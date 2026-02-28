@@ -182,8 +182,11 @@ def write_group_assets(fabric_root: Path, project_id: str, project_dir: Path, gr
 
     # Group-scoped artifact partitioning.
     (group_dir / "exposed").mkdir(parents=True, exist_ok=True)
+    write_text(group_dir / "exposed" / ".gitkeep", "")
     for specialist in group["specialists"]:
-        (group_dir / "internal" / specialist["agent_id"]).mkdir(parents=True, exist_ok=True)
+        internal_dir = group_dir / "internal" / specialist["agent_id"]
+        internal_dir.mkdir(parents=True, exist_ok=True)
+        write_text(internal_dir / ".gitkeep", "")
 
     for specialist in group["specialists"]:
         for ref_rel in specialist.get("required_references", []):
