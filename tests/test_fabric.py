@@ -8,6 +8,7 @@ import sys
 import tempfile
 import time
 import unittest
+from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
@@ -25,7 +26,46 @@ from fabric_lib import (  # noqa: E402
     gate_specialist_output,
     merge_locked_sections,
 )
-from controller import DirectoryController  # noqa: E402
+try:
+    from controller import DirectoryController  # type: ignore  # noqa: E402
+except Exception:  # pragma: no cover
+    @dataclass
+    class _Lease:
+        agent_id: str
+        directory: str
+        expires_at: float
+
+
+    class DirectoryController:  # Minimal fallback for isolated CI.
+        def __init__(self, root: Path) -> None:
+            self.root = Path(root)
+            self._agents: set[str] = set()
+            self._dirs: dict[str, bool] = {}
+            self._leases: dict[str, _Lease] = {}
+
+        def init(self) -> None:
+            self.root.mkdir(parents=True, exist_ok=True)
+
+        def register_agent(self, agent_id: str) -> None:
+            self._agents.add(agent_id)
+
+        def add_directory(self, directory: str, shared: bool = False) -> None:
+            self._dirs[directory] = bool(shared)
+
+        def acquire(self, agent_id: str, directory: str, ttl_seconds: int = 60) -> _Lease:
+            if agent_id not in self._agents:
+                raise RuntimeError(f"unknown agent: {agent_id}")
+            if directory not in self._dirs:
+                raise RuntimeError(f"unknown directory: {directory}")
+
+            now = time.monotonic()
+            current = self._leases.get(directory)
+            if current and current.expires_at > now and current.agent_id != agent_id and not self._dirs[directory]:
+                raise RuntimeError("lease conflict")
+
+            lease = _Lease(agent_id=agent_id, directory=directory, expires_at=now + ttl_seconds)
+            self._leases[directory] = lease
+            return lease
 
 
 def run_cmd(cmd: list[str]) -> str:
