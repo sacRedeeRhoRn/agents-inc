@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.1.0
+
+- Added restart-safe orchestrator state subsystem:
+  - project checkpoints under `<project-root>/.agents-inc/state/`
+  - global resume index under `~/.agents-inc/projects-index.yaml`
+- Extended `agents-inc-init-session` with resume-safe controls:
+  - `--mode ask|new|resume`
+  - `--resume-project-id`
+  - `--resume-checkpoint`
+  - `--project-index`
+  - `--overwrite-existing`
+- Changed intake default behavior to non-destructive:
+  - existing projects are resumed or explicitly overwritten by user choice
+  - removed implicit destructive regeneration in normal paths
+- Integrated automatic checkpoint writes into:
+  - `agents-inc-dispatch-dry-run`
+  - `agents-inc-long-run-test` (run-start, cycle, run-end)
+- Added internal resume guide:
+  - `src/agents_inc/docs/internal/session-resume.md`
+- Updated bootstrap messaging and README for end-to-end new/resume workflow.
+
 ## v1.0.4
 
 - Added `agents-inc-long-run-test` for full-group long-run interaction and artifact-isolation validation.

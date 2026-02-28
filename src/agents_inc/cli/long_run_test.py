@@ -18,6 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-mode", default="local-sim", choices=["local-sim"])
     parser.add_argument("--seed", type=int, default=20260301)
     parser.add_argument("--output-dir", default=None)
+    parser.add_argument("--project-index", default=None, help="global project index path for checkpoints")
     parser.add_argument("--audit", action="store_true", help="also install skills in audit mode for run diagnostics")
     parser.add_argument("--conflict-rate", type=float, default=0.1)
     parser.add_argument("--max-retries", type=int, default=3)
@@ -62,6 +63,7 @@ def main() -> int:
             run_mode=args.run_mode,
             seed=int(args.seed),
             output_dir=Path(args.output_dir).expanduser().resolve() if args.output_dir else None,
+            project_index_path=Path(args.project_index).expanduser().resolve() if args.project_index else None,
             audit=bool(args.audit),
             conflict_rate=float(args.conflict_rate),
             max_retries=int(args.max_retries),

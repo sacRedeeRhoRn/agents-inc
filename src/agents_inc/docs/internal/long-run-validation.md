@@ -50,6 +50,12 @@ Expected artifacts:
 - `final-report.md`
 - `final-report.json`
 
+State checkpoints are also written to the project state store:
+
+- `<project-root>/.agents-inc/state/session-state.yaml`
+- `<project-root>/.agents-inc/state/latest-checkpoint.yaml`
+- `<project-root>/.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
+
 ## Exit Codes
 
 - `0`: pass

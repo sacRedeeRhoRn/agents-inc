@@ -1,25 +1,144 @@
 # agents-inc
 
-Publication-ready multi-agent group fabric for Codex sessions.
+Publication-ready multi-agent group fabric for Codex sessions with restart-safe orchestration state.
 
-## Quick Start (Pinned Release Bootstrap)
+## Quick Start (Pinned Bootstrap v1.1.0)
 
 Paste this in a brand-new Codex session:
 
 ```bash
-export AGI_VER="v1.0.4" && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/bootstrap.sh" -o /tmp/bootstrap.sh && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/bootstrap.sh.sha256" -o /tmp/bootstrap.sh.sha256 && \
-(cd /tmp && shasum -a 256 -c bootstrap.sh.sha256) && \
-bash /tmp/bootstrap.sh --owner sacRedeeRhoRn --repo agents-inc --release "${AGI_VER}"
+export AGI_VER="v1.1.0" && \
+curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/bootstrap.sh" -o /tmp/agents-inc-bootstrap.sh && \
+curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/bootstrap.sh.sha256" -o /tmp/agents-inc-bootstrap.sh.sha256 && \
+(cd /tmp && shasum -a 256 -c agents-inc-bootstrap.sh.sha256) && \
+bash /tmp/agents-inc-bootstrap.sh --owner sacRedeeRhoRn --repo agents-inc --release "${AGI_VER}"
 ```
 
-What it does:
+Bootstrap does:
 1. Downloads pinned release artifacts.
-2. Verifies checksums.
+2. Verifies checksum.
 3. Installs `agents-inc`.
-4. Starts interactive intake (`agents-inc-init-session`).
-5. Generates `long-run-command.sh` in project root for full-group isolation validation.
+4. Starts intake wizard (`agents-inc-init-session`).
+5. Intake asks `new` or `resume`.
+
+## First Session: New vs Resume
+
+Run interactively:
+
+```bash
+agents-inc-init-session --mode ask
+```
+
+Modes:
+- `new`: create project bundle and install router/head skills.
+- `resume`: restore from checkpoint for existing project.
+
+Non-interactive:
+
+```bash
+agents-inc-init-session --mode new --non-interactive ...
+agents-inc-init-session --mode resume --resume-project-id <project-id>
+```
+
+## Project Lifecycle
+
+### 1) Start or Resume Project
+- Default root: `~/codex-projects/<project-id>`
+- Local fabric root: `~/codex-projects/<project-id>/agent_group_fabric`
+
+### 2) Use Router Command
+Generated file:
+- `router-call.txt`
+
+Pattern:
+
+```text
+Use $research-router for project <project-id> group <group-id>: <objective>.
+```
+
+### 3) Dry-Run Dispatch (Optional)
+
+```bash
+agents-inc-dispatch-dry-run \
+  --fabric-root ~/codex-projects/<project-id>/agent_group_fabric \
+  --project-id <project-id> \
+  --group <group-id> \
+  --objective "<objective>"
+```
+
+### 4) Validate Full Multi-Group Interaction
+
+```bash
+agents-inc-long-run-test \
+  --fabric-root ~/codex-projects/<project-id>/agent_group_fabric \
+  --project-id <project-id> \
+  --task "Film thickness dependent polymorphism stability of metastable phase" \
+  --groups all \
+  --duration-min 75 \
+  --strict-isolation hard-fail \
+  --run-mode local-sim \
+  --seed 20260301
+```
+
+### 5) Continue in Later Sessions
+- Re-run bootstrap or call `agents-inc-init-session`.
+- Choose `resume`.
+- Paste regenerated `router-call.txt`.
+
+## Resume After Shutdown / Reboot
+
+Global resume index:
+- `~/.agents-inc/projects-index.yaml`
+
+Project state files:
+- `<project-root>/.agents-inc/state/session-state.yaml`
+- `<project-root>/.agents-inc/state/latest-checkpoint.yaml`
+- `<project-root>/.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
+
+Quick resume:
+
+```bash
+agents-inc-init-session --mode resume --resume-project-id <project-id>
+```
+
+## Recover Specific Checkpoint
+
+```bash
+agents-inc-init-session \
+  --mode resume \
+  --resume-project-id <project-id> \
+  --resume-checkpoint <checkpoint-id>
+```
+
+`new` mode is non-destructive by default:
+- interactive: asks `resume/overwrite/cancel` if project exists
+- non-interactive: fails unless `--overwrite-existing`
+
+## Artifact Isolation Rules
+
+- Specialist write: only `agent-groups/<group>/internal/<specialist>/...`
+- Head write: only `agent-groups/<group>/exposed/...`
+- Cross-group read: only `agent-groups/<other-group>/exposed/...`
+- Any cross-group internal access: violation (`exit 2` in long-run validator)
+
+## How Groups Interact
+
+Default full graph uses 9 groups:
+- material-scientist
+- material-engineer
+- developer
+- designer
+- data-curation
+- literature-intelligence
+- quality-assurance
+- publication-packaging
+- atomistic-hpc-simulation
+
+Execution model:
+- Head controller coordinates specialist subtasks.
+- Independent branches run in parallel by phase.
+- Dependent branches run sequentially by dependency graph.
+- Only exposed artifacts cross group boundaries.
 
 ## Core Commands
 
@@ -34,54 +153,29 @@ agents-inc-generate-docs --include-generated-projects
 agents-inc-long-run-test --project-id <id> --groups all --duration-min 75
 ```
 
-## Long-Run Full-Group Validation
+## Troubleshooting
 
-Run one command to simulate cross-group orchestration and enforce strict artifact isolation:
+Long-run exit codes:
 
-```bash
-agents-inc-long-run-test \
-  --fabric-root /Users/moon.s.june/Documents/Playground/agent_group_fabric \
-  --project-id proj-polymorph-longrun-001 \
-  --task "Film thickness dependent polymorphism stability of metastable phase" \
-  --groups all \
-  --duration-min 75 \
-  --strict-isolation hard-fail \
-  --run-mode local-sim \
-  --seed 20260301
-```
-
-Isolation semantics:
-- No cross-group access to `agent-groups/<other-group>/internal/...`
-- Cross-group exchange is only through `agent-groups/<group>/exposed/...`
-- Specialists write only to their own `internal/<specialist>/...`
-- Heads write only to their own `exposed/...`
-
-Troubleshooting:
-
-| Exit Code | Meaning | Typical Action |
+| Exit Code | Meaning | Action |
 |---|---|---|
-| `0` | Pass | Review `final-report.md` and `coverage.json`. |
-| `2` | Isolation violation | Inspect `violations.json` and `access-ledger.ndjson` for offending actor/path. |
-| `3` | Lease contention unresolved | Check `lease-events.ndjson`, increase `--max-retries`, reduce `--conflict-rate`. |
-| `4` | Interaction coverage insufficient | Inspect `coverage.json` for missing handoff edges. |
-| `5` | Quality gate failure threshold exceeded | Review exposed artifacts and blocked gate events in `events.ndjson`. |
+| `0` | Pass | Review `final-report.md` / `final-report.json`. |
+| `2` | Isolation violation | Inspect `violations.json` and `access-ledger.ndjson`. |
+| `3` | Lease contention unresolved | Check `lease-events.ndjson`, tune retries/backoff/conflict-rate. |
+| `4` | Interaction coverage insufficient | Inspect `coverage.json` for missing edges. |
+| `5` | Quality gate failure threshold exceeded | Inspect blocked gate events and exposed payloads. |
 
-## Router Call Pattern
-
-```text
-Use $research-router for project <project-id> group <group-id>: <objective>.
-```
-
-## Project Visibility Policy
-
-- Default: `group-only`
-- Specialist artifacts: internal by default
-- Specialist exposure: audit-only override
+Resume issues:
+- If resume cannot find project, verify `~/.agents-inc/projects-index.yaml`.
+- If index entry points to deleted path, status is marked `stale`.
+- Fallback scan checks `~/codex-projects`.
 
 ## Documentation
 
-- Concise guide: [docs/INTRODUCTION.md](docs/INTRODUCTION.md)
-- Full generated reference:
+- Intro: [docs/INTRODUCTION.md](docs/INTRODUCTION.md)
+- Session intake: `src/agents_inc/docs/internal/session-intake.md`
+- Session resume: `src/agents_inc/docs/internal/session-resume.md`
+- Full generated template/skill reference:
   `docs/generated/full-template-skill-reference.md`
 
 ## Development

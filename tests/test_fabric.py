@@ -375,6 +375,7 @@ class FabricIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             project_root = Path(td) / "session-project"
             target_skills = Path(td) / "skills"
+            project_index = Path(td) / "projects-index.yaml"
             run_cmd(
                 [
                     "python3",
@@ -397,6 +398,10 @@ class FabricIntegrationTests(unittest.TestCase):
                     "technical report",
                     "--target-skill-dir",
                     str(target_skills),
+                    "--project-index",
+                    str(project_index),
+                    "--mode",
+                    "new",
                     "--non-interactive",
                 ]
             )
@@ -406,6 +411,261 @@ class FabricIntegrationTests(unittest.TestCase):
             text = long_run_cmd.read_text(encoding="utf-8")
             self.assertIn("agents-inc-long-run-test", text)
             self.assertIn("--groups all", text)
+
+            self.assertTrue((project_root / ".agents-inc" / "state" / "session-state.yaml").exists())
+            self.assertTrue((project_root / ".agents-inc" / "state" / "latest-checkpoint.yaml").exists())
+            self.assertTrue(project_index.exists())
+
+    def test_init_session_new_mode_non_destructive_without_overwrite(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "session-project"
+            target_skills = Path(td) / "skills"
+            project_index = Path(td) / "projects-index.yaml"
+            project_id = "proj-test-intake-nondestructive"
+
+            base_cmd = [
+                "python3",
+                str(SCRIPTS / "init_session.py"),
+                "--fabric-root",
+                str(ROOT),
+                "--project-root",
+                str(project_root),
+                "--project-id",
+                project_id,
+                "--task",
+                "Film thickness dependent polymorphism stability of metastable phase",
+                "--timeline",
+                "2 weeks",
+                "--compute",
+                "cuda",
+                "--remote-cluster",
+                "yes",
+                "--output-target",
+                "technical report",
+                "--target-skill-dir",
+                str(target_skills),
+                "--project-index",
+                str(project_index),
+                "--mode",
+                "new",
+                "--non-interactive",
+            ]
+            run_cmd(base_cmd)
+
+            sentinel = (
+                project_root
+                / "agent_group_fabric"
+                / "generated"
+                / "projects"
+                / project_id
+                / "long-run"
+                / "sentinel.txt"
+            )
+            sentinel.parent.mkdir(parents=True, exist_ok=True)
+            sentinel.write_text("keep-me", encoding="utf-8")
+
+            proc = subprocess.run(base_cmd, capture_output=True, text=True)
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn("overwrite is disabled", proc.stdout + proc.stderr)
+            self.assertTrue(sentinel.exists())
+
+    def test_init_session_resume_preserves_artifacts_and_checkpoint_selection(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "session-project"
+            target_skills = Path(td) / "skills"
+            project_index = Path(td) / "projects-index.yaml"
+            project_id = "proj-test-resume-checkpoint"
+            task = "Film thickness dependent polymorphism stability of metastable phase"
+
+            run_cmd(
+                [
+                    "python3",
+                    str(SCRIPTS / "init_session.py"),
+                    "--fabric-root",
+                    str(ROOT),
+                    "--project-root",
+                    str(project_root),
+                    "--project-id",
+                    project_id,
+                    "--task",
+                    task,
+                    "--timeline",
+                    "2 weeks",
+                    "--compute",
+                    "cuda",
+                    "--remote-cluster",
+                    "yes",
+                    "--output-target",
+                    "technical report",
+                    "--target-skill-dir",
+                    str(target_skills),
+                    "--project-index",
+                    str(project_index),
+                    "--mode",
+                    "new",
+                    "--non-interactive",
+                ]
+            )
+
+            sentinel = (
+                project_root
+                / "agent_group_fabric"
+                / "generated"
+                / "projects"
+                / project_id
+                / "long-run"
+                / "resume-sentinel.txt"
+            )
+            sentinel.parent.mkdir(parents=True, exist_ok=True)
+            sentinel.write_text("persist", encoding="utf-8")
+
+            run_cmd(
+                [
+                    "python3",
+                    str(SCRIPTS / "dispatch_dry_run.py"),
+                    "--fabric-root",
+                    str(project_root / "agent_group_fabric"),
+                    "--project-id",
+                    project_id,
+                    "--group",
+                    "material-scientist",
+                    "--objective",
+                    "resume objective checkpoint test",
+                    "--project-index",
+                    str(project_index),
+                ]
+            )
+
+            latest = yaml.safe_load(
+                (project_root / ".agents-inc" / "state" / "latest-checkpoint.yaml").read_text(encoding="utf-8")
+            )
+            checkpoint_id = latest["checkpoint_id"]
+
+            run_cmd(
+                [
+                    "python3",
+                    str(SCRIPTS / "init_session.py"),
+                    "--mode",
+                    "resume",
+                    "--resume-project-id",
+                    project_id,
+                    "--resume-checkpoint",
+                    checkpoint_id,
+                    "--project-index",
+                    str(project_index),
+                    "--non-interactive",
+                ]
+            )
+
+            self.assertTrue(sentinel.exists())
+
+            router_text = (project_root / "router-call.txt").read_text(encoding="utf-8")
+            self.assertIn("resume objective checkpoint test", router_text)
+
+            kickoff_text = (project_root / "kickoff.md").read_text(encoding="utf-8")
+            self.assertIn("Kickoff (Resumed)", kickoff_text)
+            self.assertIn(checkpoint_id, kickoff_text)
+
+    def test_long_run_after_resume_still_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "session-project"
+            target_skills = Path(td) / "skills"
+            project_index = Path(td) / "projects-index.yaml"
+            project_id = "proj-test-resume-longrun"
+            task = "Film thickness dependent polymorphism stability of metastable phase"
+
+            run_cmd(
+                [
+                    "python3",
+                    str(SCRIPTS / "init_session.py"),
+                    "--fabric-root",
+                    str(ROOT),
+                    "--project-root",
+                    str(project_root),
+                    "--project-id",
+                    project_id,
+                    "--task",
+                    task,
+                    "--timeline",
+                    "2 weeks",
+                    "--compute",
+                    "cuda",
+                    "--remote-cluster",
+                    "yes",
+                    "--output-target",
+                    "technical report",
+                    "--target-skill-dir",
+                    str(target_skills),
+                    "--project-index",
+                    str(project_index),
+                    "--mode",
+                    "new",
+                    "--non-interactive",
+                ]
+            )
+
+            run_cmd(
+                [
+                    "python3",
+                    str(SCRIPTS / "init_session.py"),
+                    "--mode",
+                    "resume",
+                    "--resume-project-id",
+                    project_id,
+                    "--project-index",
+                    str(project_index),
+                    "--non-interactive",
+                ]
+            )
+
+            output_dir = (
+                project_root
+                / "agent_group_fabric"
+                / "generated"
+                / "projects"
+                / project_id
+                / "long-run"
+                / "resume-fast-pass"
+            )
+            proc = subprocess.run(
+                [
+                    "python3",
+                    str(SCRIPTS / "long_run_test.py"),
+                    "--fabric-root",
+                    str(project_root / "agent_group_fabric"),
+                    "--project-id",
+                    project_id,
+                    "--task",
+                    task,
+                    "--groups",
+                    "all",
+                    "--duration-min",
+                    "5",
+                    "--strict-isolation",
+                    "hard-fail",
+                    "--run-mode",
+                    "local-sim",
+                    "--seed",
+                    "20260301",
+                    "--output-dir",
+                    str(output_dir),
+                    "--project-index",
+                    str(project_index),
+                    "--conflict-rate",
+                    "0",
+                    "--max-retries",
+                    "3",
+                    "--retry-backoff-ms",
+                    "0",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 0, msg=f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}")
+
+            report = json.loads((output_dir / "final-report.json").read_text(encoding="utf-8"))
+            self.assertEqual(report["interaction"]["coverage_percent"], 100.0)
+            self.assertEqual(report["isolation"]["violation_count"], 0)
 
 
 class ConcurrencyTests(unittest.TestCase):

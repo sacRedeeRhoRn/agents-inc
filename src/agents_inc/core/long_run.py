@@ -24,6 +24,11 @@ from agents_inc.core.fabric_lib import (
     stable_json,
     write_text,
 )
+from agents_inc.core.session_state import (
+    default_project_index_path,
+    resolve_state_project_root,
+    write_checkpoint,
+)
 
 CANONICAL_TASK = "Film thickness dependent polymorphism stability of metastable phase"
 FULL_GROUPS: List[str] = [
@@ -85,6 +90,7 @@ class LongRunConfig:
     run_mode: str
     seed: int
     output_dir: Optional[Path]
+    project_index_path: Optional[Path]
     audit: bool
     conflict_rate: float
     max_retries: int
@@ -266,6 +272,13 @@ class LongRunRunner:
     def run(self) -> Tuple[int, dict]:
         self._validate_config()
         project_dir, manifest = self._ensure_project_bundle()
+        project_id = str(manifest.get("project_id", slugify(self.config.project_id)))
+        state_project_root = resolve_state_project_root(self.config.fabric_root, project_id)
+        project_index_path = (
+            self.config.project_index_path
+            if self.config.project_index_path is not None
+            else default_project_index_path(None)
+        )
         self._prepare_output_dir(project_dir)
         dispatch_by_group, group_manifest_by_group = self._build_dispatch_plans(project_dir, manifest)
         self._init_group_stats(dispatch_by_group)
@@ -285,6 +298,13 @@ class LongRunRunner:
 
         cycles = max(1, self.config.duration_min // 5)
         self._record_event("run_start", {"cycles": cycles, "seed": self.config.seed})
+        self._checkpoint_progress(
+            project_id=project_id,
+            state_project_root=state_project_root,
+            project_index_path=project_index_path,
+            stage="run-start",
+            manifest=manifest,
+        )
 
         try:
             for cycle in range(1, cycles + 1):
@@ -491,6 +511,13 @@ class LongRunRunner:
                     self._safe_read(actor=consumer_head, target=bad_target)
 
                 self._record_event("cycle_end", {"cycle": cycle})
+                self._checkpoint_progress(
+                    project_id=project_id,
+                    state_project_root=state_project_root,
+                    project_index_path=project_index_path,
+                    stage=f"cycle-{cycle:03d}",
+                    manifest=manifest,
+                )
 
         except _AbortRun:
             pass
@@ -512,6 +539,15 @@ class LongRunRunner:
         report = self._final_report(coverage=coverage, interaction_graph=interaction_graph, lease_backend=lease_backend)
         write_text(self.output_dir / "final-report.json", stable_json(report) + "\n")
         write_text(self.output_dir / "final-report.md", self._render_report_md(report) + "\n")
+        self._checkpoint_progress(
+            project_id=project_id,
+            state_project_root=state_project_root,
+            project_index_path=project_index_path,
+            stage="run-end",
+            manifest=manifest,
+            coverage=coverage,
+            report=report,
+        )
 
         return self.failed_code, report
 
@@ -1130,6 +1166,106 @@ class LongRunRunner:
 
         return "\n".join(lines)
 
+    def _checkpoint_progress(
+        self,
+        *,
+        project_id: str,
+        state_project_root: Path,
+        project_index_path: Path,
+        stage: str,
+        manifest: dict,
+        coverage: Optional[dict] = None,
+        report: Optional[dict] = None,
+    ) -> None:
+        try:
+            selected_groups = manifest.get("selected_groups", self.config.groups)
+            if not isinstance(selected_groups, list):
+                selected_groups = self.config.groups
+            selected_groups = [str(group_id) for group_id in selected_groups]
+
+            primary_group = selected_groups[0] if selected_groups else ""
+            router_call = ""
+            if primary_group:
+                router_call = (
+                    f"Use $research-router for project {project_id} group {primary_group}: {self.config.task}."
+                )
+
+            latest_artifacts = {
+                "kickoff": str(state_project_root / "kickoff.md"),
+                "router_call": str(state_project_root / "router-call.txt"),
+                "project_manifest": str(state_project_root / "project-manifest.yaml"),
+                "long_run_output_dir": str(self.output_dir),
+                "final_report_json": str(self.output_dir / "final-report.json"),
+                "final_report_md": str(self.output_dir / "final-report.md"),
+            }
+
+            quality_summary = {
+                "stage": stage,
+                "stats": self.gate_stats,
+                "blocked_total": int(sum(v for k, v in self.gate_stats.items() if k != "PASS")),
+            }
+            isolation_summary = {
+                "stage": stage,
+                "violation_count": len([v for v in self.violations if v.get("code") == EXIT_ISOLATION_VIOLATION]),
+                "hard_fail": True,
+            }
+            if coverage is not None:
+                isolation_summary["coverage_percent"] = float(coverage.get("coverage_percent", 0.0))
+
+            pending_actions = [
+                "Inspect long-run final report for coverage, quality, and isolation outcomes.",
+                "If failures exist, rerun with injections disabled and compare checkpoint timelines.",
+            ]
+            if report is not None and int(report.get("exit_code", 0)) == 0:
+                pending_actions = [
+                    "Proceed with router-guided group execution using exposed group summaries.",
+                    "Run targeted dispatch dry-runs for next specialist-heavy objectives.",
+                ]
+
+            payload = {
+                "schema_version": "1.0",
+                "project_id": project_id,
+                "project_root": str(state_project_root),
+                "fabric_root": str(self.config.fabric_root),
+                "task": self.config.task,
+                "constraints": {
+                    "run_mode": self.config.run_mode,
+                    "duration_min": self.config.duration_min,
+                    "strict_isolation": self.config.strict_isolation,
+                    "seed": self.config.seed,
+                    "stage": stage,
+                },
+                "selected_groups": selected_groups,
+                "primary_group": primary_group,
+                "group_order_recommendation": selected_groups,
+                "router_call": router_call,
+                "latest_artifacts": latest_artifacts,
+                "quality_summary": quality_summary,
+                "isolation_summary": isolation_summary,
+                "pending_actions": pending_actions,
+            }
+            if report is not None:
+                payload["long_run_summary"] = {
+                    "exit_code": report.get("exit_code"),
+                    "exit_reason": report.get("exit_reason"),
+                    "coverage_percent": report.get("interaction", {}).get("coverage_percent"),
+                    "isolation_violations": report.get("isolation", {}).get("violation_count"),
+                }
+
+            write_checkpoint(
+                project_root=state_project_root,
+                project_index_path=project_index_path,
+                payload=payload,
+            )
+        except Exception as exc:  # noqa: BLE001
+            self._record_event(
+                "checkpoint_write_failed",
+                {
+                    "stage": stage,
+                    "error": str(exc),
+                },
+            )
+
 
 def _sha256_path(path: Path) -> str:
     h = hashlib.sha256()
@@ -1157,6 +1293,7 @@ def evaluate_access(
             run_mode="local-sim",
             seed=1,
             output_dir=None,
+            project_index_path=None,
             audit=False,
             conflict_rate=0.0,
             max_retries=1,

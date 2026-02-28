@@ -30,11 +30,19 @@ Key goals:
 
 Use `agents-inc-init-session` to:
 1. Capture task and constraints.
-2. Suggest groups and call order.
-3. Create long-term root (`~/codex-projects/<project-id>` by default).
-4. Build project bundle.
-5. Install callable group-head skills and router.
-6. Emit kickoff artifacts (`kickoff.md`, `router-call.txt`, `project-manifest.yaml`).
+2. Ask `new` or `resume` mode.
+3. Suggest groups and call order.
+4. Create long-term root (`~/codex-projects/<project-id>` by default).
+5. Build project bundle.
+6. Install callable group-head skills and router.
+7. Emit kickoff artifacts (`kickoff.md`, `router-call.txt`, `project-manifest.yaml`).
+8. Persist resume-safe checkpoints and project index.
+
+State persistence paths:
+- `<project-root>/.agents-inc/state/session-state.yaml`
+- `<project-root>/.agents-inc/state/latest-checkpoint.yaml`
+- `<project-root>/.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
+- `~/.agents-inc/projects-index.yaml`
 
 ## HPC Simulation Group
 

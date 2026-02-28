@@ -12,6 +12,11 @@ from agents_inc.core.fabric_lib import (
     load_yaml,
     resolve_fabric_root,
 )
+from agents_inc.core.session_state import (
+    default_project_index_path,
+    resolve_state_project_root,
+    write_checkpoint,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -32,6 +37,7 @@ def parse_args() -> argparse.Namespace:
         help="workspace root argument for multi_agent_dirs (defaults to fabric root parent)",
     )
     parser.add_argument("--ttl", type=int, default=900)
+    parser.add_argument("--project-index", default=None, help="global project index path")
     return parser.parse_args()
 
 
@@ -98,6 +104,41 @@ def main() -> int:
             out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_text(text + "\n", encoding="utf-8")
             print(f"written: {out_path}")
+
+        project_root = resolve_state_project_root(fabric_root, manifest["project_id"])
+        write_checkpoint(
+            project_root=project_root,
+            project_index_path=default_project_index_path(args.project_index),
+            payload={
+                "schema_version": "1.0",
+                "project_id": manifest["project_id"],
+                "project_root": str(project_root),
+                "fabric_root": str(fabric_root),
+                "task": args.objective,
+                "constraints": {
+                    "dispatch_group": group_id,
+                    "ttl": args.ttl,
+                    "multi_agent_root": multi_agent_root,
+                },
+                "selected_groups": manifest.get("selected_groups", []),
+                "primary_group": group_id,
+                "group_order_recommendation": manifest.get("selected_groups", []),
+                "router_call": f"Use $research-router for project {manifest['project_id']} group {group_id}: {args.objective}.",
+                "latest_artifacts": {
+                    "dispatch_json_out": str(Path(args.json_out).expanduser().resolve()) if args.json_out else "",
+                },
+                "pending_actions": [
+                    "Route objective through $research-router using the generated dispatch plan.",
+                    "Acquire/release workdir leases according to lock_plan during execution.",
+                ],
+                "dispatch_summary": {
+                    "group_id": group_id,
+                    "objective": args.objective,
+                    "phase_count": len(dispatch.get("phases", [])),
+                    "lock_phase_count": len(lock_plan),
+                },
+            },
+        )
 
         return 0
     except Exception as exc:  # noqa: BLE001
