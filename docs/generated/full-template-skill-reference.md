@@ -1,6 +1,6 @@
 # Full Template and Skill Reference
 
-Generated at: `2026-02-28T17:50:51Z`
+Generated at: `2026-02-28T18:11:40Z`
 Fabric root: `/Users/moon.s.june/Documents/Playground/agent_group_fabric`
 Include generated projects: `True`
 
@@ -64,6 +64,28 @@ It is intended for publication-grade audit and onboarding readiness checks.
 | 51 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
 | 52 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
 | 53 | `generated/projects/proj-battery-001/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 54 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
+| 55 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 56 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
+| 57 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 58 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 59 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-material-scientist-head/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 60 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 61 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
+| 62 | `generated/projects/proj-test-alpha/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 63 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
+| 64 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 65 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
+| 66 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 67 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 68 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 69 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 70 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 71 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 72 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 73 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 74 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
+| 75 | `generated/projects/proj-test-hpc/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
 
 ## Inlined Contents
 ## 1. `templates/group/AGENTS.template.md`
@@ -1411,6 +1433,16 @@ projects:
     - developer
     - quality-assurance
     updated_at: '2026-02-28T14:34:59Z'
+  proj-test-alpha:
+    manifest_path: generated/projects/proj-test-alpha/manifest.yaml
+    selected_groups:
+    - material-scientist
+    updated_at: '2026-02-28T18:11:37Z'
+  proj-test-hpc:
+    manifest_path: generated/projects/proj-test-hpc/manifest.yaml
+    selected_groups:
+    - atomistic-hpc-simulation
+    updated_at: '2026-02-28T18:11:39Z'
 ```
 
 ## 29. `generated/projects/proj-battery-001/agent-groups/developer/AGENTS.md`
@@ -2687,5 +2719,1228 @@ groups:
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-consistency-auditor
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor
+```
+
+## 54. `generated/projects/proj-test-alpha/agent-groups/material-scientist/AGENTS.md`
+
+- Type: `agents`
+- Purpose: Group operating contract and policy
+- Locked Sections: `safety_policy, citation_gate, routing_audit, exposure_policy`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+# Material Scientist Group - proj-test-alpha
+
+## Mission
+Route and quality-gate specialist outputs for theoretical and computational materials science.
+
+## Group Identity
+- `group_id`: `material-scientist`
+- `template_version`: `1.0.0`
+- `tool_profile`: `science-default`
+- `head_agent`: `material-scientist-head`
+- `head_skill`: `proj-proj-test-alpha-material-scientist-material-scientist-head`
+
+## Specialist Roster
+- `thermodynamics-specialist`: Phase stability, CALPHAD logic, free-energy reasoning (skill: `proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5`)
+- `electronic-structure-specialist`: DFT setup, band structure interpretation, density-of-states analysis (skill: `proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db`)
+- `atomistic-simulation-specialist`: Atomistic simulation strategy, interatomic potential reasoning, trajectory interpretation (skill: `proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c`)
+
+## Work Directories
+- `generated/projects/proj-test-alpha/work/material-scientist/thermodynamics-specialist`
+- `generated/projects/proj-test-alpha/work/material-scientist/electronic-structure-specialist`
+- `generated/projects/proj-test-alpha/work/material-scientist/atomistic-simulation-specialist`
+
+## Artifact Partition
+- Internal specialist artifacts: `agent-groups/material-scientist/internal/<specialist>/...`
+- Exposed group artifacts: `agent-groups/material-scientist/exposed/...`
+- Visibility mode is controlled at project manifest level.
+
+## Head Controller Protocol
+1. Decompose objective into specialist tasks.
+2. Dispatch hybrid execution (parallel for independent tasks, sequential for dependencies).
+3. Enforce quality gates before accepting specialist outputs.
+4. Merge outputs and publish decision log to exposed artifacts only.
+
+BEGIN_LOCKED:safety_policy
+## Safety Policy (Locked)
+- Specialists work only inside assigned project workdirs.
+- Potentially destructive commands must follow project tool policy and escalation rules.
+- Head controller records command intent for each specialist stage.
+END_LOCKED:safety_policy
+
+BEGIN_LOCKED:citation_gate
+## Citation Gate (Locked)
+- Every key claim must include at least one citation.
+- Allowed evidence sources: local references and verified web sources.
+- If citations are missing for key claims, output status is `BLOCKED_UNCITED`.
+- If web evidence is required but unavailable, output status is `BLOCKED_NEEDS_EVIDENCE`.
+END_LOCKED:citation_gate
+
+BEGIN_LOCKED:routing_audit
+## Routing Audit (Locked)
+- Head must record task graph, dependencies, and final merge rationale.
+- Cross-domain final decisions require explicit head-controller sign-off.
+END_LOCKED:routing_audit
+
+BEGIN_LOCKED:exposure_policy
+## Exposure Policy (Locked)
+- Group-level outputs are user-visible by default.
+- Specialist artifacts remain internal unless explicit audit mode is enabled.
+END_LOCKED:exposure_policy
+
+## Expected Deliverables
+- `assumptions.md` from `thermodynamics-specialist`
+- `claims_with_citations.md` from `thermodynamics-specialist`
+- `phase_stability_notes.md` from `thermodynamics-specialist`
+- `assumptions.md` from `electronic-structure-specialist`
+- `claims_with_citations.md` from `electronic-structure-specialist`
+- `electronic_summary.md` from `electronic-structure-specialist`
+- `assumptions.md` from `atomistic-simulation-specialist`
+- `claims_with_citations.md` from `atomistic-simulation-specialist`
+- `simulation_plan.md` from `atomistic-simulation-specialist`
+
+## Quality Gates
+- `citation_required`: `True`
+- `unresolved_claims_block`: `True`
+- `peer_check_required`: `True`
+- `consistency_required`: `True`
+- `scope_required`: `True`
+- `reproducibility_required`: `True`
+```
+
+## 55. `generated/projects/proj-test-alpha/agent-groups/material-scientist/group.yaml`
+
+- Type: `manifest`
+- Purpose: Project or group manifest instance
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+group_id: material-scientist
+display_name: Material Scientist Group
+template_version: 1.0.0
+domain: materials-research
+head:
+  agent_id: material-scientist-head
+  skill_name: grp-material-scientist-head
+  mission: Route and quality-gate specialist outputs for theoretical and computational
+    materials science.
+  effective_skill_name: proj-proj-test-alpha-material-scientist-material-scientist-head
+specialists:
+- agent_id: thermodynamics-specialist
+  skill_name: grp-material-scientist-thermodynamics
+  focus: Phase stability, CALPHAD logic, free-energy reasoning
+  required_references:
+  - references/thermodynamics-core.md
+  required_outputs:
+  - assumptions.md
+  - claims_with_citations.md
+  - phase_stability_notes.md
+  effective_skill_name: proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5
+- agent_id: electronic-structure-specialist
+  skill_name: grp-material-scientist-electronic-structure
+  focus: DFT setup, band structure interpretation, density-of-states analysis
+  depends_on:
+  - thermodynamics-specialist
+  required_references:
+  - references/electronic-structure-core.md
+  required_outputs:
+  - assumptions.md
+  - claims_with_citations.md
+  - electronic_summary.md
+  effective_skill_name: proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db
+- agent_id: atomistic-simulation-specialist
+  skill_name: grp-material-scientist-atomistic
+  focus: Atomistic simulation strategy, interatomic potential reasoning, trajectory
+    interpretation
+  required_references:
+  - references/atomistic-simulation-core.md
+  required_outputs:
+  - assumptions.md
+  - claims_with_citations.md
+  - simulation_plan.md
+  effective_skill_name: proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c
+tool_profile: science-default
+default_workdirs:
+- inputs
+- analysis
+- outputs
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
+```
+
+## 56. `generated/projects/proj-test-alpha/agent-groups/material-scientist/handoffs.yaml`
+
+- Type: `handoff`
+- Purpose: Intra-group handoff protocol
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```yaml
+group_id: "material-scientist"
+head_agent_id: "material-scientist-head"
+handoffs:
+  - from: "thermodynamics-specialist"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "electronic-structure-specialist"
+    to: "head-controller"
+    condition: "after dependencies satisfied"
+  - from: "atomistic-simulation-specialist"
+    to: "head-controller"
+    condition: "after task completion"
+```
+
+## 57. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c
+description: Specialist agent for Atomistic simulation strategy, interatomic potential reasoning, trajectory interpretation in Material Scientist Group (project proj-test-alpha). Use for narrow-domain expert analysis with claim-level citations.
+---
+
+# atomistic-simulation-specialist
+
+## Scope
+Atomistic simulation strategy, interatomic potential reasoning, trajectory interpretation
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/atomistic-simulation-core.md
+
+## Required Outputs
+- assumptions.md
+- claims_with_citations.md
+- simulation_plan.md
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 58. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db
+description: Specialist agent for DFT setup, band structure interpretation, density-of-states analysis in Material Scientist Group (project proj-test-alpha). Use for narrow-domain expert analysis with claim-level citations.
+---
+
+# electronic-structure-specialist
+
+## Scope
+DFT setup, band structure interpretation, density-of-states analysis
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/electronic-structure-core.md
+
+## Required Outputs
+- assumptions.md
+- claims_with_citations.md
+- electronic_summary.md
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 59. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-material-scientist-head/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-alpha-material-scientist-material-scientist-head
+description: Orchestrate Material Scientist Group for project proj-test-alpha. Use when routing objective-level work to specialist agents with strict expert quality gates.
+---
+
+# Material Scientist Group Head Controller
+
+## Scope
+Route and merge specialist outputs for `material-scientist` in project `proj-test-alpha`.
+
+## Responsibilities
+1. Build a task graph from the objective.
+2. Dispatch hybrid execution: parallel for independent branches, sequential for dependencies.
+3. Enforce citation/consistency/scope/reproducibility gates.
+4. Publish final merged artifact index and decision log.
+
+## Required Inputs
+- `objective`
+- `project_id`
+- `group_id`
+- current registry entry in `catalog/project-registry.yaml`
+
+## Execution Contract
+- Acquire per-agent workdir lease before write.
+- Retry or reroute on lease conflict.
+- Reject outputs that fail any hard gate.
+- Consolidate specialist internal outputs before publishing group-exposed artifacts.
+
+## Specialists
+- thermodynamics-specialist: `proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5`
+- electronic-structure-specialist: `proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db`
+- atomistic-simulation-specialist: `proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c`
+
+## Output Contract
+- `dispatch_plan.json`
+- `decision_log.md`
+- `artifact_index.md`
+```
+
+## 60. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5
+description: Specialist agent for Phase stability, CALPHAD logic, free-energy reasoning in Material Scientist Group (project proj-test-alpha). Use for narrow-domain expert analysis with claim-level citations.
+---
+
+# thermodynamics-specialist
+
+## Scope
+Phase stability, CALPHAD logic, free-energy reasoning
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/thermodynamics-core.md
+
+## Required Outputs
+- assumptions.md
+- claims_with_citations.md
+- phase_stability_notes.md
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 61. `generated/projects/proj-test-alpha/agent-groups/material-scientist/tools/allowlist.yaml`
+
+- Type: `tool-policy`
+- Purpose: Command/tool policy for group operations
+- Locked Sections: `tool_restrictions`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+allowed_prefixes:
+  - "python3"
+  - "bash"
+  - "sh"
+  - "rg"
+  - "sed"
+  - "awk"
+  - "cat"
+  - "ls"
+  - "git"
+  - "pytest"
+escalation_prefixes:
+  - "ssh"
+  - "sshpass"
+  - "scp"
+# BEGIN_LOCKED:tool_restrictions
+forbidden_prefixes:
+  - "rm -rf /"
+  - "git reset --hard"
+  - "mkfs"
+  - "dd if="
+wrapper_required_prefixes:
+  - "pip install"
+  - "conda install"
+# END_LOCKED:tool_restrictions
+tool_profile: "science-default"
+```
+
+## 62. `generated/projects/proj-test-alpha/manifest.yaml`
+
+- Type: `manifest`
+- Purpose: Project or group manifest instance
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+project_id: proj-test-alpha
+selected_groups:
+- material-scientist
+install_targets:
+  codex_skill_dir: /Users/moon.s.june/.codex/skills/local
+router_skill_name: research-router
+bundle_version: 1.0.0
+template_versions:
+  material-scientist: 1.0.0
+visibility:
+  mode: group-only
+  audit_override: true
+overlays:
+  allow_project_overrides: true
+  protected_sections:
+  - safety_policy
+  - citation_gate
+  - tool_restrictions
+  - routing_audit
+groups:
+  material-scientist:
+    manifest_path: agent-groups/material-scientist/group.yaml
+    skill_dirs:
+    - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-material-scientist-head
+    - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5
+    - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db
+    - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c
+    head_skill_dir: agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-material-scientist-head
+    specialist_skill_dirs:
+    - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5
+    - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db
+    - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c
+```
+
+## 63. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/AGENTS.md`
+
+- Type: `agents`
+- Purpose: Group operating contract and policy
+- Locked Sections: `safety_policy, citation_gate, routing_audit, exposure_policy`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+# Atomistic HPC Simulation Group - proj-test-hpc
+
+## Mission
+Coordinate high-fidelity atomistic simulation workflows across remote HPC resources with strict evidence and reproducibility controls.
+
+## Group Identity
+- `group_id`: `atomistic-hpc-simulation`
+- `template_version`: `1.0.0`
+- `tool_profile`: `hpc-simulation-default`
+- `head_agent`: `atomistic-hpc-simulation-head`
+- `head_skill`: `proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f`
+
+## Specialist Roster
+- `vasp-expert`: VASP workflows including DFT setup, convergence policy, and electronic structure outputs (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert`)
+- `lammps-expert`: LAMMPS MD configuration, potential selection, and production run strategy (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert`)
+- `metadynamics-expert`: Enhanced sampling with metadynamics, CV design, and free-energy surface interpretation (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert`)
+- `scheduler-remote-ops-expert`: SSH orchestration, PBS-first and Slurm-compatible job submission strategy, failure recovery (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36`)
+- `cuda-performance-expert`: CUDA queue usage, GPU performance tuning, memory and throughput diagnostics (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680`)
+- `simulation-postprocessing-expert`: Trajectory/post-processing pipelines and uncertainty-aware summary extraction (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555`)
+- `developer-bridge-expert`: Cross-group integration with developer group for scripts, SSH tooling, and reliability hardening (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1`)
+
+## Work Directories
+- `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/vasp-expert`
+- `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/lammps-expert`
+- `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/metadynamics-expert`
+- `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/scheduler-remote-ops-expert`
+- `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/cuda-performance-expert`
+- `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/simulation-postprocessing-expert`
+- `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/developer-bridge-expert`
+
+## Artifact Partition
+- Internal specialist artifacts: `agent-groups/atomistic-hpc-simulation/internal/<specialist>/...`
+- Exposed group artifacts: `agent-groups/atomistic-hpc-simulation/exposed/...`
+- Visibility mode is controlled at project manifest level.
+
+## Head Controller Protocol
+1. Decompose objective into specialist tasks.
+2. Dispatch hybrid execution (parallel for independent tasks, sequential for dependencies).
+3. Enforce quality gates before accepting specialist outputs.
+4. Merge outputs and publish decision log to exposed artifacts only.
+
+BEGIN_LOCKED:safety_policy
+## Safety Policy (Locked)
+- Specialists work only inside assigned project workdirs.
+- Potentially destructive commands must follow project tool policy and escalation rules.
+- Head controller records command intent for each specialist stage.
+END_LOCKED:safety_policy
+
+BEGIN_LOCKED:citation_gate
+## Citation Gate (Locked)
+- Every key claim must include at least one citation.
+- Allowed evidence sources: local references and verified web sources.
+- If citations are missing for key claims, output status is `BLOCKED_UNCITED`.
+- If web evidence is required but unavailable, output status is `BLOCKED_NEEDS_EVIDENCE`.
+END_LOCKED:citation_gate
+
+BEGIN_LOCKED:routing_audit
+## Routing Audit (Locked)
+- Head must record task graph, dependencies, and final merge rationale.
+- Cross-domain final decisions require explicit head-controller sign-off.
+END_LOCKED:routing_audit
+
+BEGIN_LOCKED:exposure_policy
+## Exposure Policy (Locked)
+- Group-level outputs are user-visible by default.
+- Specialist artifacts remain internal unless explicit audit mode is enabled.
+END_LOCKED:exposure_policy
+
+## Expected Deliverables
+- `assumptions.md` from `vasp-expert`
+- `claims_with_citations.md` from `vasp-expert`
+- `vasp-plan.md` from `vasp-expert`
+- `assumptions.md` from `lammps-expert`
+- `claims_with_citations.md` from `lammps-expert`
+- `lammps-plan.md` from `lammps-expert`
+- `assumptions.md` from `metadynamics-expert`
+- `claims_with_citations.md` from `metadynamics-expert`
+- `metadynamics-plan.md` from `metadynamics-expert`
+- `remote-ops-plan.md` from `scheduler-remote-ops-expert`
+- `claims_with_citations.md` from `scheduler-remote-ops-expert`
+- `cuda-plan.md` from `cuda-performance-expert`
+- `claims_with_citations.md` from `cuda-performance-expert`
+- `postprocessing-summary.md` from `simulation-postprocessing-expert`
+- `claims_with_citations.md` from `simulation-postprocessing-expert`
+- `integration-plan.md` from `developer-bridge-expert`
+- `claims_with_citations.md` from `developer-bridge-expert`
+
+## Quality Gates
+- `citation_required`: `True`
+- `unresolved_claims_block`: `True`
+- `peer_check_required`: `True`
+- `consistency_required`: `True`
+- `scope_required`: `True`
+- `reproducibility_required`: `True`
+```
+
+## 64. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/group.yaml`
+
+- Type: `manifest`
+- Purpose: Project or group manifest instance
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+group_id: atomistic-hpc-simulation
+display_name: Atomistic HPC Simulation Group
+template_version: 1.0.0
+domain: hpc-atomistic-simulation
+head:
+  agent_id: atomistic-hpc-simulation-head
+  skill_name: grp-atomistic-hpc-simulation-head
+  mission: Coordinate high-fidelity atomistic simulation workflows across remote HPC
+    resources with strict evidence and reproducibility controls.
+  effective_skill_name: proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f
+specialists:
+- agent_id: vasp-expert
+  skill_name: grp-atomistic-hpc-simulation-vasp
+  focus: VASP workflows including DFT setup, convergence policy, and electronic structure
+    outputs
+  required_references:
+  - references/vasp-core.md
+  required_outputs:
+  - assumptions.md
+  - claims_with_citations.md
+  - vasp-plan.md
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert
+- agent_id: lammps-expert
+  skill_name: grp-atomistic-hpc-simulation-lammps
+  focus: LAMMPS MD configuration, potential selection, and production run strategy
+  required_references:
+  - references/lammps-core.md
+  required_outputs:
+  - assumptions.md
+  - claims_with_citations.md
+  - lammps-plan.md
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert
+- agent_id: metadynamics-expert
+  skill_name: grp-atomistic-hpc-simulation-metadynamics
+  focus: Enhanced sampling with metadynamics, CV design, and free-energy surface interpretation
+  depends_on:
+  - lammps-expert
+  required_references:
+  - references/metadynamics-core.md
+  required_outputs:
+  - assumptions.md
+  - claims_with_citations.md
+  - metadynamics-plan.md
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert
+- agent_id: scheduler-remote-ops-expert
+  skill_name: grp-atomistic-hpc-simulation-scheduler-ops
+  focus: SSH orchestration, PBS-first and Slurm-compatible job submission strategy,
+    failure recovery
+  required_references:
+  - references/hpc-scheduler-core.md
+  required_outputs:
+  - remote-ops-plan.md
+  - claims_with_citations.md
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36
+- agent_id: cuda-performance-expert
+  skill_name: grp-atomistic-hpc-simulation-cuda
+  focus: CUDA queue usage, GPU performance tuning, memory and throughput diagnostics
+  depends_on:
+  - scheduler-remote-ops-expert
+  required_references:
+  - references/cuda-performance-core.md
+  required_outputs:
+  - cuda-plan.md
+  - claims_with_citations.md
+  execution:
+    remote_transport: ssh
+    scheduler: slurm
+    hardware: cuda-gpu
+    requires_gpu: true
+  effective_skill_name: proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680
+- agent_id: simulation-postprocessing-expert
+  skill_name: grp-atomistic-hpc-simulation-postprocessing
+  focus: Trajectory/post-processing pipelines and uncertainty-aware summary extraction
+  depends_on:
+  - vasp-expert
+  - lammps-expert
+  - metadynamics-expert
+  required_references:
+  - references/postprocessing-core.md
+  required_outputs:
+  - postprocessing-summary.md
+  - claims_with_citations.md
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555
+- agent_id: developer-bridge-expert
+  skill_name: grp-atomistic-hpc-simulation-developer-bridge
+  focus: Cross-group integration with developer group for scripts, SSH tooling, and
+    reliability hardening
+  depends_on:
+  - scheduler-remote-ops-expert
+  required_references:
+  - references/developer-bridge-core.md
+  required_outputs:
+  - integration-plan.md
+  - claims_with_citations.md
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1
+interaction:
+  mode: interactive-separated
+  linked_groups:
+  - developer
+execution_defaults:
+  remote_transport: ssh
+  schedulers:
+  - pbs
+  - slurm
+  hardware:
+  - cpu
+  - cuda-gpu
+tool_profile: hpc-simulation-default
+default_workdirs:
+- inputs
+- analysis
+- outputs
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
+```
+
+## 65. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/handoffs.yaml`
+
+- Type: `handoff`
+- Purpose: Intra-group handoff protocol
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```yaml
+group_id: "atomistic-hpc-simulation"
+head_agent_id: "atomistic-hpc-simulation-head"
+handoffs:
+  - from: "vasp-expert"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "lammps-expert"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "metadynamics-expert"
+    to: "head-controller"
+    condition: "after dependencies satisfied"
+  - from: "scheduler-remote-ops-expert"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "cuda-performance-expert"
+    to: "head-controller"
+    condition: "after dependencies satisfied"
+  - from: "simulation-postprocessing-expert"
+    to: "head-controller"
+    condition: "after dependencies satisfied"
+  - from: "developer-bridge-expert"
+    to: "head-controller"
+    condition: "after dependencies satisfied"
+```
+
+## 66. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f
+description: Orchestrate Atomistic HPC Simulation Group for project proj-test-hpc. Use when routing objective-level work to specialist agents with strict expert quality gates.
+---
+
+# Atomistic HPC Simulation Group Head Controller
+
+## Scope
+Route and merge specialist outputs for `atomistic-hpc-simulation` in project `proj-test-hpc`.
+
+## Responsibilities
+1. Build a task graph from the objective.
+2. Dispatch hybrid execution: parallel for independent branches, sequential for dependencies.
+3. Enforce citation/consistency/scope/reproducibility gates.
+4. Publish final merged artifact index and decision log.
+
+## Required Inputs
+- `objective`
+- `project_id`
+- `group_id`
+- current registry entry in `catalog/project-registry.yaml`
+
+## Execution Contract
+- Acquire per-agent workdir lease before write.
+- Retry or reroute on lease conflict.
+- Reject outputs that fail any hard gate.
+- Consolidate specialist internal outputs before publishing group-exposed artifacts.
+
+## Specialists
+- vasp-expert: `proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert`
+- lammps-expert: `proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert`
+- metadynamics-expert: `proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert`
+- scheduler-remote-ops-expert: `proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36`
+- cuda-performance-expert: `proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680`
+- simulation-postprocessing-expert: `proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555`
+- developer-bridge-expert: `proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1`
+
+## Output Contract
+- `dispatch_plan.json`
+- `decision_log.md`
+- `artifact_index.md`
+```
+
+## 67. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680
+description: Specialist agent for CUDA queue usage, GPU performance tuning, memory and throughput diagnostics in Atomistic HPC Simulation Group (project proj-test-hpc). Use for narrow-domain expert analysis with claim-level citations.
+---
+
+# cuda-performance-expert
+
+## Scope
+CUDA queue usage, GPU performance tuning, memory and throughput diagnostics
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/cuda-performance-core.md
+
+## Required Outputs
+- cuda-plan.md
+- claims_with_citations.md
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 68. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1
+description: Specialist agent for Cross-group integration with developer group for scripts, SSH tooling, and reliability hardening in Atomistic HPC Simulation Group (project proj-test-hpc). Use for narrow-domain expert analysis with claim-level citations.
+---
+
+# developer-bridge-expert
+
+## Scope
+Cross-group integration with developer group for scripts, SSH tooling, and reliability hardening
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/developer-bridge-core.md
+
+## Required Outputs
+- integration-plan.md
+- claims_with_citations.md
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 69. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert
+description: Specialist agent for LAMMPS MD configuration, potential selection, and production run strategy in Atomistic HPC Simulation Group (project proj-test-hpc). Use for narrow-domain expert analysis with claim-level citations.
+---
+
+# lammps-expert
+
+## Scope
+LAMMPS MD configuration, potential selection, and production run strategy
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/lammps-core.md
+
+## Required Outputs
+- assumptions.md
+- claims_with_citations.md
+- lammps-plan.md
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 70. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert
+description: Specialist agent for Enhanced sampling with metadynamics, CV design, and free-energy surface interpretation in Atomistic HPC Simulation Group (project proj-test-hpc). Use for narrow-domain expert analysis with claim-level citations.
+---
+
+# metadynamics-expert
+
+## Scope
+Enhanced sampling with metadynamics, CV design, and free-energy surface interpretation
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/metadynamics-core.md
+
+## Required Outputs
+- assumptions.md
+- claims_with_citations.md
+- metadynamics-plan.md
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 71. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36
+description: Specialist agent for SSH orchestration, PBS-first and Slurm-compatible job submission strategy, failure recovery in Atomistic HPC Simulation Group (project proj-test-hpc). Use for narrow-domain expert analysis with claim-level citations.
+---
+
+# scheduler-remote-ops-expert
+
+## Scope
+SSH orchestration, PBS-first and Slurm-compatible job submission strategy, failure recovery
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/hpc-scheduler-core.md
+
+## Required Outputs
+- remote-ops-plan.md
+- claims_with_citations.md
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 72. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555
+description: Specialist agent for Trajectory/post-processing pipelines and uncertainty-aware summary extraction in Atomistic HPC Simulation Group (project proj-test-hpc). Use for narrow-domain expert analysis with claim-level citations.
+---
+
+# simulation-postprocessing-expert
+
+## Scope
+Trajectory/post-processing pipelines and uncertainty-aware summary extraction
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/postprocessing-core.md
+
+## Required Outputs
+- postprocessing-summary.md
+- claims_with_citations.md
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 73. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert
+description: Specialist agent for VASP workflows including DFT setup, convergence policy, and electronic structure outputs in Atomistic HPC Simulation Group (project proj-test-hpc). Use for narrow-domain expert analysis with claim-level citations.
+---
+
+# vasp-expert
+
+## Scope
+VASP workflows including DFT setup, convergence policy, and electronic structure outputs
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/vasp-core.md
+
+## Required Outputs
+- assumptions.md
+- claims_with_citations.md
+- vasp-plan.md
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 74. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/tools/allowlist.yaml`
+
+- Type: `tool-policy`
+- Purpose: Command/tool policy for group operations
+- Locked Sections: `tool_restrictions`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+allowed_prefixes:
+  - "python3"
+  - "bash"
+  - "sh"
+  - "rg"
+  - "sed"
+  - "awk"
+  - "cat"
+  - "ls"
+  - "git"
+  - "pytest"
+escalation_prefixes:
+  - "ssh"
+  - "sshpass"
+  - "scp"
+# BEGIN_LOCKED:tool_restrictions
+forbidden_prefixes:
+  - "rm -rf /"
+  - "git reset --hard"
+  - "mkfs"
+  - "dd if="
+wrapper_required_prefixes:
+  - "pip install"
+  - "conda install"
+# END_LOCKED:tool_restrictions
+tool_profile: "hpc-simulation-default"
+```
+
+## 75. `generated/projects/proj-test-hpc/manifest.yaml`
+
+- Type: `manifest`
+- Purpose: Project or group manifest instance
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+project_id: proj-test-hpc
+selected_groups:
+- atomistic-hpc-simulation
+install_targets:
+  codex_skill_dir: /Users/moon.s.june/.codex/skills/local
+router_skill_name: research-router
+bundle_version: 1.0.0
+template_versions:
+  atomistic-hpc-simulation: 1.0.0
+visibility:
+  mode: group-only
+  audit_override: true
+overlays:
+  allow_project_overrides: true
+  protected_sections:
+  - safety_policy
+  - citation_gate
+  - tool_restrictions
+  - routing_audit
+groups:
+  atomistic-hpc-simulation:
+    manifest_path: agent-groups/atomistic-hpc-simulation/group.yaml
+    skill_dirs:
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1
+    head_skill_dir: agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f
+    specialist_skill_dirs:
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1
 ```
 
