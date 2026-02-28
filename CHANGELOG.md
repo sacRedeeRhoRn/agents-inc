@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.3
+
+- Fixed README bootstrap command filename/checksum mismatch (`bootstrap.sh` naming is now consistent).
+- Fixed bootstrap wheel checksum verification to validate only the selected wheel entry.
+- Hardened bootstrap for fresh Python 3.8 environments by upgrading `pip`, `setuptools`, and `wheel` before install.
+
 ## v1.0.2
 
 - Aligned package version with release tag for checksum-verified bootstrap installs.

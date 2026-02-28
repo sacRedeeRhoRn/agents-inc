@@ -45,13 +45,16 @@ curl -sfL "${BASE_URL}/${CHECKSUM_FILE}" -o "${TMP_DIR}/${CHECKSUM_FILE}"
 
 (
   cd "$TMP_DIR"
-  if ! grep "  ${WHEEL}$" "${CHECKSUM_FILE}" >/dev/null 2>&1; then
+  WHEEL_LINE="$(grep "  ${WHEEL}$" "${CHECKSUM_FILE}" || true)"
+  if [[ -z "${WHEEL_LINE}" ]]; then
     echo "checksum file does not contain ${WHEEL}" >&2
     exit 1
   fi
-  shasum -a 256 -c "${CHECKSUM_FILE}"
+  printf "%s\n" "${WHEEL_LINE}" > wheel-only.sha256
+  shasum -a 256 -c wheel-only.sha256
 )
 
+python3 -m pip install --upgrade pip setuptools wheel
 python3 -m pip install --upgrade "${TMP_DIR}/${WHEEL}"
 
 python3 - <<'PY'
