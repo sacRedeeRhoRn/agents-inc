@@ -63,8 +63,12 @@ import agents_inc
 try:
     p = Path(agents_inc.__file__).resolve().parent / 'docs' / 'internal' / 'session-intake.md'
     print('session intake doc:', p)
+    print('long-run validator:', 'agents-inc-long-run-test --help')
 except Exception:
     pass
 PY
+
+echo "Tip: after intake completes, run the generated long-run command file to validate full-group interaction."
+echo "     file: ~/codex-projects/<project-id>/long-run-command.sh"
 
 python3 -m agents_inc.cli.init_session

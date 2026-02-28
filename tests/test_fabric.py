@@ -371,6 +371,42 @@ class FabricIntegrationTests(unittest.TestCase):
         )
         self.assertTrue(out.exists())
 
+    def test_init_session_emits_long_run_command_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "session-project"
+            target_skills = Path(td) / "skills"
+            run_cmd(
+                [
+                    "python3",
+                    str(SCRIPTS / "init_session.py"),
+                    "--fabric-root",
+                    str(ROOT),
+                    "--project-root",
+                    str(project_root),
+                    "--project-id",
+                    "proj-test-intake-longrun",
+                    "--task",
+                    "Film thickness dependent polymorphism stability of metastable phase",
+                    "--timeline",
+                    "2 weeks",
+                    "--compute",
+                    "cuda",
+                    "--remote-cluster",
+                    "yes",
+                    "--output-target",
+                    "technical report",
+                    "--target-skill-dir",
+                    str(target_skills),
+                    "--non-interactive",
+                ]
+            )
+
+            long_run_cmd = project_root / "long-run-command.sh"
+            self.assertTrue(long_run_cmd.exists())
+            text = long_run_cmd.read_text(encoding="utf-8")
+            self.assertIn("agents-inc-long-run-test", text)
+            self.assertIn("--groups all", text)
+
 
 class ConcurrencyTests(unittest.TestCase):
     def test_lease_conflict_and_expiry(self) -> None:

@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.4
+
+- Added `agents-inc-long-run-test` for full-group long-run interaction and artifact-isolation validation.
+- Added deterministic local simulation runtime with lease contention checks, strict path policy, and machine-readable reports.
+- Added long-run test coverage for pass/fail paths (isolation, deadlock, quality gate, audit mode).
+- Improved new-session onboarding visibility:
+  - bootstrap now prints long-run validator availability
+  - intake now generates `long-run-command.sh` in project root
+  - session intake docs include long-run validation guidance
+
 ## v1.0.3
 
 - Fixed README bootstrap command filename/checksum mismatch (`bootstrap.sh` naming is now consistent).

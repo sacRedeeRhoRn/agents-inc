@@ -15,9 +15,12 @@ The onboarding wizard should create:
 - A project-local fabric bundle
 - Group recommendations and invocation order
 - Router call text for immediate execution
+- Long-run all-group validation command (`long-run-command.sh`)
 
 ## Default Behavior
 - Visibility mode: group-only
 - Specialist artifacts: internal unless audit mode is enabled
 - Router invocation:
   `Use $research-router for project <project-id> group <group-id>: <objective>.`
+- Long-run validator:
+  `agents-inc-long-run-test --project-id <project-id> --groups all --duration-min 75`

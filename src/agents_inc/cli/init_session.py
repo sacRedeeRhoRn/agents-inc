@@ -143,6 +143,19 @@ def main() -> int:
         router_call = (
             f"Use $research-router for project {project_id} group {primary_group}: {task}."
         )
+        long_run_command = "\n".join(
+            [
+                "agents-inc-long-run-test \\",
+                f"  --fabric-root {project_fabric_root} \\",
+                f"  --project-id {project_id} \\",
+                f"  --task \"{task}\" \\",
+                "  --groups all \\",
+                "  --duration-min 75 \\",
+                "  --strict-isolation hard-fail \\",
+                "  --run-mode local-sim \\",
+                "  --seed 20260301",
+            ]
+        )
 
         kickoff_md = "\n".join(
             [
@@ -170,11 +183,18 @@ def main() -> int:
                 "",
                 "## Router Call",
                 f"`{router_call}`",
+                "",
+                "## Long-Run Validation",
+                "Run this after initial setup to verify all groups interact correctly with strict artifact isolation:",
+                "```bash",
+                long_run_command,
+                "```",
             ]
         )
 
         write_text(project_root / "kickoff.md", kickoff_md + "\n")
         write_text(project_root / "router-call.txt", router_call + "\n")
+        write_text(project_root / "long-run-command.sh", long_run_command + "\n")
         write_text(project_root / "project-manifest.yaml", read_text(project_fabric_root / "generated" / "projects" / project_id / "manifest.yaml"))
 
         summary = {
@@ -187,11 +207,13 @@ def main() -> int:
             "artifacts": {
                 "kickoff": project_root / "kickoff.md",
                 "router_call": project_root / "router-call.txt",
+                "long_run_command": project_root / "long-run-command.sh",
                 "project_manifest": project_root / "project-manifest.yaml",
             },
             "visibility": manifest.get("visibility", {}),
             "next_actions": [
                 "Paste router-call.txt into the Codex session.",
+                "Run long-run-command.sh to validate all-group interaction and isolation.",
                 "Use --audit in install command only when specialist-level inspection is required.",
             ],
         }

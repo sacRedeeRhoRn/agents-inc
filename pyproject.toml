@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agents-inc"
-version = "1.0.3"
+version = "1.0.4"
 description = "Publication-ready multi-agent group fabric and router orchestration toolkit for Codex sessions"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -42,6 +42,7 @@ agents-inc-validate = "agents_inc.cli.validate:main"
 agents-inc-dispatch-dry-run = "agents_inc.cli.dispatch_dry_run:main"
 agents-inc-init-session = "agents_inc.cli.init_session:main"
 agents-inc-generate-docs = "agents_inc.cli.generate_docs:main"
+agents-inc-long-run-test = "agents_inc.cli.long_run_test:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
