@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agents-inc"
-version = "1.1.0"
+version = "1.2.0"
 description = "Publication-ready multi-agent group fabric and router orchestration toolkit for Codex sessions"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -34,16 +34,17 @@ Repository = "https://github.com/sacRedeeRhoRn/agents-inc"
 Issues = "https://github.com/sacRedeeRhoRn/agents-inc/issues"
 
 [project.scripts]
-agents-inc-new-group = "agents_inc.cli.new_group:main"
-agents-inc-new-project = "agents_inc.cli.new_project:main"
-agents-inc-install-skills = "agents_inc.cli.install_skills:main"
-agents-inc-sync-overlays = "agents_inc.cli.sync_overlays:main"
-agents-inc-validate = "agents_inc.cli.validate:main"
-agents-inc-dispatch-dry-run = "agents_inc.cli.dispatch_dry_run:main"
-agents-inc-init-session = "agents_inc.cli.init_session:main"
-agents-inc-list-sessions = "agents_inc.cli.list_sessions:main"
-agents-inc-generate-docs = "agents_inc.cli.generate_docs:main"
-agents-inc-long-run-test = "agents_inc.cli.long_run_test:main"
+agents-inc = "agents_inc.cli.main:main"
+agents-inc-new-group = "agents_inc.cli.deprecated_aliases:new_group_alias"
+agents-inc-new-project = "agents_inc.cli.deprecated_aliases:new_project_alias"
+agents-inc-install-skills = "agents_inc.cli.deprecated_aliases:install_skills_alias"
+agents-inc-sync-overlays = "agents_inc.cli.deprecated_aliases:sync_overlays_alias"
+agents-inc-validate = "agents_inc.cli.deprecated_aliases:validate_alias"
+agents-inc-dispatch-dry-run = "agents_inc.cli.deprecated_aliases:dispatch_dry_run_alias"
+agents-inc-init-session = "agents_inc.cli.deprecated_aliases:init_session_alias"
+agents-inc-list-sessions = "agents_inc.cli.deprecated_aliases:list_sessions_alias"
+agents-inc-generate-docs = "agents_inc.cli.deprecated_aliases:generate_docs_alias"
+agents-inc-long-run-test = "agents_inc.cli.deprecated_aliases:long_run_test_alias"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

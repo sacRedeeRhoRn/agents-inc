@@ -2,73 +2,70 @@
 
 ## Purpose
 
-`agents-inc` provides reusable multi-agent group templates and tooling to bootstrap long-term research projects in Codex sessions.
+`agents-inc` is a reusable multi-agent group platform for Codex-centered research orchestration.
 
-Key goals:
-- Reusable group catalogs and templates.
-- Deterministic project bundle generation.
-- Global routing through `$research-router`.
-- Strict citation and quality gates.
-- Group-scoped artifact exposure with audit-only specialist visibility.
+Core outcomes:
+- reusable expert group catalogs/templates
+- deterministic per-project bundle generation
+- strict quality/evidence gates
+- project-scoped internal/exposed artifact model
+- restart-safe orchestration state and resume workflow
 
-## Architecture
+## Primary Interface
 
-- `catalog/`: source-of-truth groups/profiles.
-- `templates/`: AGENTS/skills/handoffs/tool-policy templates.
-- `schemas/`: validation contracts.
-- `generated/projects/<project-id>/`: instantiated projects.
-- `src/agents_inc/`: package implementation.
-
-## Multi-Agent Runtime Model
-
-- Head controller is user-facing.
-- Specialists collaborate internally.
-- Internal artifacts: `agent-groups/<group>/internal/<specialist>/...`
-- Exposed artifacts: `agent-groups/<group>/exposed/...`
-
-## Onboarding Flow
-
-Use `agents-inc-init-session` to:
-1. Capture task and constraints.
-2. Ask `new` or `resume` mode.
-3. Suggest groups and call order.
-4. Create long-term root (`~/codex-projects/<project-id>` by default).
-5. Build project bundle.
-6. Install callable group-head skills and router.
-7. Emit kickoff artifacts (`kickoff.md`, `router-call.txt`, `project-manifest.yaml`).
-8. Persist resume-safe checkpoints and project index.
-
-State persistence paths:
-- `<project-root>/.agents-inc/state/session-state.yaml`
-- `<project-root>/.agents-inc/state/latest-checkpoint.yaml`
-- `<project-root>/.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
-- `~/.agents-inc/projects-index.yaml`
-
-Session listing command:
-- `agents-inc-list-sessions`
-
-## HPC Simulation Group
-
-`atomistic-hpc-simulation` includes specialists for VASP, LAMMPS, Metadynamics, scheduler/remote ops, CUDA performance, post-processing, and developer bridge.
-
-Defaults:
-- transport: SSH
-- scheduler: PBS-first with Slurm compatibility
-- hardware: CPU and CUDA GPU queues
-- collaboration mode: interactive-separated
-
-## Publication and Releases
-
-- Semantic tag releases (`vX.Y.Z`)
-- Release artifacts include wheel/sdist/bootstrap/checksums
-- README bootstrap command is release-pinned and checksum-verified
-
-## Full Reference
-
-Generate exhaustive inlined reference:
+Use the umbrella CLI:
 
 ```bash
-agents-inc-generate-docs \
+agents-inc init
+agents-inc list
+agents-inc resume <project-id>
+agents-inc dispatch ...
+agents-inc long-run ...
+```
+
+Legacy `agents-inc-*` names remain as deprecating aliases in `v1.2.x`.
+
+## Runtime Model
+
+- Heads coordinate group specialists.
+- Specialists collaborate internally.
+- Cross-group communication is only through `exposed/` outputs.
+- Internal specialist artifacts remain private unless audit mode is explicitly enabled.
+
+## Onboarding and Resume
+
+`agents-inc init` (mode `new`):
+1. captures task/constraints
+2. asks projects root and project id
+3. recommends groups and lets user edit activation
+4. generates project artifacts and installs skills
+5. writes checkpoint + compacted session snapshot
+
+`agents-inc resume <project-id>`:
+1. loads compact snapshot (`auto`) or checkpoint (`rehydrate`)
+2. regenerates kickoff/router artifacts
+3. writes a fresh checkpoint/compact record
+4. launches Codex in same terminal by default
+
+## State Contracts
+
+Global:
+- `~/.agents-inc/config.yaml`
+- `~/.agents-inc/projects-index.yaml`
+
+Project:
+- `<project-root>/.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
+- `<project-root>/.agents-inc/state/compacted/<compact-id>.yaml`
+- `<project-root>/.agents-inc/state/group-sessions.yaml`
+
+## HPC Group
+
+`atomistic-hpc-simulation` includes VASP/LAMMPS/Metadynamics plus scheduler/SSH/CUDA specialists and developer bridge.
+
+## Full Reference Generation
+
+```bash
+agents-inc docs \
   --fabric-root /Users/moon.s.june/Documents/Playground/agent_group_fabric \
   --output docs/generated/full-template-skill-reference.md \
   --include-generated-projects

@@ -1,57 +1,52 @@
-# Session Intake Guide
+# Session Intake Guide (`agents-inc init`)
 
-Use this guide in a fresh Codex session after bootstrap.
-
-## Step 1: Choose Mode
-The wizard asks first:
-
-- `new`: create a new orchestrator project bundle
-- `resume`: continue an existing project from checkpoint
-
-CLI equivalent:
+## Primary Command
+Run in terminal:
 
 ```bash
-agents-inc-init-session --mode ask
+agents-inc init --mode ask
 ```
 
-## Step 2: Intake Questions (`new` mode)
-1. What task do you want to start?
-2. What is your target timeline?
-3. Do you require CPU-only or CUDA GPU resources?
-4. Will remote cluster execution over SSH be required?
-5. What output format is needed (report, code, benchmark, slides)?
+Modes:
+- `new`: create/activate a project orchestrator workspace
+- `resume`: restore an existing workspace context
 
-## Step 3: Generated Artifacts
-The wizard creates:
+## New Project Intake Fields
+The wizard collects:
+1. task
+2. timeline
+3. compute (`cpu|gpu|cuda`)
+4. remote cluster requirement (`yes|no`)
+5. output target
+6. projects root (default from `~/.agents-inc/config.yaml`)
+7. project id
+8. groups to activate (recommended list is editable)
 
-- Long-term project root under `~/codex-projects/<project-id>`
-- Project-local fabric bundle
-- Group recommendations and invocation order
-- Router call text (`router-call.txt`) for immediate execution
-- Long-run all-group validation command (`long-run-command.sh`)
-- Persistent orchestrator state:
-  - `.agents-inc/state/session-state.yaml`
-  - `.agents-inc/state/latest-checkpoint.yaml`
-  - `.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
+## New Project Outputs
+In `<project-root>`:
+- `kickoff.md`
+- `router-call.txt`
+- `long-run-command.sh`
+- `project-manifest.yaml`
 
-## Step 4: Global Resume Index
-The wizard updates:
+Persistent state:
+- `.agents-inc/state/session-state.yaml`
+- `.agents-inc/state/latest-checkpoint.yaml`
+- `.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
+- `.agents-inc/state/latest-compacted.yaml`
+- `.agents-inc/state/compacted/<compact-id>.yaml`
+- `.agents-inc/state/group-sessions.yaml`
 
-- `~/.agents-inc/projects-index.yaml`
-
-This lets a brand-new session find prior projects after shutdown/restart.
-
-You can list sessions any time with:
+## Session Listing
 
 ```bash
-agents-inc-list-sessions
+agents-inc list
+agents-inc list --json
 ```
 
-## Default Behavior
-- Visibility mode: `group-only`
-- Specialist artifacts: internal unless audit mode is enabled
-- Existing project in `new` mode is non-destructive by default:
-  - interactive: asks `resume/overwrite/cancel`
-  - non-interactive: fails unless `--overwrite-existing` or `--mode resume`
-- Router invocation:
-  `Use $research-router for project <project-id> group <group-id>: <objective>.`
+List output includes session code and active groups.
+
+## Defaults
+- visibility: `group-only`
+- cross-group exchange: `exposed/` only
+- `new` mode is non-destructive unless overwrite is explicitly selected

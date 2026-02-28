@@ -65,7 +65,7 @@ try:
     r = Path(agents_inc.__file__).resolve().parent / 'docs' / 'internal' / 'session-resume.md'
     print('session intake doc:', p)
     print('session resume doc:', r)
-    print('long-run validator:', 'agents-inc-long-run-test --help')
+    print('long-run validator:', 'agents-inc long-run --help')
 except Exception:
     pass
 PY
@@ -74,5 +74,6 @@ echo "Tip: after intake completes, run the generated long-run command file to va
 echo "     file: ~/codex-projects/<project-id>/long-run-command.sh"
 echo "Tip: intake now asks 'new' or 'resume' and tracks resumable projects in:"
 echo "     ~/.agents-inc/projects-index.yaml"
+echo "Tip: list projects with: agents-inc list"
 
-python3 -m agents_inc.cli.init_session
+agents-inc init --mode ask

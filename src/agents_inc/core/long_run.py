@@ -24,6 +24,7 @@ from agents_inc.core.fabric_lib import (
     stable_json,
     write_text,
 )
+from agents_inc.core.session_compaction import compact_session
 from agents_inc.core.session_state import (
     default_project_index_path,
     resolve_state_project_root,
@@ -1092,7 +1093,7 @@ class LongRunRunner:
 
     def _repro_command(self) -> str:
         parts = [
-            "agents-inc-long-run-test",
+            "agents-inc long-run",
             f"--fabric-root {self.config.fabric_root}",
             f"--project-id {slugify(self.config.project_id)}",
             f"--task \"{self.config.task}\"",
@@ -1252,10 +1253,19 @@ class LongRunRunner:
                     "isolation_violations": report.get("isolation", {}).get("violation_count"),
                 }
 
-            write_checkpoint(
+            checkpoint_meta = write_checkpoint(
                 project_root=state_project_root,
                 project_index_path=project_index_path,
                 payload=payload,
+            )
+            compact_session(
+                project_root=state_project_root,
+                payload={
+                    **payload,
+                    "latest_checkpoint_id": str(checkpoint_meta["checkpoint_id"]),
+                    "latest_checkpoint_path": str(checkpoint_meta["checkpoint_path"]),
+                },
+                selected_groups=selected_groups,
             )
         except Exception as exc:  # noqa: BLE001
             self._record_event(

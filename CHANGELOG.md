@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.2.0
+
+- Added new primary umbrella CLI: `agents-inc`.
+  - Subcommands: `init`, `list`, `resume`, `dispatch`, `long-run`, `validate`, `docs`
+- Added markdown-driven Codex bootstrap prompt:
+  - `docs/bootstrap/START_IN_CODEX.md`
+- Added persistent config defaults:
+  - `~/.agents-inc/config.yaml` for projects root and release defaults
+- Added compacted orchestrator session snapshots:
+  - `<project-root>/.agents-inc/state/compacted/<compact-id>.yaml`
+  - `<project-root>/.agents-inc/state/latest-compacted.yaml`
+  - `<project-root>/.agents-inc/state/group-sessions.yaml`
+- Added `agents-inc resume <project-id>` launcher command:
+  - resumes via compact snapshot (auto) with checkpoint rehydrate fallback
+  - launches Codex in same terminal unless `--no-launch`
+- Extended session listing with session metadata:
+  - `session_code`, `active_groups`, `group_session_map`
+- Updated `init` intake:
+  - asks/saves projects root default
+  - supports recommended+editable group activation
+- Added one-release alias layer (`v1.2.x`) for old `agents-inc-*` command names with deprecation warnings.
+- Updated README and internal docs for terminal-vs-codex clarity and restart-safe orchestration workflow.
+
 ## v1.1.0
 
 - Added restart-safe orchestrator state subsystem:

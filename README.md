@@ -1,86 +1,128 @@
 # agents-inc
 
-Publication-ready multi-agent group fabric for Codex sessions with restart-safe orchestration state.
+Publication-ready multi-agent orchestration fabric for Codex sessions, with resume-safe checkpoints and strict project-level artifact isolation.
 
-## Where To Run What
+## Terminal vs Codex
+- `Terminal`: run shell commands.
+- `Codex session`: chat with Codex in an interactive session.
 
-Use this rule everywhere in this README:
+## Quick Start (Markdown-Driven, v1.2.0)
+Run this in `Terminal`:
 
-- `Terminal`: run in shell (`zsh`/`bash`)
-- `Codex Chat`: paste as a normal chat message to Codex (not as a shell command)
+```bash
+export AGI_VER="v1.2.0" && \
+codex -C "$HOME" "$(curl -sfL "https://raw.githubusercontent.com/sacRedeeRhoRn/agents-inc/${AGI_VER}/docs/bootstrap/START_IN_CODEX.md")"
+```
 
-## Quick Start (Pinned Bootstrap v1.1.0)
+What this does:
+1. Starts a new Codex session with the onboarding prompt.
+2. Guides install/check of `agents-inc`.
+3. Asks `new` vs `resume`.
+4. Asks/sets projects root default.
+5. Activates groups for the selected project.
 
+## Primary Commands (Terminal)
+
+```bash
+agents-inc init
+agents-inc list
+agents-inc resume <project-id>
+agents-inc dispatch --project-id <id> --group <group-id> --objective "<objective>"
+agents-inc long-run --project-id <id> --groups all --duration-min 75
+agents-inc validate --all
+agents-inc docs --include-generated-projects
+```
+
+## Start a New Project
 Run in `Terminal`:
 
 ```bash
-export AGI_VER="v1.1.0" && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/bootstrap.sh" -o /tmp/agents-inc-bootstrap.sh && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/bootstrap.sh.sha256" -o /tmp/agents-inc-bootstrap.sh.sha256 && \
-(cd /tmp && shasum -a 256 -c agents-inc-bootstrap.sh.sha256) && \
-bash /tmp/agents-inc-bootstrap.sh --owner sacRedeeRhoRn --repo agents-inc --release "${AGI_VER}"
+agents-inc init --mode new
 ```
 
-Bootstrap does:
-1. Downloads pinned release artifacts.
-2. Verifies checksum.
-3. Installs `agents-inc`.
-4. Starts intake wizard (`agents-inc-init-session`).
-5. Intake asks `new` or `resume`.
+The wizard asks:
+- projects root (saved to `~/.agents-inc/config.yaml`)
+- project id
+- task and constraints
+- recommended groups (editable)
 
-## First Session: New vs Resume
-
-Run in `Terminal`:
-
-```bash
-agents-inc-init-session --mode ask
-```
-
-Modes:
-- `new`: create project bundle and install router/head skills.
-- `resume`: restore from checkpoint for existing project.
-
-Non-interactive:
-
-```bash
-agents-inc-init-session --mode new --non-interactive ...
-agents-inc-init-session --mode resume --resume-project-id <project-id>
-```
-
-## Project Lifecycle
-
-### 1) Start or Resume Project
-- Default root: `~/codex-projects/<project-id>`
-- Local fabric root: `~/codex-projects/<project-id>/agent_group_fabric`
-
-### 2) Use Router Command
-Generated file:
+Generated in project root:
+- `kickoff.md`
 - `router-call.txt`
+- `long-run-command.sh`
+- `project-manifest.yaml`
 
-Paste in `Codex Chat`:
-
-```text
-Use $research-router for project <project-id> group <group-id>: <objective>.
-```
-
-### 3) Dry-Run Dispatch (Optional)
-
+## List All Sessions
 Run in `Terminal`:
 
 ```bash
-agents-inc-dispatch-dry-run \
-  --fabric-root ~/codex-projects/<project-id>/agent_group_fabric \
-  --project-id <project-id> \
-  --group <group-id> \
-  --objective "<objective>"
+agents-inc list
 ```
 
-### 4) Validate Full Multi-Group Interaction
+JSON output:
 
+```bash
+agents-inc list --json
+```
+
+Includes:
+- `project_id`
+- `session_code`
+- `active_groups`
+- `project_root`
+- `last_checkpoint`
+- `updated_at`
+- `status`
+
+## Resume After Shutdown/Reboot
 Run in `Terminal`:
 
 ```bash
-agents-inc-long-run-test \
+agents-inc resume <project-id>
+```
+
+Optional resume controls:
+
+```bash
+agents-inc resume <project-id> --checkpoint latest --resume-mode auto
+```
+
+Behavior:
+- Restores context from compact snapshot first (`auto`), then falls back to checkpoint rehydrate.
+- Regenerates `kickoff.md` and `router-call.txt`.
+- Launches a fresh Codex session in the same terminal at project root (unless `--no-launch`).
+
+## Restore Specific Checkpoint
+Run in `Terminal`:
+
+```bash
+agents-inc resume <project-id> --checkpoint <checkpoint-id> --resume-mode rehydrate
+```
+
+## Where State Is Stored
+Global:
+- `~/.agents-inc/config.yaml`
+- `~/.agents-inc/projects-index.yaml`
+
+Per project:
+- `<project-root>/.agents-inc/state/session-state.yaml`
+- `<project-root>/.agents-inc/state/latest-checkpoint.yaml`
+- `<project-root>/.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
+- `<project-root>/.agents-inc/state/latest-compacted.yaml`
+- `<project-root>/.agents-inc/state/compacted/<compact-id>.yaml`
+- `<project-root>/.agents-inc/state/group-sessions.yaml`
+
+## Group Interaction and Isolation
+- Specialists write only to `agent-groups/<group>/internal/<specialist>/...`.
+- Group heads publish only to `agent-groups/<group>/exposed/...`.
+- Cross-group reads are allowed only from another group’s `exposed/`.
+- Cross-group internal reads/writes are violations.
+
+## Validate Full 9-Group Interaction
+Run in `Terminal`:
+
+```bash
+agents-inc long-run \
   --fabric-root ~/codex-projects/<project-id>/agent_group_fabric \
   --project-id <project-id> \
   --task "Film thickness dependent polymorphism stability of metastable phase" \
@@ -91,144 +133,22 @@ agents-inc-long-run-test \
   --seed 20260301
 ```
 
-### 5) Continue in Later Sessions
-- Re-run bootstrap or call `agents-inc-init-session`.
-- Choose `resume`.
-- Paste regenerated `router-call.txt` in `Codex Chat`.
+Exit codes:
+- `0` pass
+- `2` isolation violation
+- `3` unresolved lease contention
+- `4` insufficient interaction coverage
+- `5` quality-gate exposure failure
 
-## Resume After Shutdown / Reboot
-
-Global resume index:
-- `~/.agents-inc/projects-index.yaml`
-
-Project state files:
-- `<project-root>/.agents-inc/state/session-state.yaml`
-- `<project-root>/.agents-inc/state/latest-checkpoint.yaml`
-- `<project-root>/.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
-
-Quick resume:
-
-Run in `Terminal`:
-
-```bash
-agents-inc-init-session --mode resume --resume-project-id <project-id>
-```
-
-## Recover Specific Checkpoint
-
-Run in `Terminal`:
-
-```bash
-agents-inc-init-session \
-  --mode resume \
-  --resume-project-id <project-id> \
-  --resume-checkpoint <checkpoint-id>
-```
-
-`new` mode is non-destructive by default:
-- interactive: asks `resume/overwrite/cancel` if project exists
-- non-interactive: fails unless `--overwrite-existing`
-
-## List All Sessions
-
-List every resumable project session:
-
-Run in `Terminal`:
-
-```bash
-agents-inc-list-sessions
-```
-
-Machine-readable output:
-
-Run in `Terminal`:
-
-```bash
-agents-inc-list-sessions --json
-```
-
-Include stale entries:
-
-Run in `Terminal`:
-
-```bash
-agents-inc-list-sessions --include-stale
-```
-
-## Artifact Isolation Rules
-
-- Specialist write: only `agent-groups/<group>/internal/<specialist>/...`
-- Head write: only `agent-groups/<group>/exposed/...`
-- Cross-group read: only `agent-groups/<other-group>/exposed/...`
-- Any cross-group internal access: violation (`exit 2` in long-run validator)
-
-## How Groups Interact
-
-Default full graph uses 9 groups:
-- material-scientist
-- material-engineer
-- developer
-- designer
-- data-curation
-- literature-intelligence
-- quality-assurance
-- publication-packaging
-- atomistic-hpc-simulation
-
-Execution model:
-- Head controller coordinates specialist subtasks.
-- Independent branches run in parallel by phase.
-- Dependent branches run sequentially by dependency graph.
-- Only exposed artifacts cross group boundaries.
-
-## Core Commands
-
-Run all of these in `Terminal`:
-
-```bash
-agents-inc-new-group --group-id <id> --display-name "<name>" --domain "<domain>"
-agents-inc-new-project --project-id <id> --groups g1,g2 --profile <profile>
-agents-inc-install-skills --project-id <id> --sync
-agents-inc-dispatch-dry-run --project-id <id> --group <group> --objective "<objective>"
-agents-inc-list-sessions
-agents-inc-sync-overlays --project-id <id> --from-template-version 1.0.0
-agents-inc-validate --all
-agents-inc-generate-docs --include-generated-projects
-agents-inc-long-run-test --project-id <id> --groups all --duration-min 75
-```
-
-## Troubleshooting
-
-Long-run exit codes:
-
-| Exit Code | Meaning | Action |
-|---|---|---|
-| `0` | Pass | Review `final-report.md` / `final-report.json`. |
-| `2` | Isolation violation | Inspect `violations.json` and `access-ledger.ndjson`. |
-| `3` | Lease contention unresolved | Check `lease-events.ndjson`, tune retries/backoff/conflict-rate. |
-| `4` | Interaction coverage insufficient | Inspect `coverage.json` for missing edges. |
-| `5` | Quality gate failure threshold exceeded | Inspect blocked gate events and exposed payloads. |
-
-Resume issues:
-- If resume cannot find project, verify `~/.agents-inc/projects-index.yaml`.
-- If index entry points to deleted path, status is marked `stale`.
-- Fallback scan checks `~/codex-projects`.
-
-## Documentation
-
-- Intro: [docs/INTRODUCTION.md](docs/INTRODUCTION.md)
-- Session intake: `src/agents_inc/docs/internal/session-intake.md`
-- Session resume: `src/agents_inc/docs/internal/session-resume.md`
-- Full generated template/skill reference:
-  `docs/generated/full-template-skill-reference.md`
+## Legacy Alias Commands (`v1.2.x` only)
+Old `agents-inc-*` command names still work with deprecation warnings for one release line. Migrate to `agents-inc <subcommand>`.
 
 ## Development
-
 Run in `Terminal`:
 
 ```bash
 cd /Users/moon.s.june/Documents/Playground/agent_group_fabric
 pip install -e .
-agents-inc-validate --all
+agents-inc validate --all
 python3 -m unittest discover -s tests -v
 ```

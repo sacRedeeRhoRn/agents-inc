@@ -19,7 +19,7 @@ jobs:
           python -m pip install -e .
       - name: Validate
         run: |
-          agents-inc-validate --all
+          agents-inc validate --all
       - name: Static checks
         run: |
           python -m py_compile $(find src -name '*.py')

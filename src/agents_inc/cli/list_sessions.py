@@ -4,9 +4,12 @@ import argparse
 import json
 from pathlib import Path
 
+from agents_inc.core.config_state import default_config_path, get_projects_root
 from agents_inc.core.fabric_lib import ensure_json_serializable
+from agents_inc.core.session_compaction import load_latest_compacted_summary
 from agents_inc.core.session_state import (
     default_project_index_path,
+    load_checkpoint,
     list_index_projects,
     sync_index_from_scan,
 )
@@ -17,9 +20,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--project-index", default=None, help="global project index path")
     parser.add_argument(
         "--scan-root",
-        default=str(Path.home() / "codex-projects"),
+        default=None,
         help="scan root for project discovery",
     )
+    parser.add_argument("--config-path", default=None, help="config file path (default ~/.agents-inc/config.yaml)")
     parser.add_argument(
         "--no-scan",
         action="store_true",
@@ -34,6 +38,37 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _safe_checkpoint_summary(project_root: Path) -> dict:
+    try:
+        checkpoint = load_checkpoint(project_root, "latest")
+    except Exception:
+        return {"session_code": "", "active_groups": []}
+    groups = checkpoint.get("selected_groups")
+    if not isinstance(groups, list):
+        groups = []
+    return {
+        "session_code": str(checkpoint.get("checkpoint_id") or ""),
+        "active_groups": [str(group_id) for group_id in groups],
+    }
+
+
+def _enrich_rows(rows: list[dict]) -> list[dict]:
+    enriched: list[dict] = []
+    for row in rows:
+        payload = dict(row)
+        root_raw = payload.get("project_root")
+        project_root = Path(str(root_raw)).expanduser().resolve()
+        compact = load_latest_compacted_summary(project_root)
+        if compact is None:
+            compact = _safe_checkpoint_summary(project_root)
+            compact["group_session_map"] = {}
+        payload["session_code"] = str(compact.get("session_code") or "")
+        payload["active_groups"] = compact.get("active_groups", [])
+        payload["group_session_map"] = compact.get("group_session_map", {})
+        enriched.append(payload)
+    return enriched
+
+
 def _print_table(rows: list[dict], project_index_path: Path, scan_stats: dict) -> None:
     print(f"project_index: {project_index_path}")
     print(f"scan_created: {scan_stats.get('created', 0)}")
@@ -44,12 +79,17 @@ def _print_table(rows: list[dict], project_index_path: Path, scan_stats: dict) -
         return
 
     print("")
-    print("project_id | status | last_checkpoint | updated_at | project_root")
-    print("--- | --- | --- | --- | ---")
+    print("project_id | session_code | active_groups | status | last_checkpoint | updated_at | project_root")
+    print("--- | --- | --- | --- | --- | --- | ---")
     for row in rows:
+        active_groups = row.get("active_groups", [])
+        if not isinstance(active_groups, list):
+            active_groups = []
         print(
-            "{0} | {1} | {2} | {3} | {4}".format(
+            "{0} | {1} | {2} | {3} | {4} | {5} | {6}".format(
                 row.get("project_id", ""),
+                row.get("session_code", ""),
+                ",".join(str(group_id) for group_id in active_groups),
                 row.get("status", ""),
                 row.get("last_checkpoint", ""),
                 row.get("updated_at", ""),
@@ -62,16 +102,23 @@ def main() -> int:
     args = parse_args()
     try:
         project_index_path = default_project_index_path(args.project_index)
+        scan_root = (
+            Path(args.scan_root).expanduser().resolve()
+            if args.scan_root
+            else get_projects_root(default_config_path(args.config_path))
+        )
         scan_stats = {"created": 0, "updated": 0}
         if not args.no_scan:
             scan_stats = sync_index_from_scan(
                 project_index_path,
-                Path(args.scan_root).expanduser().resolve(),
+                scan_root,
             )
 
-        rows = list_index_projects(
+        rows = _enrich_rows(
+            list_index_projects(
             project_index_path,
             include_stale=bool(args.include_stale),
+            )
         )
         payload = {
             "project_index": project_index_path,

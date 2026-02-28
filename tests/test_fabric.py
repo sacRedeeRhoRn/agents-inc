@@ -409,11 +409,13 @@ class FabricIntegrationTests(unittest.TestCase):
             long_run_cmd = project_root / "long-run-command.sh"
             self.assertTrue(long_run_cmd.exists())
             text = long_run_cmd.read_text(encoding="utf-8")
-            self.assertIn("agents-inc-long-run-test", text)
+            self.assertIn("agents-inc long-run", text)
             self.assertIn("--groups all", text)
 
             self.assertTrue((project_root / ".agents-inc" / "state" / "session-state.yaml").exists())
             self.assertTrue((project_root / ".agents-inc" / "state" / "latest-checkpoint.yaml").exists())
+            self.assertTrue((project_root / ".agents-inc" / "state" / "latest-compacted.yaml").exists())
+            self.assertTrue((project_root / ".agents-inc" / "state" / "group-sessions.yaml").exists())
             self.assertTrue(project_index.exists())
 
     def test_init_session_new_mode_non_destructive_without_overwrite(self) -> None:
@@ -719,6 +721,70 @@ class FabricIntegrationTests(unittest.TestCase):
             self.assertGreaterEqual(payload.get("count", 0), 1)
             ids = {row.get("project_id") for row in payload.get("sessions", [])}
             self.assertIn("proj-test-list-sessions", ids)
+            row = next(r for r in payload.get("sessions", []) if r.get("project_id") == "proj-test-list-sessions")
+            self.assertTrue(str(row.get("session_code", "")))
+            self.assertIn("material-scientist", row.get("active_groups", []))
+
+    def test_resume_cli_auto_falls_back_to_checkpoint_when_compact_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "session-project"
+            target_skills = Path(td) / "skills"
+            project_index = Path(td) / "projects-index.yaml"
+            project_id = "proj-test-resume-fallback"
+            task = "Film thickness dependent polymorphism stability of metastable phase"
+
+            run_cmd(
+                [
+                    "python3",
+                    str(SCRIPTS / "init_session.py"),
+                    "--fabric-root",
+                    str(ROOT),
+                    "--project-root",
+                    str(project_root),
+                    "--project-id",
+                    project_id,
+                    "--task",
+                    task,
+                    "--timeline",
+                    "2 weeks",
+                    "--compute",
+                    "cuda",
+                    "--remote-cluster",
+                    "yes",
+                    "--output-target",
+                    "technical report",
+                    "--target-skill-dir",
+                    str(target_skills),
+                    "--project-index",
+                    str(project_index),
+                    "--mode",
+                    "new",
+                    "--non-interactive",
+                ]
+            )
+
+            compact_root = project_root / ".agents-inc" / "state" / "compacted"
+            if compact_root.exists():
+                shutil.rmtree(compact_root)
+            latest_compact = project_root / ".agents-inc" / "state" / "latest-compacted.yaml"
+            if latest_compact.exists():
+                latest_compact.unlink()
+
+            proc = subprocess.run(
+                [
+                    "python3",
+                    str(SCRIPTS / "resume.py"),
+                    project_id,
+                    "--project-index",
+                    str(project_index),
+                    "--no-launch",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 0, msg=f"stdout:\\n{proc.stdout}\\nstderr:\\n{proc.stderr}")
+            self.assertTrue((project_root / "kickoff.md").exists())
+            self.assertIn("Kickoff (Resumed)", (project_root / "kickoff.md").read_text(encoding="utf-8"))
 
 
 class ConcurrencyTests(unittest.TestCase):

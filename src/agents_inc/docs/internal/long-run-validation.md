@@ -20,7 +20,7 @@ Canonical task:
 ## Command
 
 ```bash
-agents-inc-long-run-test \
+agents-inc long-run \
   --fabric-root /path/to/agent_group_fabric \
   --project-id proj-longrun-001 \
   --task "Film thickness dependent polymorphism stability of metastable phase" \
@@ -55,6 +55,8 @@ State checkpoints are also written to the project state store:
 - `<project-root>/.agents-inc/state/session-state.yaml`
 - `<project-root>/.agents-inc/state/latest-checkpoint.yaml`
 - `<project-root>/.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
+- `<project-root>/.agents-inc/state/latest-compacted.yaml`
+- `<project-root>/.agents-inc/state/compacted/<compact-id>.yaml`
 
 ## Exit Codes
 
