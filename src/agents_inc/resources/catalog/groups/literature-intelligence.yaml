@@ -1,0 +1,49 @@
+group_id: "literature-intelligence"
+display_name: "Literature Intelligence Group"
+template_version: "1.0.0"
+domain: "literature-analysis"
+head:
+  agent_id: "literature-intelligence-head"
+  skill_name: "grp-literature-intelligence-head"
+  mission: "Extract, compare, and evidence-grade literature claims for project decision support."
+specialists:
+  - agent_id: "retrieval-specialist"
+    skill_name: "grp-literature-intelligence-retrieval"
+    focus: "Paper retrieval strategy, inclusion criteria, and source tracking"
+    required_references:
+      - "references/retrieval-core.md"
+    required_outputs:
+      - "source_inventory.md"
+      - "claims_with_citations.md"
+  - agent_id: "evidence-grading-specialist"
+    skill_name: "grp-literature-intelligence-evidence"
+    focus: "Evidence grading, study quality interpretation, and confidence assignment"
+    depends_on:
+      - "retrieval-specialist"
+    required_references:
+      - "references/evidence-grading-core.md"
+    required_outputs:
+      - "evidence_matrix.md"
+      - "claims_with_citations.md"
+  - agent_id: "gap-analysis-specialist"
+    skill_name: "grp-literature-intelligence-gap"
+    focus: "Research gap mapping and risk-aware recommendation framing"
+    depends_on:
+      - "evidence-grading-specialist"
+    required_references:
+      - "references/gap-analysis-core.md"
+    required_outputs:
+      - "gap_map.md"
+      - "claims_with_citations.md"
+tool_profile: "literature-default"
+default_workdirs:
+  - "inputs"
+  - "analysis"
+  - "outputs"
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true

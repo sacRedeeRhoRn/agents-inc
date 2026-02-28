@@ -1,0 +1,26 @@
+allowed_prefixes:
+  - "python3"
+  - "bash"
+  - "sh"
+  - "rg"
+  - "sed"
+  - "awk"
+  - "cat"
+  - "ls"
+  - "git"
+  - "pytest"
+escalation_prefixes:
+  - "ssh"
+  - "sshpass"
+  - "scp"
+# BEGIN_LOCKED:tool_restrictions
+forbidden_prefixes:
+  - "rm -rf /"
+  - "git reset --hard"
+  - "mkfs"
+  - "dd if="
+wrapper_required_prefixes:
+  - "pip install"
+  - "conda install"
+# END_LOCKED:tool_restrictions
+tool_profile: "{{TOOL_PROFILE}}"

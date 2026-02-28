@@ -1,0 +1,50 @@
+group_id: "material-engineer"
+display_name: "Material Engineer Group"
+template_version: "1.0.0"
+domain: "experiment-and-process"
+head:
+  agent_id: "material-engineer-head"
+  skill_name: "grp-material-engineer-head"
+  mission: "Coordinate experiment-first engineering workflows from synthesis to characterization."
+specialists:
+  - agent_id: "synthesis-specialist"
+    skill_name: "grp-material-engineer-synthesis"
+    focus: "Synthesis route design, process windows, precursor handling"
+    required_references:
+      - "references/synthesis-core.md"
+    required_outputs:
+      - "synthesis_protocol.md"
+      - "risk_notes.md"
+      - "claims_with_citations.md"
+  - agent_id: "characterization-specialist"
+    skill_name: "grp-material-engineer-characterization"
+    focus: "Characterization plan (XRD/SEM/TEM/spectroscopy) and interpretation constraints"
+    depends_on:
+      - "synthesis-specialist"
+    required_references:
+      - "references/characterization-core.md"
+    required_outputs:
+      - "characterization_matrix.md"
+      - "claims_with_citations.md"
+  - agent_id: "scaleup-specialist"
+    skill_name: "grp-material-engineer-scaleup"
+    focus: "Scale-up risks, process transfer, manufacturability constraints"
+    depends_on:
+      - "synthesis-specialist"
+    required_references:
+      - "references/scaleup-core.md"
+    required_outputs:
+      - "scaleup_constraints.md"
+      - "claims_with_citations.md"
+tool_profile: "engineering-default"
+default_workdirs:
+  - "inputs"
+  - "analysis"
+  - "outputs"
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true

@@ -1,0 +1,12 @@
+group_id: "material-scientist"
+head_agent_id: "material-scientist-head"
+handoffs:
+  - from: "thermodynamics-specialist"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "electronic-structure-specialist"
+    to: "head-controller"
+    condition: "after dependencies satisfied"
+  - from: "atomistic-simulation-specialist"
+    to: "head-controller"
+    condition: "after task completion"

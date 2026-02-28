@@ -1,0 +1,6 @@
+profile_id: "rapid-debug"
+display_name: "Rapid Debug"
+groups:
+  - "developer"
+  - "quality-assurance"
+  - "literature-intelligence"

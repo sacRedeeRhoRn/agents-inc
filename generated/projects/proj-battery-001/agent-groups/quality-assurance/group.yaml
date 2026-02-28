@@ -1,0 +1,52 @@
+group_id: quality-assurance
+display_name: Quality Assurance Group
+template_version: 1.0.0
+domain: verification-and-risk
+head:
+  agent_id: quality-assurance-head
+  skill_name: grp-quality-assurance-head
+  mission: Audit technical outputs for reproducibility, consistency, and decision-risk
+    control.
+  effective_skill_name: proj-proj-battery-001-quality-assurance-quality-assurance-head
+specialists:
+- agent_id: reproducibility-auditor
+  skill_name: grp-quality-assurance-repro
+  focus: Reproducibility checks, parameter traceability, and artifact completeness
+  required_references:
+  - references/reproducibility-core.md
+  required_outputs:
+  - repro_audit.md
+  - claims_with_citations.md
+  effective_skill_name: proj-proj-battery-001-quality-assurance-reproducibility-auditor
+- agent_id: consistency-auditor
+  skill_name: grp-quality-assurance-consistency
+  focus: Cross-document consistency checks and contradiction detection
+  required_references:
+  - references/consistency-core.md
+  required_outputs:
+  - consistency_audit.md
+  - claims_with_citations.md
+  effective_skill_name: proj-proj-battery-001-quality-assurance-consistency-auditor
+- agent_id: risk-auditor
+  skill_name: grp-quality-assurance-risk
+  focus: Risk classification, severity tagging, and mitigation recommendation framing
+  depends_on:
+  - consistency-auditor
+  required_references:
+  - references/risk-core.md
+  required_outputs:
+  - risk_register.md
+  - claims_with_citations.md
+  effective_skill_name: proj-proj-battery-001-quality-assurance-risk-auditor
+tool_profile: qa-default
+default_workdirs:
+- inputs
+- analysis
+- outputs
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true

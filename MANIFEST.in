@@ -1,0 +1,6 @@
+include README.md LICENSE CHANGELOG.md CONTRIBUTING.md
+recursive-include src/agents_inc/resources *
+recursive-include src/agents_inc/docs/internal *.md
+recursive-include templates *
+recursive-include catalog *
+recursive-include schemas *

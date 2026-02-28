@@ -1,0 +1,67 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: "Generated Project Manifest"
+type: object
+required:
+  - project_id
+  - selected_groups
+  - install_targets
+  - router_skill_name
+  - bundle_version
+  - template_versions
+  - overlays
+  - visibility
+properties:
+  project_id:
+    type: string
+    pattern: "^[a-z0-9-]+$"
+  selected_groups:
+    type: array
+    minItems: 1
+    items: {type: string}
+  install_targets:
+    type: object
+    required: [codex_skill_dir]
+    properties:
+      codex_skill_dir: {type: string}
+  router_skill_name:
+    type: string
+  bundle_version:
+    type: string
+  template_versions:
+    type: object
+    additionalProperties: {type: string}
+  overlays:
+    type: object
+    required: [allow_project_overrides, protected_sections]
+    properties:
+      allow_project_overrides: {type: boolean}
+      protected_sections:
+        type: array
+        minItems: 1
+        items: {type: string}
+  visibility:
+    type: object
+    required: [mode, audit_override]
+    properties:
+      mode:
+        type: string
+        enum: [group-only, full]
+      audit_override:
+        type: boolean
+  groups:
+    type: object
+    additionalProperties:
+      type: object
+      required: [manifest_path, skill_dirs, head_skill_dir, specialist_skill_dirs]
+      properties:
+        manifest_path: {type: string}
+        skill_dirs:
+          type: array
+          minItems: 1
+          items: {type: string}
+        head_skill_dir:
+          type: string
+        specialist_skill_dirs:
+          type: array
+          items: {type: string}
+additionalProperties: true

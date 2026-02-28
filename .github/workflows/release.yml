@@ -1,0 +1,37 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - name: Prepare assets
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cp scripts/release/bootstrap.sh dist/bootstrap.sh
+          chmod +x dist/bootstrap.sh
+          (cd dist && shasum -a 256 *.whl *.tar.gz > "agents_inc-${VERSION}.sha256")
+          (cd dist && shasum -a 256 bootstrap.sh | awk '{print $1 "  bootstrap.sh"}' > bootstrap.sh.sha256)
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/bootstrap.sh
+            dist/bootstrap.sh.sha256
+            dist/agents_inc-*.sha256

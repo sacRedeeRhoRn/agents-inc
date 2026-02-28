@@ -1,0 +1,9 @@
+router_skill_name: research-router
+projects:
+  proj-battery-001:
+    manifest_path: generated/projects/proj-battery-001/manifest.yaml
+    selected_groups:
+    - material-scientist
+    - developer
+    - quality-assurance
+    updated_at: '2026-02-28T14:34:59Z'

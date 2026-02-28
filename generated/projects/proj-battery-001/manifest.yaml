@@ -1,0 +1,60 @@
+project_id: proj-battery-001
+selected_groups:
+- material-scientist
+- developer
+- quality-assurance
+install_targets:
+  codex_skill_dir: /Users/moon.s.june/.codex/skills/local
+router_skill_name: research-router
+bundle_version: 1.0.0
+template_versions:
+  material-scientist: 1.0.0
+  developer: 1.0.0
+  quality-assurance: 1.0.0
+visibility:
+  mode: group-only
+  audit_override: true
+overlays:
+  allow_project_overrides: true
+  protected_sections:
+  - safety_policy
+  - citation_gate
+  - tool_restrictions
+  - routing_audit
+groups:
+  material-scientist:
+    manifest_path: agent-groups/material-scientist/group.yaml
+    skill_dirs:
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-material-scientist-head
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-thermodynamics-6ace8773
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-atomistic-simu-a6a50b3f
+    head_skill_dir: agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-material-scientist-head
+    specialist_skill_dirs:
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-thermodynamics-6ace8773
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-atomistic-simu-a6a50b3f
+  developer:
+    manifest_path: agent-groups/developer/group.yaml
+    skill_dirs:
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-developer-head
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-python-expert
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-shell-expert
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert
+    head_skill_dir: agent-groups/developer/skills/proj-proj-battery-001-developer-developer-head
+    specialist_skill_dirs:
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-python-expert
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-shell-expert
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert
+  quality-assurance:
+    manifest_path: agent-groups/quality-assurance/group.yaml
+    skill_dirs:
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-quality-assurance-head
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-consistency-auditor
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor
+    head_skill_dir: agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-quality-assurance-head
+    specialist_skill_dirs:
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-consistency-auditor
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor

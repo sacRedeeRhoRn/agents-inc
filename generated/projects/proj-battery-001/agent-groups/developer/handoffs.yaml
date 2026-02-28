@@ -1,0 +1,12 @@
+group_id: "developer"
+head_agent_id: "developer-head"
+handoffs:
+  - from: "python-expert"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "shell-expert"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "ssh-remote-ops-expert"
+    to: "head-controller"
+    condition: "after task completion"

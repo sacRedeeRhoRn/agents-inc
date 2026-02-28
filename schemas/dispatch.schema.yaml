@@ -1,0 +1,55 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: "Dispatch Plan"
+type: object
+required:
+  - project_id
+  - group_id
+  - objective
+  - dispatch_mode
+  - session_mode
+  - phases
+properties:
+  project_id: {type: string}
+  group_id: {type: string}
+  objective: {type: string}
+  dispatch_mode:
+    type: string
+    enum: [hybrid]
+  session_mode:
+    type: string
+    enum: [interactive-separated]
+  phases:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [phase_id, mode, tasks]
+      properties:
+        phase_id: {type: integer}
+        mode:
+          type: string
+          enum: [parallel, sequential]
+        tasks:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [agent_id, focus, skill_name, workdir]
+            properties:
+              agent_id: {type: string}
+              focus: {type: string}
+              skill_name: {type: string}
+              workdir: {type: string}
+              transport:
+                type: string
+                enum: [local, ssh]
+              scheduler: {type: string}
+              hardware: {type: string}
+              requires_gpu: {type: boolean}
+              depends_on:
+                type: array
+                items: {type: string}
+  quality_gates:
+    type: object
+    additionalProperties: {type: boolean}
+additionalProperties: true

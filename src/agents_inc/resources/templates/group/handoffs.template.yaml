@@ -1,0 +1,4 @@
+group_id: "{{GROUP_ID}}"
+head_agent_id: "{{HEAD_AGENT_ID}}"
+handoffs:
+{{HANDOFF_BLOCK}}

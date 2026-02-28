@@ -1,0 +1,24 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: "Tool Policy"
+type: object
+required:
+  - allowed_prefixes
+  - escalation_prefixes
+  - forbidden_prefixes
+  - wrapper_required_prefixes
+properties:
+  allowed_prefixes:
+    type: array
+    items: {type: string}
+  escalation_prefixes:
+    type: array
+    items: {type: string}
+  forbidden_prefixes:
+    type: array
+    items: {type: string}
+  wrapper_required_prefixes:
+    type: array
+    items: {type: string}
+  tool_profile:
+    type: string
+additionalProperties: true

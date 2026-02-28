@@ -1,0 +1,46 @@
+group_id: "developer"
+display_name: "Developer Group"
+template_version: "1.0.0"
+domain: "software-and-infra"
+head:
+  agent_id: "developer-head"
+  skill_name: "grp-developer-head"
+  mission: "Deliver robust implementation, debugging, and automation support for research projects."
+specialists:
+  - agent_id: "python-expert"
+    skill_name: "grp-developer-python"
+    focus: "Python architecture, package reliability, tests, and runtime debugging"
+    required_references:
+      - "references/python-engineering-core.md"
+    required_outputs:
+      - "implementation_patch.md"
+      - "test_plan.md"
+      - "claims_with_citations.md"
+  - agent_id: "shell-expert"
+    skill_name: "grp-developer-shell"
+    focus: "Shell automation, reproducible scripts, CLI hardening"
+    required_references:
+      - "references/shell-engineering-core.md"
+    required_outputs:
+      - "automation_scripts.md"
+      - "claims_with_citations.md"
+  - agent_id: "ssh-remote-ops-expert"
+    skill_name: "grp-developer-ssh"
+    focus: "Remote operations, secure SSH workflows, transfer and execution protocols"
+    required_references:
+      - "references/ssh-ops-core.md"
+    required_outputs:
+      - "remote_ops_plan.md"
+      - "claims_with_citations.md"
+tool_profile: "developer-default"
+default_workdirs:
+  - "inputs"
+  - "analysis"
+  - "outputs"
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true

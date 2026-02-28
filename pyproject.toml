@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agents-inc"
+version = "1.0.0"
+description = "Publication-ready multi-agent group fabric and router orchestration toolkit for Codex sessions"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+  {name = "sacRedeeRhoRn"}
+]
+license = {text = "MIT"}
+keywords = ["codex", "multi-agent", "orchestration", "skills", "research"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
+dependencies = [
+  "PyYAML>=6.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/sacRedeeRhoRn/agents-inc"
+Repository = "https://github.com/sacRedeeRhoRn/agents-inc"
+Issues = "https://github.com/sacRedeeRhoRn/agents-inc/issues"
+
+[project.scripts]
+agents-inc-new-group = "agents_inc.cli.new_group:main"
+agents-inc-new-project = "agents_inc.cli.new_project:main"
+agents-inc-install-skills = "agents_inc.cli.install_skills:main"
+agents-inc-sync-overlays = "agents_inc.cli.sync_overlays:main"
+agents-inc-validate = "agents_inc.cli.validate:main"
+agents-inc-dispatch-dry-run = "agents_inc.cli.dispatch_dry_run:main"
+agents-inc-init-session = "agents_inc.cli.init_session:main"
+agents-inc-generate-docs = "agents_inc.cli.generate_docs:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+agents_inc = [
+  "resources/**/*",
+  "docs/internal/*.md"
+]

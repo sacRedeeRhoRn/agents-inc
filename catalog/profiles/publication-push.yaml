@@ -1,0 +1,7 @@
+profile_id: "publication-push"
+display_name: "Publication Push"
+groups:
+  - "material-scientist"
+  - "designer"
+  - "publication-packaging"
+  - "quality-assurance"

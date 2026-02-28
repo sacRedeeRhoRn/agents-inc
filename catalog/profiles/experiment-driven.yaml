@@ -1,0 +1,6 @@
+profile_id: "experiment-driven"
+display_name: "Experiment Driven"
+groups:
+  - "material-engineer"
+  - "data-curation"
+  - "developer"

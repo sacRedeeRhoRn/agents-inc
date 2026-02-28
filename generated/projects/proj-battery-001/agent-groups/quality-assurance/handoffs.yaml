@@ -1,0 +1,12 @@
+group_id: "quality-assurance"
+head_agent_id: "quality-assurance-head"
+handoffs:
+  - from: "reproducibility-auditor"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "consistency-auditor"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "risk-auditor"
+    to: "head-controller"
+    condition: "after dependencies satisfied"

@@ -1,0 +1,49 @@
+group_id: "data-curation"
+display_name: "Data Curation Group"
+template_version: "1.0.0"
+domain: "data-pipelines"
+head:
+  agent_id: "data-curation-head"
+  skill_name: "grp-data-curation-head"
+  mission: "Ensure trustworthy, traceable research data pipelines and metadata quality."
+specialists:
+  - agent_id: "data-ingest-specialist"
+    skill_name: "grp-data-curation-ingest"
+    focus: "Data ingest strategy, provenance capture, and schema conformance"
+    required_references:
+      - "references/data-ingest-core.md"
+    required_outputs:
+      - "ingest_report.md"
+      - "claims_with_citations.md"
+  - agent_id: "metadata-specialist"
+    skill_name: "grp-data-curation-metadata"
+    focus: "Metadata normalization, ontologies, and traceability annotations"
+    depends_on:
+      - "data-ingest-specialist"
+    required_references:
+      - "references/metadata-core.md"
+    required_outputs:
+      - "metadata_dictionary.md"
+      - "claims_with_citations.md"
+  - agent_id: "data-quality-specialist"
+    skill_name: "grp-data-curation-quality"
+    focus: "Data quality checks, anomaly detection heuristics, and acceptance thresholds"
+    depends_on:
+      - "metadata-specialist"
+    required_references:
+      - "references/data-quality-core.md"
+    required_outputs:
+      - "quality_report.md"
+      - "claims_with_citations.md"
+tool_profile: "data-default"
+default_workdirs:
+  - "inputs"
+  - "analysis"
+  - "outputs"
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
