@@ -12,7 +12,11 @@ Run this in Terminal:
 
 ```bash
 export AGI_VER="v2.1.0" && \
-codex -C "$HOME" "$(curl -sfL "https://raw.githubusercontent.com/sacRedeeRhoRn/agents-inc/${AGI_VER}/docs/bootstrap/START_IN_CODEX.md")"
+export AGI_BOOTSTRAP_URL="https://raw.githubusercontent.com/sacRedeeRhoRn/agents-inc/${AGI_VER}/docs/bootstrap/START_IN_CODEX.md" && \
+AGI_BOOTSTRAP_MD="$(mktemp /tmp/agents-inc-start.XXXXXX)" && \
+curl -fsSL "$AGI_BOOTSTRAP_URL" -o "$AGI_BOOTSTRAP_MD" && \
+test -s "$AGI_BOOTSTRAP_MD" && \
+codex -C "$HOME" "$(cat "$AGI_BOOTSTRAP_MD")"
 ```
 
 ### What Happens Next
