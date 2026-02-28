@@ -16,6 +16,7 @@ Deliver robust implementation, debugging, and automation support for research pr
 - `ssh-remote-ops-expert`: Remote operations, secure SSH workflows, transfer and execution protocols (skill: `proj-proj-battery-001-developer-ssh-remote-ops-expert`)
 - `integration-specialist`: Cross-artifact integration and consumability checks for Developer Group (skill: `proj-proj-battery-001-developer-integration-specialist`)
 - `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Developer Group (skill: `proj-proj-battery-001-developer-evidence-review-specialist`)
+- `web-research-specialist`: Gather web-published references and extract citation-ready evidence. (skill: `proj-proj-battery-001-developer-web-research-specialist`)
 
 ## Work Directories
 - `generated/projects/proj-battery-001/work/developer/python-expert`
@@ -23,6 +24,7 @@ Deliver robust implementation, debugging, and automation support for research pr
 - `generated/projects/proj-battery-001/work/developer/ssh-remote-ops-expert`
 - `generated/projects/proj-battery-001/work/developer/integration-specialist`
 - `generated/projects/proj-battery-001/work/developer/evidence-review-specialist`
+- `generated/projects/proj-battery-001/work/developer/web-research-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/developer/internal/<specialist>/...`
@@ -80,6 +82,8 @@ END_LOCKED:exposure_policy
 - `handoff.json` from `integration-specialist`
 - `work.md` from `evidence-review-specialist`
 - `handoff.json` from `evidence-review-specialist`
+- `work.md` from `web-research-specialist`
+- `handoff.json` from `web-research-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`

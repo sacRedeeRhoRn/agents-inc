@@ -75,5 +75,7 @@ echo "Tip: intake asks 'new' or 'resume' and tracks resumable projects in:"
 echo "     ~/.agents-inc/projects-index.yaml"
 echo "Tip: list projects with: agents-inc list"
 echo "Tip: list reusable catalog groups with: agents-inc groups list"
+echo "Tip: turn execution command: agents-inc orchestrator-reply --project-id <id> --message \"<request>\""
+echo "Tip: strict mode prefix [non-group] enables concise direct responses"
 
 agents-inc init --mode ask

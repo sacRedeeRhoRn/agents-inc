@@ -45,6 +45,20 @@ Resume refreshes:
 Resume also writes:
 - a new checkpoint
 - a new compacted snapshot
+- specialist session map refresh (`.agents-inc/state/specialist-sessions.yaml`)
+- response policy state (`.agents-inc/state/response-policy.yaml`)
+
+## Turn Execution After Resume
+
+Default turn command:
+
+```bash
+agents-inc orchestrator-reply --project-id <project-id> --message "<request>"
+```
+
+Strict mode behavior:
+- message starts with `[non-group]`: concise direct state response
+- otherwise: full delegation/negotiation/synthesis with publication-grade detail
 
 ## Global Index
 `~/.agents-inc/projects-index.yaml` tracks project roots and latest checkpoints.

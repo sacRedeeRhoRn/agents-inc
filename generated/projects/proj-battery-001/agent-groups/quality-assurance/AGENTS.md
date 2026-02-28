@@ -16,6 +16,7 @@ Audit technical outputs for reproducibility, consistency, and decision-risk cont
 - `risk-auditor`: Risk classification, severity tagging, and mitigation recommendation framing (skill: `proj-proj-battery-001-quality-assurance-risk-auditor`)
 - `integration-specialist`: Cross-artifact integration and consumability checks for Quality Assurance Group (skill: `proj-proj-battery-001-quality-assurance-integration-specialist`)
 - `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Quality Assurance Group (skill: `proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b`)
+- `web-research-specialist`: Gather web-published references and extract citation-ready evidence. (skill: `proj-proj-battery-001-quality-assurance-web-research-specialist`)
 
 ## Work Directories
 - `generated/projects/proj-battery-001/work/quality-assurance/reproducibility-auditor`
@@ -23,6 +24,7 @@ Audit technical outputs for reproducibility, consistency, and decision-risk cont
 - `generated/projects/proj-battery-001/work/quality-assurance/risk-auditor`
 - `generated/projects/proj-battery-001/work/quality-assurance/integration-specialist`
 - `generated/projects/proj-battery-001/work/quality-assurance/evidence-review-specialist`
+- `generated/projects/proj-battery-001/work/quality-assurance/web-research-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/quality-assurance/internal/<specialist>/...`
@@ -79,6 +81,8 @@ END_LOCKED:exposure_policy
 - `handoff.json` from `integration-specialist`
 - `work.md` from `evidence-review-specialist`
 - `handoff.json` from `evidence-review-specialist`
+- `work.md` from `web-research-specialist`
+- `handoff.json` from `web-research-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`

@@ -33,6 +33,7 @@ from agents_inc.core.session_state import (
 
 CANONICAL_TASK = "Film thickness dependent polymorphism stability of metastable phase"
 FULL_GROUPS: List[str] = [
+    "polymorphism-researcher",
     "material-scientist",
     "material-engineer",
     "developer",
@@ -45,10 +46,17 @@ FULL_GROUPS: List[str] = [
 ]
 HANDOFF_EDGES: List[Tuple[str, str]] = [
     ("literature-intelligence", "data-curation"),
+    ("literature-intelligence", "polymorphism-researcher"),
     ("literature-intelligence", "material-scientist"),
     ("literature-intelligence", "material-engineer"),
+    ("data-curation", "polymorphism-researcher"),
     ("data-curation", "material-scientist"),
     ("data-curation", "developer"),
+    ("polymorphism-researcher", "material-scientist"),
+    ("material-scientist", "polymorphism-researcher"),
+    ("polymorphism-researcher", "developer"),
+    ("polymorphism-researcher", "quality-assurance"),
+    ("polymorphism-researcher", "designer"),
     ("material-scientist", "atomistic-hpc-simulation"),
     ("atomistic-hpc-simulation", "material-scientist"),
     ("atomistic-hpc-simulation", "developer"),

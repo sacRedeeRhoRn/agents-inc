@@ -16,6 +16,9 @@ handoffs:
   - from: "evidence-review-specialist"
     to: "head-controller"
     condition: "after dependencies satisfied (python-expert)"
+  - from: "web-research-specialist"
+    to: "head-controller"
+    condition: "after task completion"
 output_contract:
   specialist_internal:
     - "internal/<agent-id>/work.md"

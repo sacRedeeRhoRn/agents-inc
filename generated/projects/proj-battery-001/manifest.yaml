@@ -33,6 +33,7 @@ groups:
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-integration-specialist
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-repro-qa-specialist
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-web-research-specialist
     head_skill_dir: agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-material-scientist-head
     specialist_skill_dirs:
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-thermodynamics-6ace8773
@@ -41,6 +42,7 @@ groups:
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-integration-specialist
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-repro-qa-specialist
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-web-research-specialist
   developer:
     manifest_path: agent-groups/developer/group.yaml
     skill_dirs:
@@ -50,6 +52,7 @@ groups:
     - agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert
     - agent-groups/developer/skills/proj-proj-battery-001-developer-integration-specialist
     - agent-groups/developer/skills/proj-proj-battery-001-developer-evidence-review-specialist
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-web-research-specialist
     head_skill_dir: agent-groups/developer/skills/proj-proj-battery-001-developer-developer-head
     specialist_skill_dirs:
     - agent-groups/developer/skills/proj-proj-battery-001-developer-python-expert
@@ -57,6 +60,7 @@ groups:
     - agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert
     - agent-groups/developer/skills/proj-proj-battery-001-developer-integration-specialist
     - agent-groups/developer/skills/proj-proj-battery-001-developer-evidence-review-specialist
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-web-research-specialist
   quality-assurance:
     manifest_path: agent-groups/quality-assurance/group.yaml
     skill_dirs:
@@ -66,6 +70,7 @@ groups:
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-integration-specialist
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-web-research-specialist
     head_skill_dir: agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-quality-assurance-head
     specialist_skill_dirs:
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor
@@ -73,3 +78,4 @@ groups:
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-integration-specialist
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-web-research-specialist

@@ -1,5 +1,32 @@
 # Changelog
 
+## v2.1.0
+
+- Added strict turn-mode orchestration command:
+  - `agents-inc orchestrator-reply --project-id <id> --message "<request>"`
+  - strict mode parser:
+    - `[non-group]` prefix at message start -> concise direct response.
+    - all other requests -> group-routed publication-grade detailed synthesis.
+- Added project-local response policy state:
+  - `.agents-inc/state/response-policy.yaml`
+- Added specialist session identity map:
+  - `.agents-inc/state/specialist-sessions.yaml`
+  - session code format: `<project-id>::<group-id>::<specialist-id>::<counter>`
+- Added per-turn orchestration artifacts under:
+  - `.agents-inc/turns/<turn-id>/...`
+  - includes delegation ledger, negotiation sequence, evidence index, final exposed answer, and quality gate report.
+- Added publication-grade answer quality gate for group mode with required sections/evidence thresholds.
+- Orchestrator campaign now validates delegation/negotiation/final-quality artifacts and no longer silently passes shallow fallbacks unless explicitly allowed via `--allow-live-fallback`.
+- Extended dispatch metadata with web-search policy:
+  - `group_web_search_default`
+  - `tasks[].web_search_enabled`
+- Group manifest contract now requires:
+  - `execution_defaults.web_search_enabled`
+  - optional specialist override: `specialists[].execution.web_search_enabled`
+- Updated all built-in catalog group manifests to default `web_search_enabled: true`.
+- Updated README/bootstrap/router template guidance for strict mode semantics and `orchestrator-reply`.
+- Bumped package version to `2.1.0`.
+
 ## v2.0.0
 
 - Hard-cutover schema upgrade to strict v2 contracts.

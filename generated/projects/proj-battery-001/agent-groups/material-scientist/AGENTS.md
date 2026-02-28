@@ -17,6 +17,7 @@ Route and quality-gate specialist outputs for theoretical and computational mate
 - `integration-specialist`: Cross-artifact integration and consumability checks for Material Scientist Group (skill: `proj-proj-battery-001-material-scientist-integration-specialist`)
 - `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Material Scientist Group (skill: `proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d`)
 - `repro-qa-specialist`: Reproducibility and quality assurance checks for Material Scientist Group (skill: `proj-proj-battery-001-material-scientist-repro-qa-specialist`)
+- `web-research-specialist`: Gather web-published references and extract citation-ready evidence. (skill: `proj-proj-battery-001-material-scientist-web-research-specialist`)
 
 ## Work Directories
 - `generated/projects/proj-battery-001/work/material-scientist/thermodynamics-specialist`
@@ -25,6 +26,7 @@ Route and quality-gate specialist outputs for theoretical and computational mate
 - `generated/projects/proj-battery-001/work/material-scientist/integration-specialist`
 - `generated/projects/proj-battery-001/work/material-scientist/evidence-review-specialist`
 - `generated/projects/proj-battery-001/work/material-scientist/repro-qa-specialist`
+- `generated/projects/proj-battery-001/work/material-scientist/web-research-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/material-scientist/internal/<specialist>/...`
@@ -86,6 +88,8 @@ END_LOCKED:exposure_policy
 - `handoff.json` from `evidence-review-specialist`
 - `work.md` from `repro-qa-specialist`
 - `handoff.json` from `repro-qa-specialist`
+- `work.md` from `web-research-specialist`
+- `handoff.json` from `web-research-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`

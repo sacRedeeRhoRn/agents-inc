@@ -1,6 +1,6 @@
 # Full Template and Skill Reference
 
-Generated at: `2026-02-28T19:19:12Z`
+Generated at: `2026-02-28T21:12:29Z`
 Fabric root: `/Users/moon.s.june/Documents/Playground/agent_group_fabric`
 Include generated projects: `True`
 
@@ -31,73 +31,79 @@ It is intended for publication-grade audit and onboarding readiness checks.
 | 18 | `catalog/groups/literature-intelligence.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
 | 19 | `catalog/groups/material-engineer.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
 | 20 | `catalog/groups/material-scientist.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 21 | `catalog/groups/publication-packaging.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 22 | `catalog/groups/quality-assurance.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 23 | `catalog/profiles/experiment-driven.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 24 | `catalog/profiles/hpc-simulation-core.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 25 | `catalog/profiles/publication-push.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 26 | `catalog/profiles/rapid-debug.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 27 | `catalog/profiles/reproduction-core.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 28 | `catalog/project-registry.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 29 | `generated/projects/proj-battery-001/agent-groups/developer/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
-| 30 | `generated/projects/proj-battery-001/agent-groups/developer/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
-| 31 | `generated/projects/proj-battery-001/agent-groups/developer/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
-| 32 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-developer-head/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 33 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-evidence-review-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 34 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-integration-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 35 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-python-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 36 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-shell-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 37 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 38 | `generated/projects/proj-battery-001/agent-groups/developer/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
-| 39 | `generated/projects/proj-battery-001/agent-groups/material-scientist/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
-| 40 | `generated/projects/proj-battery-001/agent-groups/material-scientist/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
-| 41 | `generated/projects/proj-battery-001/agent-groups/material-scientist/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
-| 42 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-atomistic-simu-a6a50b3f/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 43 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 44 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 45 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-integration-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 46 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-material-scientist-head/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 47 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-repro-qa-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 48 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-thermodynamics-6ace8773/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 49 | `generated/projects/proj-battery-001/agent-groups/material-scientist/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
-| 50 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
-| 51 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
-| 52 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
-| 53 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-consistency-auditor/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 54 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 55 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-integration-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 56 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-quality-assurance-head/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 57 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 58 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 59 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
-| 60 | `generated/projects/proj-battery-001/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
-| 61 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
-| 62 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
-| 63 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
-| 64 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 65 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 66 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-evidence-review-6a24b907/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 67 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-integration-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 68 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-material-scientist-head/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 69 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-repro-qa-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 70 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 71 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
-| 72 | `generated/projects/proj-test-alpha/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
-| 73 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
-| 74 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
-| 75 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
-| 76 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 77 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 78 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 79 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-evidence-re-1c668f5f/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 80 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 81 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 82 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-repro-qa-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 83 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 84 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 85 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 86 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
-| 87 | `generated/projects/proj-test-hpc/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 21 | `catalog/groups/polymorphism-researcher.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 22 | `catalog/groups/publication-packaging.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 23 | `catalog/groups/quality-assurance.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 24 | `catalog/profiles/experiment-driven.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 25 | `catalog/profiles/hpc-simulation-core.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 26 | `catalog/profiles/publication-push.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 27 | `catalog/profiles/rapid-debug.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 28 | `catalog/profiles/reproduction-core.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 29 | `catalog/project-registry.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 30 | `generated/projects/proj-battery-001/agent-groups/developer/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
+| 31 | `generated/projects/proj-battery-001/agent-groups/developer/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 32 | `generated/projects/proj-battery-001/agent-groups/developer/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
+| 33 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-developer-head/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 34 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-evidence-review-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 35 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-integration-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 36 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-python-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 37 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-shell-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 38 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 39 | `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-web-research-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 40 | `generated/projects/proj-battery-001/agent-groups/developer/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
+| 41 | `generated/projects/proj-battery-001/agent-groups/material-scientist/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
+| 42 | `generated/projects/proj-battery-001/agent-groups/material-scientist/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 43 | `generated/projects/proj-battery-001/agent-groups/material-scientist/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
+| 44 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-atomistic-simu-a6a50b3f/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 45 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 46 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 47 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-integration-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 48 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-material-scientist-head/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 49 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-repro-qa-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 50 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-thermodynamics-6ace8773/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 51 | `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-web-research-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 52 | `generated/projects/proj-battery-001/agent-groups/material-scientist/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
+| 53 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
+| 54 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 55 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
+| 56 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-consistency-auditor/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 57 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 58 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-integration-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 59 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-quality-assurance-head/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 60 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 61 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 62 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-web-research-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 63 | `generated/projects/proj-battery-001/agent-groups/quality-assurance/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
+| 64 | `generated/projects/proj-battery-001/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 65 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
+| 66 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 67 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
+| 68 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 69 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 70 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-evidence-review-6a24b907/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 71 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-integration-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 72 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-material-scientist-head/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 73 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-repro-qa-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 74 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 75 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-web-research-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 76 | `generated/projects/proj-test-alpha/agent-groups/material-scientist/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
+| 77 | `generated/projects/proj-test-alpha/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 78 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
+| 79 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 80 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
+| 81 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 82 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 83 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 84 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-evidence-re-1c668f5f/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 85 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 86 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 87 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-repro-qa-specialist/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 88 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 89 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 90 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 91 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-web-researc-cfc0ed24/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 92 | `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
+| 93 | `generated/projects/proj-test-hpc/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
 
 ## Inlined Contents
 ## 1. `templates/group/AGENTS.template.md`
@@ -438,7 +444,7 @@ Examples:
 ```md
 ---
 name: research-router
-version: 2.0.0
+version: 2.1.0
 role: router
 description: Global router for expert multi-agent group bundles. Dispatch objectives
   to group heads with strict gate and artifact contracts.
@@ -465,6 +471,10 @@ Use this skill as:
 
 `Use $research-router for project <project-id> group <group-id>: <objective>.`
 
+Mode contract:
+- If request starts with `[non-group]`, return concise direct state answer without delegation.
+- Otherwise, run full group delegation + negotiation + synthesis and return publication-grade detail.
+
 ## Routing Workflow
 1. Resolve project in `{{FABRIC_ROOT}}/catalog/project-registry.yaml`.
 2. Resolve group under `{{FABRIC_ROOT}}/generated/projects/<project-id>/agent-groups`.
@@ -477,6 +487,8 @@ Use this skill as:
 - Block unresolved cross-domain decisions.
 - Use lease-based workdir coordination for all write tasks.
 - Keep specialist artifacts internal unless audit mode is explicitly enabled.
+- Never return short final answers for group-routed requests.
+- Always include delegation and negotiation artifact references in group-routed responses.
 
 ## Quick Command
 ```bash
@@ -520,6 +532,8 @@ properties:
     type: string
   gate_profile:
     type: object
+  group_web_search_default:
+    type: boolean
   phases:
     type: array
     minItems: 1
@@ -549,6 +563,7 @@ properties:
               scheduler: {type: string}
               hardware: {type: string}
               requires_gpu: {type: boolean}
+              web_search_enabled: {type: boolean}
               depends_on:
                 type: array
                 items: {type: object}
@@ -645,6 +660,32 @@ properties:
   specialists:
     type: array
     minItems: 4
+    allOf:
+      - contains:
+          type: object
+          properties:
+            role:
+              const: domain-core
+      - contains:
+          type: object
+          properties:
+            role:
+              const: web-research
+      - contains:
+          type: object
+          properties:
+            role:
+              const: integration
+      - contains:
+          type: object
+          properties:
+            role:
+              const: evidence-review
+      - contains:
+          type: object
+          properties:
+            role:
+              const: repro-qa
     items:
       type: object
       required:
@@ -703,6 +744,8 @@ properties:
         execution:
           type: object
           properties:
+            web_search_enabled:
+              type: boolean
             remote_transport:
               type: string
               enum: [local, ssh]
@@ -736,7 +779,10 @@ properties:
         items: {type: string}
   execution_defaults:
     type: object
+    required: [web_search_enabled]
     properties:
+      web_search_enabled:
+        type: boolean
       remote_transport:
         type: string
         enum: [local, ssh]
@@ -1185,11 +1231,35 @@ specialists:
     scheduler: local
     hardware: cpu
     requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-atomistic-hpc-simulation-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 interaction:
   mode: interactive-separated
   linked_groups:
   - developer
 execution_defaults:
+  web_search_enabled: true
   remote_transport: ssh
   schedulers:
   - pbs
@@ -1405,6 +1475,29 @@ specialists:
     scheduler: local
     hardware: cpu
     requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-data-curation-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 tool_profile: data-default
 default_workdirs:
 - inputs
@@ -1445,6 +1538,7 @@ interaction:
   mode: interactive-separated
   linked_groups: []
 execution_defaults:
+  web_search_enabled: true
   remote_transport: local
   schedulers:
   - local
@@ -1641,6 +1735,29 @@ specialists:
     scheduler: local
     hardware: cpu
     requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-designer-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 tool_profile: design-default
 default_workdirs:
 - inputs
@@ -1681,6 +1798,7 @@ interaction:
   mode: interactive-separated
   linked_groups: []
 execution_defaults:
+  web_search_enabled: true
   remote_transport: local
   schedulers:
   - local
@@ -1850,6 +1968,29 @@ specialists:
     scheduler: local
     hardware: cpu
     requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-developer-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 tool_profile: developer-default
 default_workdirs:
 - inputs
@@ -1890,6 +2031,7 @@ interaction:
   mode: interactive-separated
   linked_groups: []
 execution_defaults:
+  web_search_enabled: true
   remote_transport: local
   schedulers:
   - local
@@ -2041,6 +2183,29 @@ specialists:
     scheduler: local
     hardware: cpu
     requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-literature-intelligence-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 tool_profile: literature-default
 default_workdirs:
 - inputs
@@ -2081,6 +2246,7 @@ interaction:
   mode: interactive-separated
   linked_groups: []
 execution_defaults:
+  web_search_enabled: true
   remote_transport: local
   schedulers:
   - local
@@ -2256,6 +2422,29 @@ specialists:
     scheduler: local
     hardware: cpu
     requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-material-engineer-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 tool_profile: engineering-default
 default_workdirs:
 - inputs
@@ -2296,6 +2485,7 @@ interaction:
   mode: interactive-separated
   linked_groups: []
 execution_defaults:
+  web_search_enabled: true
   remote_transport: local
   schedulers:
   - local
@@ -2498,6 +2688,29 @@ specialists:
     scheduler: local
     hardware: cpu
     requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-material-scientist-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 tool_profile: science-default
 default_workdirs:
 - inputs
@@ -2538,6 +2751,7 @@ interaction:
   mode: interactive-separated
   linked_groups: []
 execution_defaults:
+  web_search_enabled: true
   remote_transport: local
   schedulers:
   - local
@@ -2545,7 +2759,327 @@ execution_defaults:
   - cpu
 ```
 
-## 21. `catalog/groups/publication-packaging.yaml`
+## 21. `catalog/groups/polymorphism-researcher.yaml`
+
+- Type: `catalog`
+- Purpose: Reusable source-of-truth group/profile/registry metadata
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+schema_version: "2.0"
+group_id: polymorphism-researcher
+display_name: Polymorphism Researcher Group
+template_version: "2.0.0"
+domain: metastable-thin-film-polymorphism
+purpose: Design and validate thin-film polymorphism synthesis procedures with DFT/MD/FEM support.
+success_criteria:
+  - Synthesis path with measurable low-resistivity targets
+  - Cross-validated DFT/MD/FEM computational plan
+  - Evidence-backed and reproducible exposed deliverables
+head:
+  agent_id: polymorphism-researcher-head
+  skill_name: grp-polymorphism-researcher-head
+  mission: Route and quality-gate polymorphism synthesis and compute specialists.
+  publish_contract:
+    exposed_required:
+      - summary.md
+      - handoff.json
+      - INTEGRATION_NOTES.md
+    visibility: group-only
+specialists:
+  - agent_id: phase-stability-specialist
+    skill_name: grp-polymorphism-researcher-phase-stability
+    role: domain-core
+    focus: Film-thickness-dependent polymorph stability and phase competition analysis.
+    required_references:
+      - references/phase-stability-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on: []
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+  - agent_id: dft-electronic-structure-specialist
+    skill_name: grp-polymorphism-researcher-dft-electronic-structure
+    role: domain-core
+    focus: DFT electronic structure and SOC-enabled topological indicator workflow.
+    required_references:
+      - references/dft-electronic-structure-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: phase-stability-specialist
+        required_artifacts:
+          - internal/phase-stability-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: ssh
+      scheduler: slurm
+      hardware: cuda
+      requires_gpu: true
+  - agent_id: md-kinetics-specialist
+    skill_name: grp-polymorphism-researcher-md-kinetics
+    role: domain-core
+    focus: MD-based kinetic stability, interface evolution, and thermal trajectory analysis.
+    required_references:
+      - references/md-kinetics-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: phase-stability-specialist
+        required_artifacts:
+          - internal/phase-stability-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: ssh
+      scheduler: slurm
+      hardware: cuda
+      requires_gpu: true
+  - agent_id: fem-process-specialist
+    skill_name: grp-polymorphism-researcher-fem-process
+    role: domain-core
+    focus: FEM process-window, stress-thermal coupling, and diffusion sensitivity modeling.
+    required_references:
+      - references/fem-process-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: phase-stability-specialist
+        required_artifacts:
+          - internal/phase-stability-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+  - agent_id: web-experimental-data-specialist
+    skill_name: grp-polymorphism-researcher-web-experimental-data
+    role: web-research
+    focus: Gather web-published experimental cobalt-silicide film data with citation-quality summaries.
+    required_references:
+      - references/web-experimental-data-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on: []
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+  - agent_id: integration-specialist
+    skill_name: grp-polymorphism-researcher-integration
+    role: integration
+    focus: Cross-specialist handoff integration and consumability verification.
+    required_references:
+      - references/integration-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: phase-stability-specialist
+        required_artifacts:
+          - internal/phase-stability-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: dft-electronic-structure-specialist
+        required_artifacts:
+          - internal/dft-electronic-structure-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: md-kinetics-specialist
+        required_artifacts:
+          - internal/md-kinetics-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: fem-process-specialist
+        required_artifacts:
+          - internal/fem-process-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: web-experimental-data-specialist
+        required_artifacts:
+          - internal/web-experimental-data-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+  - agent_id: evidence-review-specialist
+    skill_name: grp-polymorphism-researcher-evidence-review
+    role: evidence-review
+    focus: Claim-level evidence adequacy review for synthesis and simulation recommendations.
+    required_references:
+      - references/evidence-review-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: web-experimental-data-specialist
+        required_artifacts:
+          - internal/web-experimental-data-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: integration-specialist
+        required_artifacts:
+          - internal/integration-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+  - agent_id: repro-qa-specialist
+    skill_name: grp-polymorphism-researcher-repro-qa
+    role: repro-qa
+    focus: Reproducibility checklist and cross-run QA for procedure and package outputs.
+    required_references:
+      - references/repro-qa-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: integration-specialist
+        required_artifacts:
+          - internal/integration-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: evidence-review-specialist
+        required_artifacts:
+          - internal/evidence-review-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+        - internal/<agent-id>/work.md
+        - internal/<agent-id>/handoff.json
+      head_exposed:
+        - exposed/summary.md
+        - exposed/handoff.json
+        - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: polymorphism-evidence-v2
+  specialist_output_schema: specialist-handoff-v2
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+tool_profile: science-default
+default_workdirs:
+  - inputs
+  - analysis
+  - outputs
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
+interaction:
+  mode: interactive-separated
+  linked_groups:
+    - developer
+execution_defaults:
+  web_search_enabled: true
+  remote_transport: ssh
+  schedulers:
+    - pbs
+    - slurm
+    - local
+  hardware:
+    - cpu
+    - cuda
+```
+
+## 22. `catalog/groups/publication-packaging.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -2684,6 +3218,29 @@ specialists:
     scheduler: local
     hardware: cpu
     requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-publication-packaging-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 tool_profile: publication-default
 default_workdirs:
 - inputs
@@ -2724,6 +3281,7 @@ interaction:
   mode: interactive-separated
   linked_groups: []
 execution_defaults:
+  web_search_enabled: true
   remote_transport: local
   schedulers:
   - local
@@ -2731,7 +3289,7 @@ execution_defaults:
   - cpu
 ```
 
-## 22. `catalog/groups/quality-assurance.yaml`
+## 23. `catalog/groups/quality-assurance.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -2899,6 +3457,29 @@ specialists:
     scheduler: local
     hardware: cpu
     requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-quality-assurance-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 tool_profile: qa-default
 default_workdirs:
 - inputs
@@ -2939,6 +3520,7 @@ interaction:
   mode: interactive-separated
   linked_groups: []
 execution_defaults:
+  web_search_enabled: true
   remote_transport: local
   schedulers:
   - local
@@ -2946,7 +3528,7 @@ execution_defaults:
   - cpu
 ```
 
-## 23. `catalog/profiles/experiment-driven.yaml`
+## 24. `catalog/profiles/experiment-driven.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -2963,7 +3545,7 @@ groups:
   - "developer"
 ```
 
-## 24. `catalog/profiles/hpc-simulation-core.yaml`
+## 25. `catalog/profiles/hpc-simulation-core.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -2980,7 +3562,7 @@ groups:
   - "quality-assurance"
 ```
 
-## 25. `catalog/profiles/publication-push.yaml`
+## 26. `catalog/profiles/publication-push.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -2998,7 +3580,7 @@ groups:
   - "quality-assurance"
 ```
 
-## 26. `catalog/profiles/rapid-debug.yaml`
+## 27. `catalog/profiles/rapid-debug.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -3015,7 +3597,7 @@ groups:
   - "literature-intelligence"
 ```
 
-## 27. `catalog/profiles/reproduction-core.yaml`
+## 28. `catalog/profiles/reproduction-core.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -3032,7 +3614,7 @@ groups:
   - "quality-assurance"
 ```
 
-## 28. `catalog/project-registry.yaml`
+## 29. `catalog/project-registry.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -3049,20 +3631,20 @@ projects:
     - material-scientist
     - developer
     - quality-assurance
-    updated_at: '2026-02-28T19:17:51Z'
+    updated_at: '2026-02-28T19:51:58Z'
   proj-test-alpha:
     manifest_path: generated/projects/proj-test-alpha/manifest.yaml
     selected_groups:
     - material-scientist
-    updated_at: '2026-02-28T19:19:10Z'
+    updated_at: '2026-02-28T21:12:27Z'
   proj-test-hpc:
     manifest_path: generated/projects/proj-test-hpc/manifest.yaml
     selected_groups:
     - atomistic-hpc-simulation
-    updated_at: '2026-02-28T19:19:11Z'
+    updated_at: '2026-02-28T21:12:29Z'
 ```
 
-## 29. `generated/projects/proj-battery-001/agent-groups/developer/AGENTS.md`
+## 30. `generated/projects/proj-battery-001/agent-groups/developer/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -3089,6 +3671,7 @@ Deliver robust implementation, debugging, and automation support for research pr
 - `ssh-remote-ops-expert`: Remote operations, secure SSH workflows, transfer and execution protocols (skill: `proj-proj-battery-001-developer-ssh-remote-ops-expert`)
 - `integration-specialist`: Cross-artifact integration and consumability checks for Developer Group (skill: `proj-proj-battery-001-developer-integration-specialist`)
 - `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Developer Group (skill: `proj-proj-battery-001-developer-evidence-review-specialist`)
+- `web-research-specialist`: Gather web-published references and extract citation-ready evidence. (skill: `proj-proj-battery-001-developer-web-research-specialist`)
 
 ## Work Directories
 - `generated/projects/proj-battery-001/work/developer/python-expert`
@@ -3096,6 +3679,7 @@ Deliver robust implementation, debugging, and automation support for research pr
 - `generated/projects/proj-battery-001/work/developer/ssh-remote-ops-expert`
 - `generated/projects/proj-battery-001/work/developer/integration-specialist`
 - `generated/projects/proj-battery-001/work/developer/evidence-review-specialist`
+- `generated/projects/proj-battery-001/work/developer/web-research-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/developer/internal/<specialist>/...`
@@ -3153,6 +3737,8 @@ END_LOCKED:exposure_policy
 - `handoff.json` from `integration-specialist`
 - `work.md` from `evidence-review-specialist`
 - `handoff.json` from `evidence-review-specialist`
+- `work.md` from `web-research-specialist`
+- `handoff.json` from `web-research-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`
@@ -3163,7 +3749,7 @@ END_LOCKED:exposure_policy
 - `reproducibility_required`: `True`
 ```
 
-## 30. `generated/projects/proj-battery-001/agent-groups/developer/group.yaml`
+## 31. `generated/projects/proj-battery-001/agent-groups/developer/group.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -3331,6 +3917,30 @@ specialists:
     hardware: cpu
     requires_gpu: false
   effective_skill_name: proj-proj-battery-001-developer-evidence-review-specialist
+- agent_id: web-research-specialist
+  skill_name: grp-developer-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-battery-001-developer-web-research-specialist
 tool_profile: developer-default
 default_workdirs:
 - inputs
@@ -3378,7 +3988,7 @@ execution_defaults:
   - cpu
 ```
 
-## 31. `generated/projects/proj-battery-001/agent-groups/developer/handoffs.yaml`
+## 32. `generated/projects/proj-battery-001/agent-groups/developer/handoffs.yaml`
 
 - Type: `handoff`
 - Purpose: Intra-group handoff protocol
@@ -3405,6 +4015,9 @@ handoffs:
   - from: "evidence-review-specialist"
     to: "head-controller"
     condition: "after dependencies satisfied (python-expert)"
+  - from: "web-research-specialist"
+    to: "head-controller"
+    condition: "after task completion"
 output_contract:
   specialist_internal:
     - "internal/<agent-id>/work.md"
@@ -3415,7 +4028,7 @@ output_contract:
     - "exposed/INTEGRATION_NOTES.md"
 ```
 
-## 32. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-developer-head/SKILL.md`
+## 33. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-developer-head/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3477,6 +4090,7 @@ Route and merge specialist outputs for `developer` in project `proj-battery-001`
 - ssh-remote-ops-expert: `proj-proj-battery-001-developer-ssh-remote-ops-expert`
 - integration-specialist: `proj-proj-battery-001-developer-integration-specialist`
 - evidence-review-specialist: `proj-proj-battery-001-developer-evidence-review-specialist`
+- web-research-specialist: `proj-proj-battery-001-developer-web-research-specialist`
 
 ## Output Contract
 - `exposed/summary.md`
@@ -3484,7 +4098,7 @@ Route and merge specialist outputs for `developer` in project `proj-battery-001`
 - `exposed/INTEGRATION_NOTES.md`
 ```
 
-## 33. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-evidence-review-specialist/SKILL.md`
+## 34. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-evidence-review-specialist/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3549,7 +4163,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 34. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-integration-specialist/SKILL.md`
+## 35. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-integration-specialist/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3614,7 +4228,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 35. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-python-expert/SKILL.md`
+## 36. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-python-expert/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3682,7 +4296,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 36. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-shell-expert/SKILL.md`
+## 37. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-shell-expert/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3749,7 +4363,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 37. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert/SKILL.md`
+## 38. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3816,7 +4430,72 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 38. `generated/projects/proj-battery-001/agent-groups/developer/tools/allowlist.yaml`
+## 39. `generated/projects/proj-battery-001/agent-groups/developer/skills/proj-proj-battery-001-developer-web-research-specialist/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-battery-001-developer-web-research-specialist
+version: "2.0.0"
+role: specialist
+description: Specialist agent for Gather web-published references and extract citation-ready evidence. in Developer Group (project proj-battery-001) with strict structured handoff output.
+scope: Narrow specialist execution only; no cross-domain final decisions.
+inputs:
+  - objective
+  - group-context.json
+  - dependency artifacts
+outputs:
+  - internal/web-research-specialist/work.md
+  - internal/web-research-specialist/handoff.json
+failure_modes:
+  - blocked_needs_evidence
+  - blocked_uncited
+  - scope_violation
+autouse_triggers:
+  - specialist dispatch task
+  - dependency artifact ready
+---
+
+# web-research-specialist
+
+## Scope
+Gather web-published references and extract citation-ready evidence.
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/web-research-core.md
+
+## Required Outputs
+- work.md
+- handoff.json
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Always produce `work.md` and `handoff.json`.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 40. `generated/projects/proj-battery-001/agent-groups/developer/tools/allowlist.yaml`
 
 - Type: `tool-policy`
 - Purpose: Command/tool policy for group operations
@@ -3853,7 +4532,7 @@ wrapper_required_prefixes:
 tool_profile: "developer-default"
 ```
 
-## 39. `generated/projects/proj-battery-001/agent-groups/material-scientist/AGENTS.md`
+## 41. `generated/projects/proj-battery-001/agent-groups/material-scientist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -3881,6 +4560,7 @@ Route and quality-gate specialist outputs for theoretical and computational mate
 - `integration-specialist`: Cross-artifact integration and consumability checks for Material Scientist Group (skill: `proj-proj-battery-001-material-scientist-integration-specialist`)
 - `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Material Scientist Group (skill: `proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d`)
 - `repro-qa-specialist`: Reproducibility and quality assurance checks for Material Scientist Group (skill: `proj-proj-battery-001-material-scientist-repro-qa-specialist`)
+- `web-research-specialist`: Gather web-published references and extract citation-ready evidence. (skill: `proj-proj-battery-001-material-scientist-web-research-specialist`)
 
 ## Work Directories
 - `generated/projects/proj-battery-001/work/material-scientist/thermodynamics-specialist`
@@ -3889,6 +4569,7 @@ Route and quality-gate specialist outputs for theoretical and computational mate
 - `generated/projects/proj-battery-001/work/material-scientist/integration-specialist`
 - `generated/projects/proj-battery-001/work/material-scientist/evidence-review-specialist`
 - `generated/projects/proj-battery-001/work/material-scientist/repro-qa-specialist`
+- `generated/projects/proj-battery-001/work/material-scientist/web-research-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/material-scientist/internal/<specialist>/...`
@@ -3950,6 +4631,8 @@ END_LOCKED:exposure_policy
 - `handoff.json` from `evidence-review-specialist`
 - `work.md` from `repro-qa-specialist`
 - `handoff.json` from `repro-qa-specialist`
+- `work.md` from `web-research-specialist`
+- `handoff.json` from `web-research-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`
@@ -3960,7 +4643,7 @@ END_LOCKED:exposure_policy
 - `reproducibility_required`: `True`
 ```
 
-## 40. `generated/projects/proj-battery-001/agent-groups/material-scientist/group.yaml`
+## 42. `generated/projects/proj-battery-001/agent-groups/material-scientist/group.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -4162,6 +4845,30 @@ specialists:
     hardware: cpu
     requires_gpu: false
   effective_skill_name: proj-proj-battery-001-material-scientist-repro-qa-specialist
+- agent_id: web-research-specialist
+  skill_name: grp-material-scientist-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-battery-001-material-scientist-web-research-specialist
 tool_profile: science-default
 default_workdirs:
 - inputs
@@ -4209,7 +4916,7 @@ execution_defaults:
   - cpu
 ```
 
-## 41. `generated/projects/proj-battery-001/agent-groups/material-scientist/handoffs.yaml`
+## 43. `generated/projects/proj-battery-001/agent-groups/material-scientist/handoffs.yaml`
 
 - Type: `handoff`
 - Purpose: Intra-group handoff protocol
@@ -4239,6 +4946,9 @@ handoffs:
   - from: "repro-qa-specialist"
     to: "head-controller"
     condition: "after dependencies satisfied (thermodynamics-specialist)"
+  - from: "web-research-specialist"
+    to: "head-controller"
+    condition: "after task completion"
 output_contract:
   specialist_internal:
     - "internal/<agent-id>/work.md"
@@ -4249,7 +4959,7 @@ output_contract:
     - "exposed/INTEGRATION_NOTES.md"
 ```
 
-## 42. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-atomistic-simu-a6a50b3f/SKILL.md`
+## 44. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-atomistic-simu-a6a50b3f/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4317,7 +5027,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 43. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7/SKILL.md`
+## 45. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4385,7 +5095,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 44. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d/SKILL.md`
+## 46. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4450,7 +5160,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 45. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-integration-specialist/SKILL.md`
+## 47. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-integration-specialist/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4515,7 +5225,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 46. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-material-scientist-head/SKILL.md`
+## 48. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-material-scientist-head/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4578,6 +5288,7 @@ Route and merge specialist outputs for `material-scientist` in project `proj-bat
 - integration-specialist: `proj-proj-battery-001-material-scientist-integration-specialist`
 - evidence-review-specialist: `proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d`
 - repro-qa-specialist: `proj-proj-battery-001-material-scientist-repro-qa-specialist`
+- web-research-specialist: `proj-proj-battery-001-material-scientist-web-research-specialist`
 
 ## Output Contract
 - `exposed/summary.md`
@@ -4585,7 +5296,7 @@ Route and merge specialist outputs for `material-scientist` in project `proj-bat
 - `exposed/INTEGRATION_NOTES.md`
 ```
 
-## 47. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-repro-qa-specialist/SKILL.md`
+## 49. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-repro-qa-specialist/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4650,7 +5361,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 48. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-thermodynamics-6ace8773/SKILL.md`
+## 50. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-thermodynamics-6ace8773/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4718,7 +5429,72 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 49. `generated/projects/proj-battery-001/agent-groups/material-scientist/tools/allowlist.yaml`
+## 51. `generated/projects/proj-battery-001/agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-web-research-specialist/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-battery-001-material-scientist-web-research-specialist
+version: "2.0.0"
+role: specialist
+description: Specialist agent for Gather web-published references and extract citation-ready evidence. in Material Scientist Group (project proj-battery-001) with strict structured handoff output.
+scope: Narrow specialist execution only; no cross-domain final decisions.
+inputs:
+  - objective
+  - group-context.json
+  - dependency artifacts
+outputs:
+  - internal/web-research-specialist/work.md
+  - internal/web-research-specialist/handoff.json
+failure_modes:
+  - blocked_needs_evidence
+  - blocked_uncited
+  - scope_violation
+autouse_triggers:
+  - specialist dispatch task
+  - dependency artifact ready
+---
+
+# web-research-specialist
+
+## Scope
+Gather web-published references and extract citation-ready evidence.
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/web-research-core.md
+
+## Required Outputs
+- work.md
+- handoff.json
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Always produce `work.md` and `handoff.json`.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 52. `generated/projects/proj-battery-001/agent-groups/material-scientist/tools/allowlist.yaml`
 
 - Type: `tool-policy`
 - Purpose: Command/tool policy for group operations
@@ -4755,7 +5531,7 @@ wrapper_required_prefixes:
 tool_profile: "science-default"
 ```
 
-## 50. `generated/projects/proj-battery-001/agent-groups/quality-assurance/AGENTS.md`
+## 53. `generated/projects/proj-battery-001/agent-groups/quality-assurance/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -4782,6 +5558,7 @@ Audit technical outputs for reproducibility, consistency, and decision-risk cont
 - `risk-auditor`: Risk classification, severity tagging, and mitigation recommendation framing (skill: `proj-proj-battery-001-quality-assurance-risk-auditor`)
 - `integration-specialist`: Cross-artifact integration and consumability checks for Quality Assurance Group (skill: `proj-proj-battery-001-quality-assurance-integration-specialist`)
 - `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Quality Assurance Group (skill: `proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b`)
+- `web-research-specialist`: Gather web-published references and extract citation-ready evidence. (skill: `proj-proj-battery-001-quality-assurance-web-research-specialist`)
 
 ## Work Directories
 - `generated/projects/proj-battery-001/work/quality-assurance/reproducibility-auditor`
@@ -4789,6 +5566,7 @@ Audit technical outputs for reproducibility, consistency, and decision-risk cont
 - `generated/projects/proj-battery-001/work/quality-assurance/risk-auditor`
 - `generated/projects/proj-battery-001/work/quality-assurance/integration-specialist`
 - `generated/projects/proj-battery-001/work/quality-assurance/evidence-review-specialist`
+- `generated/projects/proj-battery-001/work/quality-assurance/web-research-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/quality-assurance/internal/<specialist>/...`
@@ -4845,6 +5623,8 @@ END_LOCKED:exposure_policy
 - `handoff.json` from `integration-specialist`
 - `work.md` from `evidence-review-specialist`
 - `handoff.json` from `evidence-review-specialist`
+- `work.md` from `web-research-specialist`
+- `handoff.json` from `web-research-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`
@@ -4855,7 +5635,7 @@ END_LOCKED:exposure_policy
 - `reproducibility_required`: `True`
 ```
 
-## 51. `generated/projects/proj-battery-001/agent-groups/quality-assurance/group.yaml`
+## 54. `generated/projects/proj-battery-001/agent-groups/quality-assurance/group.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -5029,6 +5809,30 @@ specialists:
     hardware: cpu
     requires_gpu: false
   effective_skill_name: proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b
+- agent_id: web-research-specialist
+  skill_name: grp-quality-assurance-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-battery-001-quality-assurance-web-research-specialist
 tool_profile: qa-default
 default_workdirs:
 - inputs
@@ -5076,7 +5880,7 @@ execution_defaults:
   - cpu
 ```
 
-## 52. `generated/projects/proj-battery-001/agent-groups/quality-assurance/handoffs.yaml`
+## 55. `generated/projects/proj-battery-001/agent-groups/quality-assurance/handoffs.yaml`
 
 - Type: `handoff`
 - Purpose: Intra-group handoff protocol
@@ -5103,6 +5907,9 @@ handoffs:
   - from: "evidence-review-specialist"
     to: "head-controller"
     condition: "after dependencies satisfied (consistency-auditor)"
+  - from: "web-research-specialist"
+    to: "head-controller"
+    condition: "after task completion"
 output_contract:
   specialist_internal:
     - "internal/<agent-id>/work.md"
@@ -5113,7 +5920,7 @@ output_contract:
     - "exposed/INTEGRATION_NOTES.md"
 ```
 
-## 53. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-consistency-auditor/SKILL.md`
+## 56. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-consistency-auditor/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -5180,7 +5987,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 54. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b/SKILL.md`
+## 57. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -5245,7 +6052,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 55. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-integration-specialist/SKILL.md`
+## 58. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-integration-specialist/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -5310,7 +6117,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 56. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-quality-assurance-head/SKILL.md`
+## 59. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-quality-assurance-head/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -5372,6 +6179,7 @@ Route and merge specialist outputs for `quality-assurance` in project `proj-batt
 - risk-auditor: `proj-proj-battery-001-quality-assurance-risk-auditor`
 - integration-specialist: `proj-proj-battery-001-quality-assurance-integration-specialist`
 - evidence-review-specialist: `proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b`
+- web-research-specialist: `proj-proj-battery-001-quality-assurance-web-research-specialist`
 
 ## Output Contract
 - `exposed/summary.md`
@@ -5379,7 +6187,7 @@ Route and merge specialist outputs for `quality-assurance` in project `proj-batt
 - `exposed/INTEGRATION_NOTES.md`
 ```
 
-## 57. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor/SKILL.md`
+## 60. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -5446,7 +6254,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 58. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor/SKILL.md`
+## 61. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -5513,7 +6321,72 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 59. `generated/projects/proj-battery-001/agent-groups/quality-assurance/tools/allowlist.yaml`
+## 62. `generated/projects/proj-battery-001/agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-web-research-specialist/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-battery-001-quality-assurance-web-research-specialist
+version: "2.0.0"
+role: specialist
+description: Specialist agent for Gather web-published references and extract citation-ready evidence. in Quality Assurance Group (project proj-battery-001) with strict structured handoff output.
+scope: Narrow specialist execution only; no cross-domain final decisions.
+inputs:
+  - objective
+  - group-context.json
+  - dependency artifacts
+outputs:
+  - internal/web-research-specialist/work.md
+  - internal/web-research-specialist/handoff.json
+failure_modes:
+  - blocked_needs_evidence
+  - blocked_uncited
+  - scope_violation
+autouse_triggers:
+  - specialist dispatch task
+  - dependency artifact ready
+---
+
+# web-research-specialist
+
+## Scope
+Gather web-published references and extract citation-ready evidence.
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/web-research-core.md
+
+## Required Outputs
+- work.md
+- handoff.json
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Always produce `work.md` and `handoff.json`.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 63. `generated/projects/proj-battery-001/agent-groups/quality-assurance/tools/allowlist.yaml`
 
 - Type: `tool-policy`
 - Purpose: Command/tool policy for group operations
@@ -5550,7 +6423,7 @@ wrapper_required_prefixes:
 tool_profile: "qa-default"
 ```
 
-## 60. `generated/projects/proj-battery-001/manifest.yaml`
+## 64. `generated/projects/proj-battery-001/manifest.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -5594,6 +6467,7 @@ groups:
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-integration-specialist
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-repro-qa-specialist
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-web-research-specialist
     head_skill_dir: agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-material-scientist-head
     specialist_skill_dirs:
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-thermodynamics-6ace8773
@@ -5602,6 +6476,7 @@ groups:
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-integration-specialist
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-repro-qa-specialist
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-web-research-specialist
   developer:
     manifest_path: agent-groups/developer/group.yaml
     skill_dirs:
@@ -5611,6 +6486,7 @@ groups:
     - agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert
     - agent-groups/developer/skills/proj-proj-battery-001-developer-integration-specialist
     - agent-groups/developer/skills/proj-proj-battery-001-developer-evidence-review-specialist
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-web-research-specialist
     head_skill_dir: agent-groups/developer/skills/proj-proj-battery-001-developer-developer-head
     specialist_skill_dirs:
     - agent-groups/developer/skills/proj-proj-battery-001-developer-python-expert
@@ -5618,6 +6494,7 @@ groups:
     - agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert
     - agent-groups/developer/skills/proj-proj-battery-001-developer-integration-specialist
     - agent-groups/developer/skills/proj-proj-battery-001-developer-evidence-review-specialist
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-web-research-specialist
   quality-assurance:
     manifest_path: agent-groups/quality-assurance/group.yaml
     skill_dirs:
@@ -5627,6 +6504,7 @@ groups:
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-integration-specialist
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-web-research-specialist
     head_skill_dir: agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-quality-assurance-head
     specialist_skill_dirs:
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor
@@ -5634,9 +6512,10 @@ groups:
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-integration-specialist
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-web-research-specialist
 ```
 
-## 61. `generated/projects/proj-test-alpha/agent-groups/material-scientist/AGENTS.md`
+## 65. `generated/projects/proj-test-alpha/agent-groups/material-scientist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -5664,6 +6543,7 @@ Route and quality-gate specialist outputs for theoretical and computational mate
 - `integration-specialist`: Cross-artifact integration and consumability checks for Material Scientist Group (skill: `proj-proj-test-alpha-material-scientist-integration-specialist`)
 - `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Material Scientist Group (skill: `proj-proj-test-alpha-material-scientist-evidence-review-6a24b907`)
 - `repro-qa-specialist`: Reproducibility and quality assurance checks for Material Scientist Group (skill: `proj-proj-test-alpha-material-scientist-repro-qa-specialist`)
+- `web-research-specialist`: Gather web-published references and extract citation-ready evidence. (skill: `proj-proj-test-alpha-material-scientist-web-research-specialist`)
 
 ## Work Directories
 - `generated/projects/proj-test-alpha/work/material-scientist/thermodynamics-specialist`
@@ -5672,6 +6552,7 @@ Route and quality-gate specialist outputs for theoretical and computational mate
 - `generated/projects/proj-test-alpha/work/material-scientist/integration-specialist`
 - `generated/projects/proj-test-alpha/work/material-scientist/evidence-review-specialist`
 - `generated/projects/proj-test-alpha/work/material-scientist/repro-qa-specialist`
+- `generated/projects/proj-test-alpha/work/material-scientist/web-research-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/material-scientist/internal/<specialist>/...`
@@ -5733,6 +6614,8 @@ END_LOCKED:exposure_policy
 - `handoff.json` from `evidence-review-specialist`
 - `work.md` from `repro-qa-specialist`
 - `handoff.json` from `repro-qa-specialist`
+- `work.md` from `web-research-specialist`
+- `handoff.json` from `web-research-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`
@@ -5743,7 +6626,7 @@ END_LOCKED:exposure_policy
 - `reproducibility_required`: `True`
 ```
 
-## 62. `generated/projects/proj-test-alpha/agent-groups/material-scientist/group.yaml`
+## 66. `generated/projects/proj-test-alpha/agent-groups/material-scientist/group.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -5945,6 +6828,30 @@ specialists:
     hardware: cpu
     requires_gpu: false
   effective_skill_name: proj-proj-test-alpha-material-scientist-repro-qa-specialist
+- agent_id: web-research-specialist
+  skill_name: grp-material-scientist-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-test-alpha-material-scientist-web-research-specialist
 tool_profile: science-default
 default_workdirs:
 - inputs
@@ -5985,6 +6892,7 @@ interaction:
   mode: interactive-separated
   linked_groups: []
 execution_defaults:
+  web_search_enabled: true
   remote_transport: local
   schedulers:
   - local
@@ -5992,7 +6900,7 @@ execution_defaults:
   - cpu
 ```
 
-## 63. `generated/projects/proj-test-alpha/agent-groups/material-scientist/handoffs.yaml`
+## 67. `generated/projects/proj-test-alpha/agent-groups/material-scientist/handoffs.yaml`
 
 - Type: `handoff`
 - Purpose: Intra-group handoff protocol
@@ -6022,6 +6930,9 @@ handoffs:
   - from: "repro-qa-specialist"
     to: "head-controller"
     condition: "after dependencies satisfied (thermodynamics-specialist)"
+  - from: "web-research-specialist"
+    to: "head-controller"
+    condition: "after task completion"
 output_contract:
   specialist_internal:
     - "internal/<agent-id>/work.md"
@@ -6032,7 +6943,7 @@ output_contract:
     - "exposed/INTEGRATION_NOTES.md"
 ```
 
-## 64. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c/SKILL.md`
+## 68. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-atomistic-simul-96f8d96c/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -6100,7 +7011,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 65. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db/SKILL.md`
+## 69. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-electronic-stru-2a0a40db/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -6168,7 +7079,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 66. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-evidence-review-6a24b907/SKILL.md`
+## 70. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-evidence-review-6a24b907/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -6233,7 +7144,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 67. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-integration-specialist/SKILL.md`
+## 71. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-integration-specialist/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -6298,7 +7209,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 68. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-material-scientist-head/SKILL.md`
+## 72. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-material-scientist-head/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -6361,6 +7272,7 @@ Route and merge specialist outputs for `material-scientist` in project `proj-tes
 - integration-specialist: `proj-proj-test-alpha-material-scientist-integration-specialist`
 - evidence-review-specialist: `proj-proj-test-alpha-material-scientist-evidence-review-6a24b907`
 - repro-qa-specialist: `proj-proj-test-alpha-material-scientist-repro-qa-specialist`
+- web-research-specialist: `proj-proj-test-alpha-material-scientist-web-research-specialist`
 
 ## Output Contract
 - `exposed/summary.md`
@@ -6368,7 +7280,7 @@ Route and merge specialist outputs for `material-scientist` in project `proj-tes
 - `exposed/INTEGRATION_NOTES.md`
 ```
 
-## 69. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-repro-qa-specialist/SKILL.md`
+## 73. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-repro-qa-specialist/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -6433,7 +7345,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 70. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5/SKILL.md`
+## 74. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -6501,7 +7413,72 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 71. `generated/projects/proj-test-alpha/agent-groups/material-scientist/tools/allowlist.yaml`
+## 75. `generated/projects/proj-test-alpha/agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-web-research-specialist/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-alpha-material-scientist-web-research-specialist
+version: "2.0.0"
+role: specialist
+description: Specialist agent for Gather web-published references and extract citation-ready evidence. in Material Scientist Group (project proj-test-alpha) with strict structured handoff output.
+scope: Narrow specialist execution only; no cross-domain final decisions.
+inputs:
+  - objective
+  - group-context.json
+  - dependency artifacts
+outputs:
+  - internal/web-research-specialist/work.md
+  - internal/web-research-specialist/handoff.json
+failure_modes:
+  - blocked_needs_evidence
+  - blocked_uncited
+  - scope_violation
+autouse_triggers:
+  - specialist dispatch task
+  - dependency artifact ready
+---
+
+# web-research-specialist
+
+## Scope
+Gather web-published references and extract citation-ready evidence.
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/web-research-core.md
+
+## Required Outputs
+- work.md
+- handoff.json
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Always produce `work.md` and `handoff.json`.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 76. `generated/projects/proj-test-alpha/agent-groups/material-scientist/tools/allowlist.yaml`
 
 - Type: `tool-policy`
 - Purpose: Command/tool policy for group operations
@@ -6538,7 +7515,7 @@ wrapper_required_prefixes:
 tool_profile: "science-default"
 ```
 
-## 72. `generated/projects/proj-test-alpha/manifest.yaml`
+## 77. `generated/projects/proj-test-alpha/manifest.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -6578,6 +7555,7 @@ groups:
     - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-integration-specialist
     - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-evidence-review-6a24b907
     - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-repro-qa-specialist
+    - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-web-research-specialist
     head_skill_dir: agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-material-scientist-head
     specialist_skill_dirs:
     - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-thermodynamics-2e0d13a5
@@ -6586,9 +7564,10 @@ groups:
     - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-integration-specialist
     - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-evidence-review-6a24b907
     - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-repro-qa-specialist
+    - agent-groups/material-scientist/skills/proj-proj-test-alpha-material-scientist-web-research-specialist
 ```
 
-## 73. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/AGENTS.md`
+## 78. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -6619,6 +7598,7 @@ Coordinate high-fidelity atomistic simulation workflows across remote HPC resour
 - `developer-bridge-expert`: Cross-group integration with developer group for scripts, SSH tooling, and reliability hardening (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1`)
 - `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Atomistic HPC Simulation Group (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-evidence-re-1c668f5f`)
 - `repro-qa-specialist`: Reproducibility and quality assurance checks for Atomistic HPC Simulation Group (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-repro-qa-specialist`)
+- `web-research-specialist`: Gather web-published references and extract citation-ready evidence. (skill: `proj-proj-test-hpc-atomistic-hpc-simulation-web-researc-cfc0ed24`)
 
 ## Work Directories
 - `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/vasp-expert`
@@ -6630,6 +7610,7 @@ Coordinate high-fidelity atomistic simulation workflows across remote HPC resour
 - `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/developer-bridge-expert`
 - `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/evidence-review-specialist`
 - `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/repro-qa-specialist`
+- `generated/projects/proj-test-hpc/work/atomistic-hpc-simulation/web-research-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/atomistic-hpc-simulation/internal/<specialist>/...`
@@ -6705,6 +7686,8 @@ END_LOCKED:exposure_policy
 - `handoff.json` from `evidence-review-specialist`
 - `work.md` from `repro-qa-specialist`
 - `handoff.json` from `repro-qa-specialist`
+- `work.md` from `web-research-specialist`
+- `handoff.json` from `web-research-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`
@@ -6715,7 +7698,7 @@ END_LOCKED:exposure_policy
 - `reproducibility_required`: `True`
 ```
 
-## 74. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/group.yaml`
+## 79. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/group.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -7024,11 +8007,36 @@ specialists:
     hardware: cpu
     requires_gpu: false
   effective_skill_name: proj-proj-test-hpc-atomistic-hpc-simulation-repro-qa-specialist
+- agent_id: web-research-specialist
+  skill_name: grp-atomistic-hpc-simulation-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-test-hpc-atomistic-hpc-simulation-web-researc-cfc0ed24
 interaction:
   mode: interactive-separated
   linked_groups:
   - developer
 execution_defaults:
+  web_search_enabled: true
   remote_transport: ssh
   schedulers:
   - pbs
@@ -7074,7 +8082,7 @@ gate_profile:
     scope_enforced: true
 ```
 
-## 75. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/handoffs.yaml`
+## 80. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/handoffs.yaml`
 
 - Type: `handoff`
 - Purpose: Intra-group handoff protocol
@@ -7113,6 +8121,9 @@ handoffs:
   - from: "repro-qa-specialist"
     to: "head-controller"
     condition: "after dependencies satisfied (vasp-expert)"
+  - from: "web-research-specialist"
+    to: "head-controller"
+    condition: "after task completion"
 output_contract:
   specialist_internal:
     - "internal/<agent-id>/work.md"
@@ -7123,7 +8134,7 @@ output_contract:
     - "exposed/INTEGRATION_NOTES.md"
 ```
 
-## 76. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f/SKILL.md`
+## 81. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -7189,6 +8200,7 @@ Route and merge specialist outputs for `atomistic-hpc-simulation` in project `pr
 - developer-bridge-expert: `proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1`
 - evidence-review-specialist: `proj-proj-test-hpc-atomistic-hpc-simulation-evidence-re-1c668f5f`
 - repro-qa-specialist: `proj-proj-test-hpc-atomistic-hpc-simulation-repro-qa-specialist`
+- web-research-specialist: `proj-proj-test-hpc-atomistic-hpc-simulation-web-researc-cfc0ed24`
 
 ## Output Contract
 - `exposed/summary.md`
@@ -7196,7 +8208,7 @@ Route and merge specialist outputs for `atomistic-hpc-simulation` in project `pr
 - `exposed/INTEGRATION_NOTES.md`
 ```
 
-## 77. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680/SKILL.md`
+## 82. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-cuda-perfor-4b333680/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -7263,7 +8275,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 78. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1/SKILL.md`
+## 83. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -7330,7 +8342,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 79. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-evidence-re-1c668f5f/SKILL.md`
+## 84. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-evidence-re-1c668f5f/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -7395,7 +8407,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 80. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert/SKILL.md`
+## 85. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-lammps-expert/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -7463,7 +8475,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 81. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert/SKILL.md`
+## 86. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-metadynamics-expert/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -7531,7 +8543,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 82. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-repro-qa-specialist/SKILL.md`
+## 87. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-repro-qa-specialist/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -7596,7 +8608,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 83. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36/SKILL.md`
+## 88. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-scheduler-r-08c25c36/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -7663,7 +8675,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 84. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555/SKILL.md`
+## 89. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-simulation-a558d555/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -7730,7 +8742,7 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 85. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert/SKILL.md`
+## 90. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -7798,7 +8810,72 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - Head controller decides what is exposed.
 ```
 
-## 86. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/tools/allowlist.yaml`
+## 91. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-web-researc-cfc0ed24/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: proj-proj-test-hpc-atomistic-hpc-simulation-web-researc-cfc0ed24
+version: "2.0.0"
+role: specialist
+description: Specialist agent for Gather web-published references and extract citation-ready evidence. in Atomistic HPC Simulation Group (project proj-test-hpc) with strict structured handoff output.
+scope: Narrow specialist execution only; no cross-domain final decisions.
+inputs:
+  - objective
+  - group-context.json
+  - dependency artifacts
+outputs:
+  - internal/web-research-specialist/work.md
+  - internal/web-research-specialist/handoff.json
+failure_modes:
+  - blocked_needs_evidence
+  - blocked_uncited
+  - scope_violation
+autouse_triggers:
+  - specialist dispatch task
+  - dependency artifact ready
+---
+
+# web-research-specialist
+
+## Scope
+Gather web-published references and extract citation-ready evidence.
+
+## Hard Gate Requirements
+1. Every key claim must include a citation.
+2. Assumptions must be explicit.
+3. Output must stay within specialist scope.
+4. Reproducibility details are mandatory.
+
+If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+
+## Required References
+- references/web-research-core.md
+
+## Required Outputs
+- work.md
+- handoff.json
+
+## Response Format
+- `status`: `PASS` or blocked reason.
+- `assumptions`
+- `claims_with_citations`
+- `repro_steps`
+- `artifact_paths`
+
+## Artifact Scope
+- Write specialist artifacts under internal group paths.
+- Always produce `work.md` and `handoff.json`.
+- Do not publish user-facing artifacts directly.
+- Head controller decides what is exposed.
+```
+
+## 92. `generated/projects/proj-test-hpc/agent-groups/atomistic-hpc-simulation/tools/allowlist.yaml`
 
 - Type: `tool-policy`
 - Purpose: Command/tool policy for group operations
@@ -7835,7 +8912,7 @@ wrapper_required_prefixes:
 tool_profile: "hpc-simulation-default"
 ```
 
-## 87. `generated/projects/proj-test-hpc/manifest.yaml`
+## 93. `generated/projects/proj-test-hpc/manifest.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -7878,6 +8955,7 @@ groups:
     - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1
     - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-evidence-re-1c668f5f
     - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-repro-qa-specialist
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-web-researc-cfc0ed24
     head_skill_dir: agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-atomistic-h-42ae9d8f
     specialist_skill_dirs:
     - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-vasp-expert
@@ -7889,5 +8967,6 @@ groups:
     - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-developer-b-5ef15aa1
     - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-evidence-re-1c668f5f
     - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-repro-qa-specialist
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-test-hpc-atomistic-hpc-simulation-web-researc-cfc0ed24
 ```
 

@@ -157,6 +157,30 @@ specialists:
     hardware: cpu
     requires_gpu: false
   effective_skill_name: proj-proj-battery-001-developer-evidence-review-specialist
+- agent_id: web-research-specialist
+  skill_name: grp-developer-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-battery-001-developer-web-research-specialist
 tool_profile: developer-default
 default_workdirs:
 - inputs
@@ -197,6 +221,7 @@ interaction:
   mode: interactive-separated
   linked_groups: []
 execution_defaults:
+  web_search_enabled: true
   remote_transport: local
   schedulers:
   - local

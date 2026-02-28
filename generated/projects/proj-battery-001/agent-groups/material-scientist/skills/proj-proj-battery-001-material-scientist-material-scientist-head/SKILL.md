@@ -52,6 +52,7 @@ Route and merge specialist outputs for `material-scientist` in project `proj-bat
 - integration-specialist: `proj-proj-battery-001-material-scientist-integration-specialist`
 - evidence-review-specialist: `proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d`
 - repro-qa-specialist: `proj-proj-battery-001-material-scientist-repro-qa-specialist`
+- web-research-specialist: `proj-proj-battery-001-material-scientist-web-research-specialist`
 
 ## Output Contract
 - `exposed/summary.md`

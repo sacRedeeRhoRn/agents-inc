@@ -288,11 +288,35 @@ specialists:
     scheduler: local
     hardware: cpu
     requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-atomistic-hpc-simulation-web-research
+  role: web-research
+  focus: Gather web-published references and extract citation-ready evidence.
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 interaction:
   mode: interactive-separated
   linked_groups:
   - developer
 execution_defaults:
+  web_search_enabled: true
   remote_transport: ssh
   schedulers:
   - pbs

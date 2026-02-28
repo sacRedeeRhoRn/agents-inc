@@ -51,6 +51,7 @@ Route and merge specialist outputs for `quality-assurance` in project `proj-batt
 - risk-auditor: `proj-proj-battery-001-quality-assurance-risk-auditor`
 - integration-specialist: `proj-proj-battery-001-quality-assurance-integration-specialist`
 - evidence-review-specialist: `proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b`
+- web-research-specialist: `proj-proj-battery-001-quality-assurance-web-research-specialist`
 
 ## Output Contract
 - `exposed/summary.md`

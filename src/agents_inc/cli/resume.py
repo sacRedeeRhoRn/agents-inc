@@ -40,7 +40,9 @@ def _build_resume_prompt(summary: dict) -> str:
         f"{project_id}. Session code: {session_code}. "
         f"Active groups: {groups_text}. "
         f"Start from router call: {router_call} "
-        "Keep group artifacts isolated by project and only exchange through exposed/ paths."
+        "Keep group artifacts isolated by project and only exchange through exposed/ paths. "
+        "Default mode is group-detailed publication-grade synthesis. "
+        "Use strict prefix [non-group] only for concise direct state queries."
     )
 
 

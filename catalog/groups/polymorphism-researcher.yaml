@@ -1,0 +1,309 @@
+schema_version: "2.0"
+group_id: polymorphism-researcher
+display_name: Polymorphism Researcher Group
+template_version: "2.0.0"
+domain: metastable-thin-film-polymorphism
+purpose: Design and validate thin-film polymorphism synthesis procedures with DFT/MD/FEM support.
+success_criteria:
+  - Synthesis path with measurable low-resistivity targets
+  - Cross-validated DFT/MD/FEM computational plan
+  - Evidence-backed and reproducible exposed deliverables
+head:
+  agent_id: polymorphism-researcher-head
+  skill_name: grp-polymorphism-researcher-head
+  mission: Route and quality-gate polymorphism synthesis and compute specialists.
+  publish_contract:
+    exposed_required:
+      - summary.md
+      - handoff.json
+      - INTEGRATION_NOTES.md
+    visibility: group-only
+specialists:
+  - agent_id: phase-stability-specialist
+    skill_name: grp-polymorphism-researcher-phase-stability
+    role: domain-core
+    focus: Film-thickness-dependent polymorph stability and phase competition analysis.
+    required_references:
+      - references/phase-stability-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on: []
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+  - agent_id: dft-electronic-structure-specialist
+    skill_name: grp-polymorphism-researcher-dft-electronic-structure
+    role: domain-core
+    focus: DFT electronic structure and SOC-enabled topological indicator workflow.
+    required_references:
+      - references/dft-electronic-structure-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: phase-stability-specialist
+        required_artifacts:
+          - internal/phase-stability-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: ssh
+      scheduler: slurm
+      hardware: cuda
+      requires_gpu: true
+  - agent_id: md-kinetics-specialist
+    skill_name: grp-polymorphism-researcher-md-kinetics
+    role: domain-core
+    focus: MD-based kinetic stability, interface evolution, and thermal trajectory analysis.
+    required_references:
+      - references/md-kinetics-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: phase-stability-specialist
+        required_artifacts:
+          - internal/phase-stability-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: ssh
+      scheduler: slurm
+      hardware: cuda
+      requires_gpu: true
+  - agent_id: fem-process-specialist
+    skill_name: grp-polymorphism-researcher-fem-process
+    role: domain-core
+    focus: FEM process-window, stress-thermal coupling, and diffusion sensitivity modeling.
+    required_references:
+      - references/fem-process-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: phase-stability-specialist
+        required_artifacts:
+          - internal/phase-stability-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+  - agent_id: web-experimental-data-specialist
+    skill_name: grp-polymorphism-researcher-web-experimental-data
+    role: web-research
+    focus: Gather web-published experimental cobalt-silicide film data with citation-quality summaries.
+    required_references:
+      - references/web-experimental-data-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on: []
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+  - agent_id: integration-specialist
+    skill_name: grp-polymorphism-researcher-integration
+    role: integration
+    focus: Cross-specialist handoff integration and consumability verification.
+    required_references:
+      - references/integration-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: phase-stability-specialist
+        required_artifacts:
+          - internal/phase-stability-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: dft-electronic-structure-specialist
+        required_artifacts:
+          - internal/dft-electronic-structure-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: md-kinetics-specialist
+        required_artifacts:
+          - internal/md-kinetics-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: fem-process-specialist
+        required_artifacts:
+          - internal/fem-process-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: web-experimental-data-specialist
+        required_artifacts:
+          - internal/web-experimental-data-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+  - agent_id: evidence-review-specialist
+    skill_name: grp-polymorphism-researcher-evidence-review
+    role: evidence-review
+    focus: Claim-level evidence adequacy review for synthesis and simulation recommendations.
+    required_references:
+      - references/evidence-review-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: web-experimental-data-specialist
+        required_artifacts:
+          - internal/web-experimental-data-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: integration-specialist
+        required_artifacts:
+          - internal/integration-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+  - agent_id: repro-qa-specialist
+    skill_name: grp-polymorphism-researcher-repro-qa
+    role: repro-qa
+    focus: Reproducibility checklist and cross-run QA for procedure and package outputs.
+    required_references:
+      - references/repro-qa-core.md
+    required_outputs:
+      - work.md
+      - handoff.json
+    contract:
+      inputs:
+        - objective.md
+        - group-context.json
+      outputs:
+        - work.md
+        - handoff.json
+      output_schema: specialist-handoff-v2
+    depends_on:
+      - agent_id: integration-specialist
+        required_artifacts:
+          - internal/integration-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+      - agent_id: evidence-review-specialist
+        required_artifacts:
+          - internal/evidence-review-specialist/handoff.json
+        validate_with: json-parse
+        on_missing: request-rerun
+    execution:
+      remote_transport: local
+      scheduler: local
+      hardware: cpu
+      requires_gpu: false
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+        - internal/<agent-id>/work.md
+        - internal/<agent-id>/handoff.json
+      head_exposed:
+        - exposed/summary.md
+        - exposed/handoff.json
+        - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: polymorphism-evidence-v2
+  specialist_output_schema: specialist-handoff-v2
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+tool_profile: science-default
+default_workdirs:
+  - inputs
+  - analysis
+  - outputs
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
+interaction:
+  mode: interactive-separated
+  linked_groups:
+    - developer
+execution_defaults:
+  web_search_enabled: true
+  remote_transport: ssh
+  schedulers:
+    - pbs
+    - slurm
+    - local
+  hardware:
+    - cpu
+    - cuda

@@ -42,6 +42,8 @@ def _write_text(path: Path, text: str) -> None:
 
 def _infer_role(agent_id: str, focus: str) -> str:
     text = f"{agent_id} {focus}".lower()
+    if "web" in text or "literature" in text or "data gather" in text:
+        return "web-research"
     if "integrat" in text or "bridge" in text:
         return "integration"
     if "review" in text or "evidence" in text or "citation" in text:
@@ -264,6 +266,7 @@ def migrate_group_manifest(data: dict) -> dict:
     execution_defaults = (
         data.get("execution_defaults") if isinstance(data.get("execution_defaults"), dict) else {}
     )
+    execution_defaults.setdefault("web_search_enabled", True)
     execution_defaults.setdefault("remote_transport", "local")
     execution_defaults.setdefault("schedulers", ["local"])
     execution_defaults.setdefault("hardware", ["cpu"])

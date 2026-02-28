@@ -10,6 +10,7 @@ ASK = Callable[[str, Optional[str]], str]
 
 MANDATORY_ROLES = [
     "domain-core",
+    "web-research",
     "integration",
     "evidence-review",
     "repro-qa",
@@ -17,6 +18,7 @@ MANDATORY_ROLES = [
 
 ROLE_ORDER = [
     "domain-core",
+    "web-research",
     "integration",
     "evidence-review",
     "repro-qa",
@@ -42,6 +44,7 @@ class GroupDraft:
 def _role_focus(role: str, domain: str, display_name: str) -> str:
     mapping = {
         "domain-core": f"Primary domain analysis for {display_name} in {domain}",
+        "web-research": f"Web evidence and experimental data gathering for {display_name}",
         "integration": f"Cross-artifact integration and consumability checks for {display_name}",
         "evidence-review": f"Claim-level evidence review and citation sufficiency for {display_name}",
         "repro-qa": f"Reproducibility and quality assurance checks for {display_name}",
@@ -86,6 +89,7 @@ def _specialist_from_role(group_id: str, display_name: str, domain: str, role: s
         },
         "depends_on": depends_on,
         "execution": {
+            "web_search_enabled": True,
             "remote_transport": "local",
             "scheduler": "local",
             "hardware": "cpu",
@@ -392,6 +396,7 @@ def build_manifest_v2(draft: GroupDraft) -> dict:
             "linked_groups": [],
         },
         "execution_defaults": {
+            "web_search_enabled": True,
             "remote_transport": "local",
             "schedulers": ["local"],
             "hardware": ["cpu"],

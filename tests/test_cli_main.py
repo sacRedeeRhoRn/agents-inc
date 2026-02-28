@@ -36,6 +36,31 @@ class CLIMainTests(unittest.TestCase):
         self.assertEqual(code, 9)
         mocked.assert_called_once()
 
+    def test_main_routes_orchestrate_command(self) -> None:
+        with patch("agents_inc.cli.orchestrate.main", return_value=11) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "orchestrate", "--project-id", "x"]):
+                code = cli_main.main()
+        self.assertEqual(code, 11)
+        mocked.assert_called_once()
+
+    def test_main_routes_orchestrator_reply_command(self) -> None:
+        with patch("agents_inc.cli.orchestrator_reply.main", return_value=13) as mocked:
+            with patch.object(
+                sys,
+                "argv",
+                [
+                    "agents-inc",
+                    "orchestrator-reply",
+                    "--project-id",
+                    "x",
+                    "--message",
+                    "hello",
+                ],
+            ):
+                code = cli_main.main()
+        self.assertEqual(code, 13)
+        mocked.assert_called_once()
+
     def test_main_version_flag(self) -> None:
         with patch.object(sys, "argv", ["agents-inc", "--version"]):
             code = cli_main.main()

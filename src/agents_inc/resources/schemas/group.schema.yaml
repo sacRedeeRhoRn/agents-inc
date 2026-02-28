@@ -60,6 +60,32 @@ properties:
   specialists:
     type: array
     minItems: 4
+    allOf:
+      - contains:
+          type: object
+          properties:
+            role:
+              const: domain-core
+      - contains:
+          type: object
+          properties:
+            role:
+              const: web-research
+      - contains:
+          type: object
+          properties:
+            role:
+              const: integration
+      - contains:
+          type: object
+          properties:
+            role:
+              const: evidence-review
+      - contains:
+          type: object
+          properties:
+            role:
+              const: repro-qa
     items:
       type: object
       required:
@@ -118,6 +144,8 @@ properties:
         execution:
           type: object
           properties:
+            web_search_enabled:
+              type: boolean
             remote_transport:
               type: string
               enum: [local, ssh]
@@ -151,7 +179,10 @@ properties:
         items: {type: string}
   execution_defaults:
     type: object
+    required: [web_search_enabled]
     properties:
+      web_search_enabled:
+        type: boolean
       remote_transport:
         type: string
         enum: [local, ssh]

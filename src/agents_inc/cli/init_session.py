@@ -26,6 +26,7 @@ from agents_inc.core.fabric_lib import (
     suggest_groups,
     write_text,
 )
+from agents_inc.core.response_policy import ensure_response_policy, upsert_specialist_sessions
 from agents_inc.core.session_compaction import compact_session, load_compacted
 from agents_inc.core.session_state import (
     default_project_index_path,
@@ -177,6 +178,7 @@ def _resume_summary(
         "visibility": visibility,
         "next_actions": [
             "Paste router-call.txt into the Codex session.",
+            "Use agents-inc orchestrator-reply for detailed-by-default turn execution.",
             "Run long-run-command.sh to validate all-group interaction and isolation.",
             "Use agents-inc dispatch to continue a specific group objective.",
         ],
@@ -214,6 +216,8 @@ def _build_resume_kickoff(
             "- user <-> head-controller: objective refinement and acceptance",
             "- head-controller <-> specialists: internal execution and cross-checking",
             "- specialist artifacts stay internal by default; only exposed outputs are surfaced",
+            "- requests starting with `[non-group]` run concise direct reasoning without delegation",
+            "- all other requests run group-routed publication-grade detailed orchestration",
             "",
             "## Router Call",
             f"`{router_call}`",
@@ -269,6 +273,8 @@ def _build_new_kickoff(
             "- user <-> head-controller: objective refinement and acceptance",
             "- head-controller <-> specialists: internal execution and cross-checking",
             "- specialist artifacts stay internal by default; only exposed outputs are surfaced",
+            "- requests starting with `[non-group]` run concise direct reasoning without delegation",
+            "- all other requests run group-routed publication-grade detailed orchestration",
             "",
             "## Router Call",
             f"`{router_call}`",
@@ -446,6 +452,7 @@ def run_resume_flow(
         .resolve()
     )
     ensure_fabric_root_initialized(project_fabric_root)
+    ensure_response_policy(project_root)
 
     checkpoint_ref = str(args.resume_checkpoint or "latest")
     resume_mode = str(args.resume_mode or "auto")
@@ -508,6 +515,13 @@ def run_resume_flow(
             )
             resume_source = "rehydrate"
 
+    upsert_specialist_sessions(
+        project_root=project_root,
+        project_fabric_root=project_fabric_root,
+        project_id=project_id,
+        selected_groups=groups,
+    )
+
     long_run_command = _build_long_run_command(project_fabric_root, project_id, task)
     kickoff_md = _build_resume_kickoff(
         project_id=project_id,
@@ -536,6 +550,10 @@ def run_resume_flow(
         "router_call": str(project_root / "router-call.txt"),
         "long_run_command": str(project_root / "long-run-command.sh"),
         "project_manifest": str(project_root / "project-manifest.yaml"),
+        "response_policy": str(project_root / ".agents-inc" / "state" / "response-policy.yaml"),
+        "specialist_sessions": str(
+            project_root / ".agents-inc" / "state" / "specialist-sessions.yaml"
+        ),
     }
 
     payload = _build_checkpoint_payload(
@@ -549,6 +567,7 @@ def run_resume_flow(
         latest_artifacts=latest_artifacts,
         pending_actions=[
             "Paste router-call.txt into the Codex session.",
+            "Use agents-inc orchestrator-reply for detailed-by-default group responses.",
             "Run long-run-command.sh to validate all-group interaction and isolation.",
             "Continue with agents-inc dispatch for focused group objectives.",
         ],
@@ -572,6 +591,11 @@ def run_resume_flow(
             "router_call": project_root / "router-call.txt",
             "long_run_command": project_root / "long-run-command.sh",
             "project_manifest": project_root / "project-manifest.yaml",
+            "response_policy": project_root / ".agents-inc" / "state" / "response-policy.yaml",
+            "specialist_sessions": project_root
+            / ".agents-inc"
+            / "state"
+            / "specialist-sessions.yaml",
             "checkpoint": records["checkpoint"]["checkpoint_path"],
             "compact": records["compact"]["compact_path"],
             "project_index": records["checkpoint"]["project_index_path"],
@@ -761,6 +785,13 @@ def main() -> int:
         run_cmd(install_cmd, env=cmd_env)
 
         _, manifest = load_project_manifest(project_fabric_root, project_id)
+        ensure_response_policy(project_root)
+        upsert_specialist_sessions(
+            project_root=project_root,
+            project_fabric_root=project_fabric_root,
+            project_id=project_id,
+            selected_groups=selected_groups,
+        )
 
         primary_group = selected_groups[0]
         router_call = (
@@ -773,6 +804,10 @@ def main() -> int:
             "router_call": str(project_root / "router-call.txt"),
             "long_run_command": str(project_root / "long-run-command.sh"),
             "project_manifest": str(project_root / "project-manifest.yaml"),
+            "response_policy": str(project_root / ".agents-inc" / "state" / "response-policy.yaml"),
+            "specialist_sessions": str(
+                project_root / ".agents-inc" / "state" / "specialist-sessions.yaml"
+            ),
         }
 
         payload = _build_checkpoint_payload(
@@ -791,6 +826,7 @@ def main() -> int:
             latest_artifacts=latest_artifacts,
             pending_actions=[
                 "Paste router-call.txt into the Codex session.",
+                "Use agents-inc orchestrator-reply for detailed-by-default group responses.",
                 "Run long-run-command.sh to validate all-group interaction and isolation.",
                 "Use --audit in install command only when specialist-level inspection is required.",
             ],
@@ -843,6 +879,11 @@ def main() -> int:
                 "router_call": project_root / "router-call.txt",
                 "long_run_command": project_root / "long-run-command.sh",
                 "project_manifest": project_root / "project-manifest.yaml",
+                "response_policy": project_root / ".agents-inc" / "state" / "response-policy.yaml",
+                "specialist_sessions": project_root
+                / ".agents-inc"
+                / "state"
+                / "specialist-sessions.yaml",
                 "checkpoint": records["checkpoint"]["checkpoint_path"],
                 "compact": records["compact"]["compact_path"],
                 "project_index": records["checkpoint"]["project_index_path"],
@@ -850,6 +891,7 @@ def main() -> int:
             "visibility": manifest.get("visibility", {}),
             "next_actions": [
                 "Paste router-call.txt into the Codex session.",
+                "Use agents-inc orchestrator-reply for detailed-by-default group responses.",
                 "Run long-run-command.sh to validate all-group interaction and isolation.",
                 "Use --audit in install command only when specialist-level inspection is required.",
             ],

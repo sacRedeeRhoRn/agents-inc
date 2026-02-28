@@ -6,12 +6,12 @@ It is built for long work with continuity: you can pause, shut down, return, and
 
 You set intent. Group heads coordinate specialists. Exposed artifacts stay clear and calm.
 
-## Quick Start (Markdown-Driven, v2.0.0)
+## Quick Start (Markdown-Driven, v2.1.0)
 
 Run this in Terminal:
 
 ```bash
-export AGI_VER="v2.0.0" && \
+export AGI_VER="v2.1.0" && \
 codex -C "$HOME" "$(curl -sfL "https://raw.githubusercontent.com/sacRedeeRhoRn/agents-inc/${AGI_VER}/docs/bootstrap/START_IN_CODEX.md")"
 ```
 
@@ -87,6 +87,74 @@ Use $research-router for project <project-id> group <group-id>: <objective>.
 By default, interaction is group-level.
 
 Specialist artifacts remain internal unless you explicitly enable audit-level inspection.
+
+## Request Mode Contract
+
+`agents-inc` enforces strict request mode parsing per turn:
+
+- Message starts with `[non-group]`: concise direct response, no group delegation.
+- Any other message: group-routed orchestration with publication-grade detailed synthesis.
+
+Run per-turn orchestration from Terminal:
+
+```bash
+agents-inc orchestrator-reply --project-id <project-id> --message "<your request>"
+```
+
+For direct state lookups:
+
+```bash
+agents-inc orchestrator-reply --project-id <project-id> --message "[non-group] Bring session id of web-search specialist of polymorphism researcher dangled to current project."
+```
+
+## Evidence Campaign (Live Orchestrator Session)
+
+Run a full evidence-first orchestrator session with transcript capture, 12+ intake Q/A, multi-group checks, and a final report:
+
+```bash
+agents-inc orchestrate \
+  --fabric-root /Users/moon.s.june/Documents/Playground/agent_group_fabric \
+  --project-id proj-cosi-polymorphism \
+  --task "want to synthesize low resistivity topological semimetal cobalt silicide film and design procedure with computational methods like DFT, MD, FEM" \
+  --create-group polymorphism-researcher \
+  --group-selection recommended \
+  --questions-min 12 \
+  --self-qa router-self \
+  --live-codex \
+  --codex-web-search \
+  --report-root /Users/moon.s.june/agents-inc-local-runs \
+  --until-pass
+```
+
+The run writes:
+
+- `run-config.yaml`
+- `session.raw.log`
+- `session.redacted.log`
+- `qa/questions.yaml`
+- `qa/answers.yaml`
+- `qa/qa-transcript.md`
+- `plan/complete-film-synthesis-plan.md`
+- `events.ndjson`
+- `access-ledger.ndjson`
+- `group-matrix.json`
+- `refinement-history.md`
+- `REPORT.md`
+- `REPORT.json`
+
+`plan/complete-film-synthesis-plan.md` includes:
+- synthesis DOE
+- DFT/MD/FEM workflow
+- anticipated resistivity-vs-thickness table
+- web evidence snapshot with source URLs
+
+If live Codex web execution times out, orchestration falls back automatically to the built-in web evidence planner and still completes.
+
+Regenerate report from a prior run directory:
+
+```bash
+agents-inc orchestrate-report --run-dir <run-dir>
+```
 
 ## Catalog Groups (Reusable, Not Project-Bound)
 
@@ -166,7 +234,7 @@ agents-inc resume <project-id> --checkpoint <checkpoint-id> --resume-mode rehydr
 
 ## Migration to v2 (Hard Cutover)
 
-`v2.0.0` uses strict schema contracts.
+`v2.1.0` uses strict schema contracts.
 
 If existing artifacts are from earlier schema versions, migrate before normal operations:
 
@@ -204,11 +272,14 @@ Run these in Terminal:
 | `agents-inc groups list` | List reusable catalog groups. |
 | `agents-inc groups show <group-id>` | Show one catalog group contract. |
 | `agents-inc groups new --interactive` | Create a reusable catalog group with user-confirmed specialists. |
+| `agents-inc orchestrator-reply --project-id <id> --message "<request>"` | Execute one orchestrator turn with strict mode split (`group-detailed` by default, `[non-group]` for concise direct queries). |
+| `agents-inc orchestrate ...` | Run live orchestrator campaign with web-enabled intake, complete film-plan artifact, and report bundle. |
+| `agents-inc orchestrate-report --run-dir <run-dir>` | Regenerate report from existing run artifacts. |
 | `agents-inc dispatch --project-id <id> --group <group-id> --objective "<objective>"` | Build deterministic dispatch plan. |
 | `agents-inc docs --include-generated-projects` | Generate full inlined reference docs. |
 | `agents-inc migrate-v2 --dry-run|--apply` | Upgrade older artifacts to strict v2 schema. |
 
-## Legacy Aliases in v2.0.x
+## Legacy Aliases in v2.1.x
 
 Legacy `agents-inc-*` aliases still run with deprecation warnings during the compatibility window.
 
@@ -229,6 +300,8 @@ Project-local:
 - `<project-root>/.agents-inc/state/latest-compacted.yaml`
 - `<project-root>/.agents-inc/state/compacted/<compact-id>.yaml`
 - `<project-root>/.agents-inc/state/group-sessions.yaml`
+- `<project-root>/.agents-inc/state/specialist-sessions.yaml`
+- `<project-root>/.agents-inc/state/response-policy.yaml`
 - `<project-root>/.agents-inc/state/resume-prompt.md`
 
 ## Troubleshooting
@@ -269,7 +342,7 @@ agents-inc migrate-v2 --apply
 
 ## Assumptions and Defaults
 
-- Release tag in this guide: `v2.0.0`.
+- Release tag in this guide: `v2.1.0`.
 - `codex` CLI is available on PATH.
 - Default projects root: `~/codex-projects` unless changed.
 - Default visibility: group-only exposed artifacts.

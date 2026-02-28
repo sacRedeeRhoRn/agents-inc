@@ -51,6 +51,7 @@ Route and merge specialist outputs for `developer` in project `proj-battery-001`
 - ssh-remote-ops-expert: `proj-proj-battery-001-developer-ssh-remote-ops-expert`
 - integration-specialist: `proj-proj-battery-001-developer-integration-specialist`
 - evidence-review-specialist: `proj-proj-battery-001-developer-evidence-review-specialist`
+- web-research-specialist: `proj-proj-battery-001-developer-web-research-specialist`
 
 ## Output Contract
 - `exposed/summary.md`

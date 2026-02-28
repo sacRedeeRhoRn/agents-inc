@@ -409,6 +409,11 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
         execution = specialist.get("execution", {})
         if execution and not isinstance(execution, dict):
             errors.append(f"{label}.execution must be a map")
+        elif isinstance(execution, dict):
+            if "web_search_enabled" in execution and not isinstance(
+                execution["web_search_enabled"], bool
+            ):
+                errors.append(f"{label}.execution.web_search_enabled must be boolean")
 
         contract = specialist.get("contract")
         if not isinstance(contract, dict):
@@ -460,7 +465,7 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
                     f"{source}: specialists[{idx}].depends_on.on_missing must be request-rerun|regenerate|block"
                 )
 
-    for role in {"domain-core", "integration", "evidence-review", "repro-qa"}:
+    for role in {"domain-core", "web-research", "integration", "evidence-review", "repro-qa"}:
         if role not in specialist_roles:
             errors.append(f"{source}: specialists must include role '{role}'")
 
@@ -481,8 +486,13 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
                 errors.append(f"{source}: interaction.linked_groups must be a list of strings")
 
     execution_defaults = group.get("execution_defaults", {})
-    if execution_defaults and not isinstance(execution_defaults, dict):
+    if not isinstance(execution_defaults, dict):
         errors.append(f"{source}: execution_defaults must be a map")
+    else:
+        if "web_search_enabled" not in execution_defaults:
+            errors.append(f"{source}: execution_defaults.web_search_enabled is required")
+        elif not isinstance(execution_defaults.get("web_search_enabled"), bool):
+            errors.append(f"{source}: execution_defaults.web_search_enabled must be boolean")
 
     required_artifacts = group.get("required_artifacts")
     if not isinstance(required_artifacts, dict):
@@ -824,8 +834,11 @@ def resolve_task_execution(group_manifest: dict, specialist: dict) -> dict:
         "scheduler": "local",
         "hardware": "cpu",
         "requires_gpu": False,
+        "web_search_enabled": True,
     }
     if isinstance(defaults, dict):
+        if "web_search_enabled" in defaults:
+            merged["web_search_enabled"] = bool(defaults["web_search_enabled"])
         if defaults.get("remote_transport") == "ssh":
             merged["transport"] = "ssh"
         schedulers = defaults.get("schedulers", [])
@@ -839,6 +852,8 @@ def resolve_task_execution(group_manifest: dict, specialist: dict) -> dict:
             )
 
     if isinstance(task_exec, dict):
+        if "web_search_enabled" in task_exec:
+            merged["web_search_enabled"] = bool(task_exec["web_search_enabled"])
         if task_exec.get("remote_transport"):
             merged["transport"] = str(task_exec["remote_transport"])
         if task_exec.get("scheduler"):
@@ -947,6 +962,7 @@ def build_dispatch_plan(
                     "scheduler": exec_meta["scheduler"],
                     "hardware": exec_meta["hardware"],
                     "requires_gpu": exec_meta["requires_gpu"],
+                    "web_search_enabled": exec_meta["web_search_enabled"],
                 }
             )
         phases.append({"phase_id": phase_id, "mode": mode, "tasks": tasks})
@@ -977,6 +993,9 @@ def build_dispatch_plan(
             group_manifest.get("gate_profile", {}).get(
                 "specialist_output_schema", "specialist-handoff-v2"
             )
+        ),
+        "group_web_search_default": bool(
+            group_manifest.get("execution_defaults", {}).get("web_search_enabled", True)
         ),
         "gate_profile": group_manifest.get("gate_profile", {}),
         "phases": phases,
@@ -1052,6 +1071,22 @@ def suggest_groups(
             "Research objective suggests materials-science interpretation and validation."
         )
 
+    if any(
+        k in text
+        for k in [
+            "polymorphism",
+            "cobalt silicide",
+            "topological semimetal",
+            "thin film",
+            "film",
+            "resistivity",
+        ]
+    ):
+        selected.append("polymorphism-researcher")
+        rationale.append(
+            "Detected polymorphism/thin-film/topological semimetal keywords; add polymorphism researcher group."
+        )
+
     if any(k in text for k in ["experiment", "synthesis", "characterization", "process"]):
         selected.append("material-engineer")
         rationale.append("Experimental/process terms suggest material-engineer support.")
@@ -1089,6 +1124,7 @@ def suggest_groups(
 
     ordered = []
     for gid in [
+        "polymorphism-researcher",
         "material-scientist",
         "material-engineer",
         "atomistic-hpc-simulation",

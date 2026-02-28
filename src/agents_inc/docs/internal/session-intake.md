@@ -36,6 +36,14 @@ Persistent state:
 - `.agents-inc/state/latest-compacted.yaml`
 - `.agents-inc/state/compacted/<compact-id>.yaml`
 - `.agents-inc/state/group-sessions.yaml`
+- `.agents-inc/state/specialist-sessions.yaml`
+- `.agents-inc/state/response-policy.yaml`
+
+Turn artifacts:
+- `.agents-inc/turns/<turn-id>/request.txt`
+- `.agents-inc/turns/<turn-id>/mode.json`
+- `.agents-inc/turns/<turn-id>/final-exposed-answer.md`
+- `.agents-inc/turns/<turn-id>/final-answer-quality.json`
 
 ## Session Listing
 
@@ -50,3 +58,6 @@ List output includes session code and active groups.
 - visibility: `group-only`
 - cross-group exchange: `exposed/` only
 - `new` mode is non-destructive unless overwrite is explicitly selected
+- strict mode parser:
+  - `[non-group]` prefix at request start -> concise direct response
+  - all other requests -> group-routed publication-grade detailed synthesis

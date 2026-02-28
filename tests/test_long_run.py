@@ -183,7 +183,7 @@ class LongRunIntegrationTests(unittest.TestCase):
         report = json.loads((output_dir / "final-report.json").read_text(encoding="utf-8"))
         self.assertEqual(report["interaction"]["coverage_percent"], 100.0)
         self.assertEqual(report["isolation"]["violation_count"], 0)
-        self.assertEqual(len(report["groups"]), 9)
+        self.assertEqual(len(report["groups"]), 10)
 
     def test_injected_isolation_violation_returns_code_2(self) -> None:
         output_dir = (

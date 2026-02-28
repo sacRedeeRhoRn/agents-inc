@@ -66,7 +66,7 @@ class GroupsCLITests(unittest.TestCase):
             self.assertTrue(manifest_path.exists())
             manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
             self.assertEqual(manifest["schema_version"], "2.0")
-            self.assertGreaterEqual(len(manifest.get("specialists", [])), 4)
+            self.assertGreaterEqual(len(manifest.get("specialists", [])), 5)
 
 
 class MigrationTests(unittest.TestCase):

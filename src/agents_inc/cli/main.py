@@ -15,6 +15,9 @@ from agents_inc.cli import (
     migrate_v2,
     new_group,
     new_project,
+    orchestrate,
+    orchestrate_report,
+    orchestrator_reply,
     resume,
     sync_overlays,
     validate,
@@ -43,6 +46,9 @@ def _print_help() -> None:
     print("  resume       resume a project and launch codex")
     print("  dispatch     dry-run project/group dispatch plan")
     print("  groups       catalog-level group management")
+    print("  orchestrator-reply one-turn orchestrator reply (group-detailed or [non-group])")
+    print("  orchestrate  run live orchestrator evidence campaign")
+    print("  orchestrate-report regenerate report from existing run directory")
     print("  migrate-v2   hard-cutover migration to schema v2")
     print("  long-run     run full-group isolation validation")
     print("  validate     validate catalog/templates/schemas")
@@ -64,6 +70,9 @@ def main() -> int:
         "resume": resume.main,
         "dispatch": dispatch_dry_run.main,
         "groups": groups.main,
+        "orchestrator-reply": orchestrator_reply.main,
+        "orchestrate": orchestrate.main,
+        "orchestrate-report": orchestrate_report.main,
         "migrate-v2": migrate_v2.main,
         "long-run": long_run_test.main,
         "validate": validate.main,
