@@ -7,7 +7,7 @@ Publication-ready multi-agent group fabric for Codex sessions.
 Paste this in a brand-new Codex session:
 
 ```bash
-export AGI_VER="v1.0.0" && \
+export AGI_VER="v1.0.2" && \
 curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/bootstrap.sh" -o /tmp/agents-inc-bootstrap.sh && \
 curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/bootstrap.sh.sha256" -o /tmp/agents-inc-bootstrap.sh.sha256 && \
 (cd /tmp && shasum -a 256 -c agents-inc-bootstrap.sh.sha256) && \
