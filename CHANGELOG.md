@@ -11,6 +11,7 @@
   - `--resume-checkpoint`
   - `--project-index`
   - `--overwrite-existing`
+- Added `agents-inc-list-sessions` to enumerate resumable sessions (active/stale) with JSON output option.
 - Changed intake default behavior to non-destructive:
   - existing projects are resumed or explicitly overwritten by user choice
   - removed implicit destructive regeneration in normal paths

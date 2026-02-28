@@ -10,6 +10,14 @@ agents-inc-init-session --mode resume --resume-project-id <project-id>
 
 By default this restores the latest checkpoint.
 
+## List Sessions
+
+```bash
+agents-inc-list-sessions
+```
+
+Use `--json` for machine-readable output and `--include-stale` to include missing-path entries.
+
 ## Resume Specific Checkpoint
 
 ```bash

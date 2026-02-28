@@ -146,6 +146,10 @@ def upsert_project_index_entry(
 
 
 def list_active_index_projects(index_path: Path) -> List[dict]:
+    return list_index_projects(index_path, include_stale=False)
+
+
+def list_index_projects(index_path: Path, include_stale: bool = False) -> List[dict]:
     index_data = mark_stale_index_entries(index_path)
     projects = index_data.get("projects", {})
     out: List[dict] = []
@@ -154,7 +158,7 @@ def list_active_index_projects(index_path: Path) -> List[dict]:
     for project_id, payload in sorted(projects.items()):
         if not isinstance(payload, dict):
             continue
-        if payload.get("status") != "active":
+        if not include_stale and payload.get("status") != "active":
             continue
         out.append({"project_id": project_id, **payload})
     return out
@@ -188,6 +192,67 @@ def discover_projects(scan_root: Path) -> List[dict]:
                 }
             )
     return out
+
+
+def _checkpoint_info_for_project_root(project_root: Path) -> Dict[str, str]:
+    checkpoint_path = latest_checkpoint_path(project_root)
+    checkpoint_id = "latest"
+    if checkpoint_path.exists():
+        loaded = _load_yaml_map(checkpoint_path, {})
+        if isinstance(loaded.get("checkpoint_id"), str):
+            checkpoint_id = loaded["checkpoint_id"]
+    return {
+        "checkpoint_id": checkpoint_id,
+        "checkpoint_path": str(checkpoint_path),
+    }
+
+
+def sync_index_from_scan(index_path: Path, scan_root: Path) -> Dict[str, int]:
+    index_data = load_project_index(index_path)
+    projects = index_data.setdefault("projects", {})
+    if not isinstance(projects, dict):
+        projects = {}
+        index_data["projects"] = projects
+
+    created = 0
+    updated = 0
+    changed = False
+    now = now_iso()
+
+    for found in discover_projects(scan_root):
+        project_id = str(found["project_id"])
+        project_root = Path(str(found["project_root"])).expanduser().resolve()
+        fabric_root = Path(str(found["fabric_root"])).expanduser().resolve()
+        cp = _checkpoint_info_for_project_root(project_root)
+        next_payload = {
+            "project_root": str(project_root),
+            "fabric_root": str(fabric_root),
+            "last_checkpoint": cp["checkpoint_id"],
+            "last_checkpoint_path": cp["checkpoint_path"],
+            "updated_at": now,
+            "status": "active" if project_root.exists() else "stale",
+        }
+        prev = projects.get(project_id)
+        if not isinstance(prev, dict):
+            projects[project_id] = next_payload
+            created += 1
+            changed = True
+            continue
+
+        stable_prev = dict(prev)
+        stable_prev.pop("updated_at", None)
+        stable_next = dict(next_payload)
+        stable_next.pop("updated_at", None)
+        if stable_prev != stable_next:
+            projects[project_id] = next_payload
+            updated += 1
+            changed = True
+
+    if changed:
+        save_project_index(index_path, index_data)
+
+    mark_stale_index_entries(index_path)
+    return {"created": created, "updated": updated}
 
 
 def find_resume_project(

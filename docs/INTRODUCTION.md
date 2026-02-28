@@ -44,6 +44,9 @@ State persistence paths:
 - `<project-root>/.agents-inc/state/checkpoints/<checkpoint-id>.yaml`
 - `~/.agents-inc/projects-index.yaml`
 
+Session listing command:
+- `agents-inc-list-sessions`
+
 ## HPC Simulation Group
 
 `atomistic-hpc-simulation` includes specialists for VASP, LAMMPS, Metadynamics, scheduler/remote ops, CUDA performance, post-processing, and developer bridge.

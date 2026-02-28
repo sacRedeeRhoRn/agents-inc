@@ -667,6 +667,59 @@ class FabricIntegrationTests(unittest.TestCase):
             self.assertEqual(report["interaction"]["coverage_percent"], 100.0)
             self.assertEqual(report["isolation"]["violation_count"], 0)
 
+    def test_list_sessions_cli_lists_created_projects(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            codex_projects_root = Path(td) / "codex-projects"
+            project_root = codex_projects_root / "proj-test-list-sessions"
+            target_skills = Path(td) / "skills"
+            project_index = Path(td) / "projects-index.yaml"
+
+            run_cmd(
+                [
+                    "python3",
+                    str(SCRIPTS / "init_session.py"),
+                    "--fabric-root",
+                    str(ROOT),
+                    "--project-root",
+                    str(project_root),
+                    "--project-id",
+                    "proj-test-list-sessions",
+                    "--task",
+                    "Film thickness dependent polymorphism stability of metastable phase",
+                    "--timeline",
+                    "2 weeks",
+                    "--compute",
+                    "cuda",
+                    "--remote-cluster",
+                    "yes",
+                    "--output-target",
+                    "technical report",
+                    "--target-skill-dir",
+                    str(target_skills),
+                    "--project-index",
+                    str(project_index),
+                    "--mode",
+                    "new",
+                    "--non-interactive",
+                ]
+            )
+
+            raw = run_cmd(
+                [
+                    "python3",
+                    str(SCRIPTS / "list_sessions.py"),
+                    "--project-index",
+                    str(project_index),
+                    "--scan-root",
+                    str(codex_projects_root),
+                    "--json",
+                ]
+            )
+            payload = json.loads(raw)
+            self.assertGreaterEqual(payload.get("count", 0), 1)
+            ids = {row.get("project_id") for row in payload.get("sessions", [])}
+            self.assertIn("proj-test-list-sessions", ids)
+
 
 class ConcurrencyTests(unittest.TestCase):
     def test_lease_conflict_and_expiry(self) -> None:

@@ -41,6 +41,7 @@ agents-inc-sync-overlays = "agents_inc.cli.sync_overlays:main"
 agents-inc-validate = "agents_inc.cli.validate:main"
 agents-inc-dispatch-dry-run = "agents_inc.cli.dispatch_dry_run:main"
 agents-inc-init-session = "agents_inc.cli.init_session:main"
+agents-inc-list-sessions = "agents_inc.cli.list_sessions:main"
 agents-inc-generate-docs = "agents_inc.cli.generate_docs:main"
 agents-inc-long-run-test = "agents_inc.cli.long_run_test:main"
 

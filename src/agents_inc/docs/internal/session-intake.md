@@ -41,6 +41,12 @@ The wizard updates:
 
 This lets a brand-new session find prior projects after shutdown/restart.
 
+You can list sessions any time with:
+
+```bash
+agents-inc-list-sessions
+```
+
 ## Default Behavior
 - Visibility mode: `group-only`
 - Specialist artifacts: internal unless audit mode is enabled

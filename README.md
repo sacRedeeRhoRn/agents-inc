@@ -114,6 +114,26 @@ agents-inc-init-session \
 - interactive: asks `resume/overwrite/cancel` if project exists
 - non-interactive: fails unless `--overwrite-existing`
 
+## List All Sessions
+
+List every resumable project session:
+
+```bash
+agents-inc-list-sessions
+```
+
+Machine-readable output:
+
+```bash
+agents-inc-list-sessions --json
+```
+
+Include stale entries:
+
+```bash
+agents-inc-list-sessions --include-stale
+```
+
 ## Artifact Isolation Rules
 
 - Specialist write: only `agent-groups/<group>/internal/<specialist>/...`
@@ -147,6 +167,7 @@ agents-inc-new-group --group-id <id> --display-name "<name>" --domain "<domain>"
 agents-inc-new-project --project-id <id> --groups g1,g2 --profile <profile>
 agents-inc-install-skills --project-id <id> --sync
 agents-inc-dispatch-dry-run --project-id <id> --group <group> --objective "<objective>"
+agents-inc-list-sessions
 agents-inc-sync-overlays --project-id <id> --from-template-version 1.0.0
 agents-inc-validate --all
 agents-inc-generate-docs --include-generated-projects
