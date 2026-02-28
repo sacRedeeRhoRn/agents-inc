@@ -2,58 +2,47 @@
 
 `agents-inc` is a project-scoped multi-agent orchestration fabric for Codex.
 
-It is designed for long work.
+It is built for long work with continuity: you can pause, shut down, return, and keep moving from stable session state.
 
-You can pause, shut down your machine, return later, and continue from stable project state.
+You set intent. Group heads coordinate specialists. Exposed artifacts stay clear and calm.
 
-The handoff stays calm:
-you set intent,
-group heads coordinate specialists,
-and only group-level outputs are surfaced by default.
-
-## Quick Start (Markdown-Driven, v1.2.0)
+## Quick Start (Markdown-Driven, v2.0.0)
 
 Run this in Terminal:
 
 ```bash
-export AGI_VER="v1.2.0" && \
+export AGI_VER="v2.0.0" && \
 codex -C "$HOME" "$(curl -sfL "https://raw.githubusercontent.com/sacRedeeRhoRn/agents-inc/${AGI_VER}/docs/bootstrap/START_IN_CODEX.md")"
 ```
 
 ### What Happens Next
 
-1. Codex opens with the `START_IN_CODEX.md` onboarding prompt.
-2. The prompt ensures `agents-inc` is available in your environment.
+1. Codex opens with the onboarding prompt.
+2. The prompt confirms `agents-inc` availability.
 3. You choose `new` or `resume`.
-4. You confirm the default projects root.
-5. Your selected project groups are activated and kickoff artifacts are emitted.
+4. You confirm your default projects root.
+5. You activate project groups and receive kickoff artifacts.
 
 ## Terminal vs Codex
 
 | Place | Purpose |
 | --- | --- |
-| Terminal | Manage project/session state through `agents-inc` commands. |
-| Codex chat | Run orchestration conversation, router calls, and cross-group planning. |
+| Terminal | Manage project/session state and catalog commands. |
+| Codex chat | Run orchestration conversation and router-driven coordination. |
 
-Terminal keeps the state grounded.
+Terminal anchors state.
 
-Codex carries the reasoning and orchestration flow.
+Codex carries orchestration reasoning.
 
 ## First Session: Start New or Resume
 
-This is your first decision at startup.
-
-Pick the path that matches your project momentum.
-
 ### Path A: Start New
-
-Run in Terminal:
 
 ```bash
 agents-inc init --mode new
 ```
 
-Or use fully interactive mode:
+Or interactive:
 
 ```bash
 agents-inc init
@@ -63,73 +52,85 @@ You will choose:
 
 - projects root (saved in `~/.agents-inc/config.yaml`)
 - project id
-- task
-- timeline
-- compute target (`cpu`, `gpu`, or `cuda`)
-- remote cluster usage (`yes` or `no`)
-- output target
-- active groups (recommended list is editable)
+- task and constraints
+- active groups (recommended, editable)
 
 ### Path B: Resume Existing
-
-Run in Terminal:
 
 ```bash
 agents-inc list
 agents-inc resume <project-id>
 ```
 
-Use this path when you already have project state and want to continue with continuity.
+Resume preserves project context and continues from compact/checkpoint state.
 
 ### Generated Project Artifacts
-
-After activation, your project root includes:
 
 - `kickoff.md`
 - `router-call.txt`
 - `project-manifest.yaml`
 
-These are your immediate handoff files for session continuity.
-
 ## Daily Operating Loop
 
-Use this rhythm for day-to-day work.
-
-1. Activate or resume the project in Terminal.
+1. Activate or resume from Terminal.
 2. Paste the router call into Codex.
-3. Let group heads coordinate specialists.
-4. Review exposed outputs and decide next objective.
-5. Pause safely at any point and resume later.
-
-This keeps motion steady without mixing project boundaries.
+3. Let group heads coordinate specialist execution.
+4. Review exposed outputs.
+5. Continue with next objective or pause safely.
 
 ### Canonical Router Call
-
-Use this pattern inside Codex:
 
 ```text
 Use $research-router for project <project-id> group <group-id>: <objective>.
 ```
 
-By default, you interact with group-level results.
+By default, interaction is group-level.
 
-Specialist internals remain private unless you intentionally use audit behavior.
+Specialist artifacts remain internal unless you explicitly enable audit-level inspection.
+
+## Catalog Groups (Reusable, Not Project-Bound)
+
+List all catalog groups:
+
+```bash
+agents-inc groups list
+```
+
+Machine-readable:
+
+```bash
+agents-inc groups list --json
+```
+
+Show a specific group:
+
+```bash
+agents-inc groups show <group-id>
+```
+
+Create a new group with codex-session-friendly wizard:
+
+```bash
+agents-inc groups new --interactive
+```
+
+Template/archetype info:
+
+```bash
+agents-inc groups templates
+```
 
 ## Sessions at a Glance
-
-List sessions in Terminal:
 
 ```bash
 agents-inc list
 ```
 
-Machine-readable listing:
-
 ```bash
 agents-inc list --json
 ```
 
-Fields you should expect:
+Fields include:
 
 - `project_id`
 - `session_code`
@@ -139,80 +140,88 @@ Fields you should expect:
 - `updated_at`
 - `status`
 
-This gives you a quick map of live, paused, and stale project contexts.
-
 ## Resume After Restart
-
-Resume from Terminal:
 
 ```bash
 agents-inc resume <project-id>
 ```
 
-Optional controls:
+Optional:
 
 ```bash
 agents-inc resume <project-id> --checkpoint latest --resume-mode auto
 ```
 
-How resume source is selected:
+Resume behavior:
 
-- `auto`: tries compact snapshot first, then checkpoint rehydrate.
-- `compact`: use compacted state only.
-- `rehydrate`: rebuild from checkpoint record.
-
-Your existing artifacts stay in place unless you explicitly use overwrite behavior during project creation.
+- `auto`: compact snapshot first, then checkpoint rehydrate.
+- `compact`: compact source only.
+- `rehydrate`: checkpoint source only.
 
 ## Recover a Specific Checkpoint
-
-Run in Terminal:
 
 ```bash
 agents-inc resume <project-id> --checkpoint <checkpoint-id> --resume-mode rehydrate
 ```
 
-Use this when you want to return to a precise earlier decision frame.
+## Migration to v2 (Hard Cutover)
 
-## Working Contract for Group Boundaries
+`v2.0.0` uses strict schema contracts.
 
-Treat these rules as operational guardrails.
+If existing artifacts are from earlier schema versions, migrate before normal operations:
 
-1. Specialists write only to their own internal scope:
+```bash
+agents-inc migrate-v2 --fabric-root <path> --project-index <path> --dry-run
+agents-inc migrate-v2 --fabric-root <path> --project-index <path> --apply
+```
+
+Optional backup target:
+
+```bash
+agents-inc migrate-v2 --apply --backup-dir <path>
+```
+
+## Working Contract for Artifact Boundaries
+
+1. Specialists write only to:
    `agent-groups/<group>/internal/<specialist>/...`
-2. Group heads publish shared outputs only to:
+2. Heads publish shared results only to:
    `agent-groups/<group>/exposed/...`
-3. Cross-group consumption is from another group's `exposed/` path only.
-4. Group internals are not a shared exchange channel.
-5. Keep each project isolated from every other project, even when group names overlap.
-
-This contract preserves clean collaboration and clear ownership of artifacts.
+3. Cross-group reads are from `exposed/` only.
+4. Cross-group internal reads/writes are not allowed.
+5. Keep each project isolated, even when group names overlap.
 
 ## Lean Command Reference
 
-Run these in Terminal.
+Run these in Terminal:
 
 | Command | Use |
 | --- | --- |
-| `agents-inc init` | Start onboarding for a new or resumed project flow. |
-| `agents-inc list` | Show resumable project sessions. |
-| `agents-inc resume <project-id>` | Reopen orchestration context for one project. |
-| `agents-inc dispatch --project-id <id> --group <group-id> --objective "<objective>"` | Build deterministic dispatch plan for an objective. |
+| `agents-inc --version` | Show runtime package version. |
+| `agents-inc init` | Start new/resume intake flow. |
+| `agents-inc list` | List resumable project sessions. |
+| `agents-inc resume <project-id>` | Resume orchestration context for one project. |
+| `agents-inc groups list` | List reusable catalog groups. |
+| `agents-inc groups show <group-id>` | Show one catalog group contract. |
+| `agents-inc groups new --interactive` | Create a reusable catalog group with user-confirmed specialists. |
+| `agents-inc dispatch --project-id <id> --group <group-id> --objective "<objective>"` | Build deterministic dispatch plan. |
 | `agents-inc docs --include-generated-projects` | Generate full inlined reference docs. |
+| `agents-inc migrate-v2 --dry-run|--apply` | Upgrade older artifacts to strict v2 schema. |
 
-## Legacy Aliases in v1.2.x
+## Legacy Aliases in v2.0.x
 
-Legacy `agents-inc-*` commands remain available in `v1.2.x` with deprecation notices.
+Legacy `agents-inc-*` aliases still run with deprecation warnings during the compatibility window.
 
-Use `agents-inc <subcommand>` as the primary interface moving forward.
+Canonical interface is `agents-inc <subcommand>`.
 
 ## Where State Lives
 
-Global files:
+Global:
 
 - `~/.agents-inc/config.yaml`
 - `~/.agents-inc/projects-index.yaml`
 
-Project-local state:
+Project-local:
 
 - `<project-root>/.agents-inc/state/session-state.yaml`
 - `<project-root>/.agents-inc/state/latest-checkpoint.yaml`
@@ -220,65 +229,54 @@ Project-local state:
 - `<project-root>/.agents-inc/state/latest-compacted.yaml`
 - `<project-root>/.agents-inc/state/compacted/<compact-id>.yaml`
 - `<project-root>/.agents-inc/state/group-sessions.yaml`
-
-Keep these files intact for reliable resume behavior.
+- `<project-root>/.agents-inc/state/resume-prompt.md`
 
 ## Troubleshooting
 
 ### `agents-inc` command not found
 
-Install or repair the package in your active Python environment.
-
-Then retry:
+Install in the active Python environment, then retry:
 
 ```bash
 agents-inc --help
 ```
 
-### Project does not appear in `agents-inc list`
-
-Run scan-enabled listing:
+### Project missing from session list
 
 ```bash
 agents-inc list --include-stale
-```
-
-If needed, point to your known root:
-
-```bash
 agents-inc list --scan-root ~/codex-projects
 ```
 
-### Stale project index entry
+### Stale index entry
 
-If a project path moved or no longer exists, it may appear as `stale`.
+Use `--include-stale` to inspect stale entries, then resume the active project id.
 
-Use `--include-stale` to inspect it and then resume the correct active project id.
-
-### Resume from a known checkpoint id
-
-If `latest` is not the context you want, pin a checkpoint:
+### Resume from a known checkpoint
 
 ```bash
 agents-inc resume <project-id> --checkpoint <checkpoint-id> --resume-mode rehydrate
 ```
 
+### Schema-version errors after upgrade
+
+Run migration:
+
+```bash
+agents-inc migrate-v2 --dry-run
+agents-inc migrate-v2 --apply
+```
+
 ## Assumptions and Defaults
 
-- Release tag in this guide: `v1.2.0`.
-- `codex` CLI is available on your PATH.
-- Default projects root is `~/codex-projects` unless you change it.
-- Visibility default is group-only output exposure.
-- Audit-style specialist detail is optional and explicit.
+- Release tag in this guide: `v2.0.0`.
+- `codex` CLI is available on PATH.
+- Default projects root: `~/codex-projects` unless changed.
+- Default visibility: group-only exposed artifacts.
+- Locking mode default for dispatch: `auto`.
 
 ## Start Here
 
-If you are beginning now,
-run the quick-start command,
-choose `new` or `resume`,
-and keep your work in one project rhythm at a time.
+Run the quick-start command, choose `new` or `resume`, and keep one project rhythm at a time.
 
-The system is built to preserve continuity,
-so your research flow can stay focused,
-clear,
-and resumable.
+The platform is designed to preserve continuity while keeping group boundaries clean.

@@ -8,8 +8,8 @@ import yaml
 
 from agents_inc.core.fabric_lib import FabricError, load_yaml
 
-STATE_SCHEMA_VERSION = "1.0"
-INDEX_SCHEMA_VERSION = "1.0"
+STATE_SCHEMA_VERSION = "2.0"
+INDEX_SCHEMA_VERSION = "2.0"
 STATE_REL_DIR = Path(".agents-inc") / "state"
 DEFAULT_INDEX_PATH = Path.home() / ".agents-inc" / "projects-index.yaml"
 
@@ -31,6 +31,16 @@ def _load_yaml_map(path: Path, default: dict) -> dict:
     out = dict(default)
     out.update(loaded)
     return out
+
+
+def _require_schema(path: Path, payload: dict, expected: str, kind: str) -> None:
+    found = str(payload.get("schema_version") or "")
+    if found and found == expected:
+        return
+    raise FabricError(
+        f"{kind} schema_version '{found or '<missing>'}' is not supported. "
+        "Run 'agents-inc migrate-v2 --apply' before continuing."
+    )
 
 
 def _dump_yaml(path: Path, value: dict) -> None:
@@ -70,7 +80,11 @@ def load_session_state(project_root: Path) -> dict:
         "schema_version": STATE_SCHEMA_VERSION,
         "checkpoint_counter": 0,
     }
-    return _load_yaml_map(session_state_path(project_root), default)
+    path = session_state_path(project_root)
+    loaded = _load_yaml_map(path, default)
+    if path.exists():
+        _require_schema(path, loaded, STATE_SCHEMA_VERSION, "session state")
+    return loaded
 
 
 def save_session_state(project_root: Path, state: dict) -> None:
@@ -86,6 +100,8 @@ def load_project_index(path: Path) -> dict:
         "projects": {},
     }
     data = _load_yaml_map(path, default)
+    if path.exists():
+        _require_schema(path, data, INDEX_SCHEMA_VERSION, "project index")
     projects = data.get("projects")
     if not isinstance(projects, dict):
         data["projects"] = {}
@@ -165,7 +181,14 @@ def list_index_projects(index_path: Path, include_stale: bool = False) -> List[d
 
 
 def _find_local_project_manifest(project_root: Path, project_id: str) -> Optional[Path]:
-    candidate = project_root / "agent_group_fabric" / "generated" / "projects" / project_id / "manifest.yaml"
+    candidate = (
+        project_root
+        / "agent_group_fabric"
+        / "generated"
+        / "projects"
+        / project_id
+        / "manifest.yaml"
+    )
     if candidate.exists():
         return candidate
     return None
@@ -321,6 +344,7 @@ def load_checkpoint(project_root: Path, checkpoint_id: str = "latest") -> dict:
     data = load_yaml(cp_path)
     if not isinstance(data, dict):
         raise FabricError(f"invalid checkpoint: {cp_path}")
+    _require_schema(cp_path, data, STATE_SCHEMA_VERSION, "checkpoint")
     return data
 
 

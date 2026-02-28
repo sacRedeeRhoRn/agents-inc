@@ -16,10 +16,16 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e .
+          python -m pip install -e .[dev]
       - name: Validate
         run: |
           agents-inc validate --all
+      - name: Ruff
+        run: |
+          ruff check src tests
+      - name: Black
+        run: |
+          black --check src tests
       - name: Static checks
         run: |
           python -m py_compile $(find src -name '*.py')

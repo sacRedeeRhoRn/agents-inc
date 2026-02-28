@@ -63,17 +63,17 @@ import agents_inc
 try:
     p = Path(agents_inc.__file__).resolve().parent / 'docs' / 'internal' / 'session-intake.md'
     r = Path(agents_inc.__file__).resolve().parent / 'docs' / 'internal' / 'session-resume.md'
+    print('agents-inc version:', agents_inc.__version__)
     print('session intake doc:', p)
     print('session resume doc:', r)
-    print('long-run validator:', 'agents-inc long-run --help')
+    print('catalog groups:', 'agents-inc groups list')
 except Exception:
     pass
 PY
 
-echo "Tip: after intake completes, run the generated long-run command file to validate full-group interaction."
-echo "     file: ~/codex-projects/<project-id>/long-run-command.sh"
-echo "Tip: intake now asks 'new' or 'resume' and tracks resumable projects in:"
+echo "Tip: intake asks 'new' or 'resume' and tracks resumable projects in:"
 echo "     ~/.agents-inc/projects-index.yaml"
 echo "Tip: list projects with: agents-inc list"
+echo "Tip: list reusable catalog groups with: agents-inc groups list"
 
 agents-inc init --mode ask

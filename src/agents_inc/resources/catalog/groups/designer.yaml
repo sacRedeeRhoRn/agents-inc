@@ -1,43 +1,188 @@
-group_id: "designer"
-display_name: "Designer Group"
-template_version: "1.0.0"
-domain: "workflow-and-communication"
+group_id: designer
+display_name: Designer Group
+template_version: 2.0.0
+domain: workflow-and-communication
 head:
-  agent_id: "designer-head"
-  skill_name: "grp-designer-head"
-  mission: "Design coherent research workflows and high-impact audience communication artifacts."
+  agent_id: designer-head
+  skill_name: grp-designer-head
+  mission: Design coherent research workflows and high-impact audience communication
+    artifacts.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
 specialists:
-  - agent_id: "workflow-architect"
-    skill_name: "grp-designer-workflow"
-    focus: "Workflow architecture, dependency mapping, and execution sequencing"
-    required_references:
-      - "references/workflow-design-core.md"
-    required_outputs:
-      - "workflow_map.md"
-      - "claims_with_citations.md"
-  - agent_id: "visual-narrative-specialist"
-    skill_name: "grp-designer-visual-narrative"
-    focus: "Figure storytelling, message hierarchy, and audience-oriented narrative structure"
-    required_references:
-      - "references/visual-narrative-core.md"
-    required_outputs:
-      - "storyline.md"
-      - "claims_with_citations.md"
-  - agent_id: "presentation-specialist"
-    skill_name: "grp-designer-presentation"
-    focus: "Slide architecture, delivery pacing, and presentation readability"
-    depends_on:
-      - "visual-narrative-specialist"
-    required_references:
-      - "references/presentation-core.md"
-    required_outputs:
-      - "slide_spec.md"
-      - "claims_with_citations.md"
-tool_profile: "design-default"
+- agent_id: workflow-architect
+  skill_name: grp-designer-workflow
+  focus: Workflow architecture, dependency mapping, and execution sequencing
+  required_references:
+  - references/workflow-design-core.md
+  required_outputs:
+  - workflow_map.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: visual-narrative-specialist
+  skill_name: grp-designer-visual-narrative
+  focus: Figure storytelling, message hierarchy, and audience-oriented narrative structure
+  required_references:
+  - references/visual-narrative-core.md
+  required_outputs:
+  - storyline.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: presentation-specialist
+  skill_name: grp-designer-presentation
+  focus: Slide architecture, delivery pacing, and presentation readability
+  depends_on:
+  - agent_id: visual-narrative-specialist
+    required_artifacts:
+    - internal/visual-narrative-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  required_references:
+  - references/presentation-core.md
+  required_outputs:
+  - slide_spec.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: integration-specialist
+  skill_name: grp-designer-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Designer Group
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: workflow-architect
+    required_artifacts:
+    - internal/workflow-architect/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-review-specialist
+  skill_name: grp-designer-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Designer Group
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: workflow-architect
+    required_artifacts:
+    - internal/workflow-architect/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: repro-qa-specialist
+  skill_name: grp-designer-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Designer Group
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: workflow-architect
+    required_artifacts:
+    - internal/workflow-architect/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+tool_profile: design-default
 default_workdirs:
-  - "inputs"
-  - "analysis"
-  - "outputs"
+- inputs
+- analysis
+- outputs
 quality_gates:
   citation_required: true
   unresolved_claims_block: true
@@ -45,3 +190,36 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
+schema_version: '2.0'
+purpose: Coordinate expert specialists for Designer Group objectives.
+success_criteria:
+- All required artifacts produced
+- Gate profile satisfied
+- Exposed handoff consumable
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v2
+  specialist_output_schema: specialist-handoff-v2
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+interaction:
+  mode: interactive-separated
+  linked_groups: []
+execution_defaults:
+  remote_transport: local
+  schedulers:
+  - local
+  hardware:
+  - cpu

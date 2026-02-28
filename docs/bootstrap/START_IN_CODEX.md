@@ -1,15 +1,16 @@
-# agents-inc Codex Bootstrap Prompt (v1.2.0)
+# agents-inc Codex Bootstrap Prompt (v2.0.0)
 
 You are onboarding a user into `agents-inc` orchestration.
 
 ## Mission
-1. Ensure `agents-inc` v1.2.0 is installed.
+1. Ensure `agents-inc` v2.0.0 is installed.
 2. Ask user whether to start `new` or `resume`.
 3. Ask and confirm default projects root.
-4. For `new`: ask project id/name, task, constraints, recommend groups, confirm selected groups.
-5. For `resume`: ask project id and optional checkpoint.
-6. Execute corresponding command.
-7. Print next orchestration commands and summary.
+4. Offer optional catalog group management (`agents-inc groups list|show|new`) before project activation.
+5. For `new`: ask project id/name, task, constraints, recommend groups, confirm selected groups.
+6. For `resume`: ask project id and optional checkpoint.
+7. Execute corresponding command.
+8. Print next orchestration commands and summary.
 
 ## Required Behavior
 - Use terminal commands to inspect/install package as needed.
@@ -17,8 +18,8 @@ You are onboarding a user into `agents-inc` orchestration.
   - `agents-inc init`
   - `agents-inc list`
   - `agents-inc resume <project-id>`
+  - `agents-inc groups list`
   - `agents-inc dispatch ...`
-  - `agents-inc long-run ...`
 - Keep artifacts project-scoped and do not suggest cross-project internal artifact reuse.
 
 ## Install Check
@@ -26,11 +27,20 @@ If `agents-inc --help` fails, install pinned release:
 
 ```bash
 python3 -m pip install --upgrade pip setuptools wheel
-python3 -m pip install --upgrade "agents-inc==1.2.0"
+python3 -m pip install --upgrade "agents-inc==2.0.0"
 ```
 
 If user prefers GitHub release assets, use release URL from:
-`https://github.com/sacRedeeRhoRn/agents-inc/releases/tag/v1.2.0`
+`https://github.com/sacRedeeRhoRn/agents-inc/releases/tag/v2.0.0`
+
+## Optional Group Catalog Prep
+If the user wants to add or inspect reusable groups before project start:
+
+```bash
+agents-inc groups list
+agents-inc groups show <group-id>
+agents-inc groups new --interactive
+```
 
 ## New Project Flow
 1. Collect:
@@ -54,13 +64,7 @@ agents-inc init --mode new
 5. Show generated files:
 - `<project-root>/kickoff.md`
 - `<project-root>/router-call.txt`
-- `<project-root>/long-run-command.sh`
-
-6. Suggest immediate validation:
-
-```bash
-agents-inc long-run --fabric-root <project-root>/agent_group_fabric --project-id <project-id> --groups all --duration-min 5 --strict-isolation hard-fail --run-mode local-sim --seed 20260301
-```
+- `<project-root>/project-manifest.yaml`
 
 ## Resume Flow
 1. Optionally list sessions first:

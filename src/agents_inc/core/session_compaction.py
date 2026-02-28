@@ -8,7 +8,7 @@ import yaml
 from agents_inc.core.fabric_lib import FabricError, load_yaml
 from agents_inc.core.session_state import now_iso, state_dir
 
-COMPACT_SCHEMA_VERSION = "1.0"
+COMPACT_SCHEMA_VERSION = "2.0"
 
 
 def compacted_dir(project_root: Path) -> Path:
@@ -42,6 +42,16 @@ def _load_yaml_map(path: Path, default: dict) -> dict:
     return merged
 
 
+def _require_schema(path: Path, payload: dict) -> None:
+    found = str(payload.get("schema_version") or "")
+    if found and found == COMPACT_SCHEMA_VERSION:
+        return
+    raise FabricError(
+        f"compaction schema_version '{found or '<missing>'}' is not supported. "
+        "Run 'agents-inc migrate-v2 --apply' before continuing."
+    )
+
+
 def _dump_yaml(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
@@ -49,7 +59,8 @@ def _dump_yaml(path: Path, value: dict) -> None:
 
 
 def load_group_sessions(project_root: Path) -> dict:
-    return _load_yaml_map(
+    path = group_sessions_path(project_root)
+    data = _load_yaml_map(
         group_sessions_path(project_root),
         {
             "schema_version": COMPACT_SCHEMA_VERSION,
@@ -59,6 +70,9 @@ def load_group_sessions(project_root: Path) -> dict:
             "updated_at": now_iso(),
         },
     )
+    if path.exists():
+        _require_schema(path, data)
+    return data
 
 
 def upsert_group_sessions(project_root: Path, project_id: str, groups: List[str]) -> Dict[str, str]:
@@ -121,7 +135,9 @@ def compact_session(
     if not isinstance(groups, list):
         groups = []
     groups = [str(group_id) for group_id in groups if str(group_id).strip()]
-    group_session_map = upsert_group_sessions(project_root, project_id, groups) if project_id else {}
+    group_session_map = (
+        upsert_group_sessions(project_root, project_id, groups) if project_id else {}
+    )
 
     compact_payload = dict(payload)
     compact_payload["schema_version"] = COMPACT_SCHEMA_VERSION
@@ -173,6 +189,7 @@ def load_compacted(project_root: Path, compact_id: str = "latest") -> dict:
     loaded = load_yaml(compact_path)
     if not isinstance(loaded, dict):
         raise FabricError(f"invalid compacted session: {compact_path}")
+    _require_schema(compact_path, loaded)
     return loaded
 
 

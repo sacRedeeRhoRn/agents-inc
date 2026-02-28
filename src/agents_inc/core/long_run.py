@@ -124,12 +124,16 @@ class _FallbackDirectoryController:
     def init(self) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
 
-    def register_agent(self, agent_id: str, label: Optional[str] = None, meta: Optional[dict] = None) -> None:
+    def register_agent(
+        self, agent_id: str, label: Optional[str] = None, meta: Optional[dict] = None
+    ) -> None:
         _ = label
         _ = meta
         self._agents.add(agent_id)
 
-    def add_directory(self, path: str, shared: bool = False, allowed_agents: Optional[List[str]] = None) -> str:
+    def add_directory(
+        self, path: str, shared: bool = False, allowed_agents: Optional[List[str]] = None
+    ) -> str:
         _ = allowed_agents
         self._dirs[path] = bool(shared)
         return path
@@ -142,11 +146,18 @@ class _FallbackDirectoryController:
 
         now_epoch = int(time.time())
         current = self._leases.get(path)
-        if current and current.expires_at > now_epoch and current.agent_id != agent_id and not self._dirs[path]:
+        if (
+            current
+            and current.expires_at > now_epoch
+            and current.agent_id != agent_id
+            and not self._dirs[path]
+        ):
             raise RuntimeError("lease conflict")
 
         token = hashlib.sha1(f"{agent_id}:{path}:{now_epoch}".encode("utf-8")).hexdigest()[:20]
-        lease = _FallbackLease(token=token, path=path, agent_id=agent_id, expires_at=now_epoch + ttl_seconds)
+        lease = _FallbackLease(
+            token=token, path=path, agent_id=agent_id, expires_at=now_epoch + ttl_seconds
+        )
         self._leases[path] = lease
         return lease
 
@@ -174,7 +185,11 @@ class LeaseBackend:
         self.root = root
         self.lease_events = lease_events
         self._controller = self._load_controller(root)
-        self.backend_name = "multi_agent_dirs" if self._controller.__class__.__name__ != "_FallbackDirectoryController" else "fallback"
+        self.backend_name = (
+            "multi_agent_dirs"
+            if self._controller.__class__.__name__ != "_FallbackDirectoryController"
+            else "fallback"
+        )
 
     @staticmethod
     def _load_controller(root: Path):
@@ -257,7 +272,12 @@ class LongRunRunner:
         self.violations: List[dict] = []
         self.covered_edges: set[Tuple[str, str]] = set()
         self.group_stats: Dict[str, dict] = {}
-        self.gate_stats: Dict[str, int] = {"PASS": 0, "BLOCKED_UNCITED": 0, "BLOCKED_NEEDS_EVIDENCE": 0, "BLOCKED_REVIEW": 0}
+        self.gate_stats: Dict[str, int] = {
+            "PASS": 0,
+            "BLOCKED_UNCITED": 0,
+            "BLOCKED_NEEDS_EVIDENCE": 0,
+            "BLOCKED_REVIEW": 0,
+        }
         self.file_last_writer: Dict[str, str] = {}
         self.failed_code = EXIT_OK
         self.failed_reason = ""
@@ -281,14 +301,20 @@ class LongRunRunner:
             else default_project_index_path(None)
         )
         self._prepare_output_dir(project_dir)
-        dispatch_by_group, group_manifest_by_group = self._build_dispatch_plans(project_dir, manifest)
+        dispatch_by_group, group_manifest_by_group = self._build_dispatch_plans(
+            project_dir, manifest
+        )
         self._init_group_stats(dispatch_by_group)
 
         workdirs = self._collect_workdirs(dispatch_by_group)
         lease_backend = LeaseBackend(self.config.fabric_root, self.lease_events)
         self._register_leases(lease_backend, workdirs)
 
-        active_edges = [edge for edge in HANDOFF_EDGES if edge[0] in self.config.groups and edge[1] in self.config.groups]
+        active_edges = [
+            edge
+            for edge in HANDOFF_EDGES
+            if edge[0] in self.config.groups and edge[1] in self.config.groups
+        ]
         interaction_graph = {
             "task": self.config.task,
             "groups": self.config.groups,
@@ -364,7 +390,11 @@ class LongRunRunner:
                             )
                             gate = gate_specialist_output(
                                 synthetic,
-                                citation_required=bool(group_manifest.get("quality_gates", {}).get("citation_required", True)),
+                                citation_required=bool(
+                                    group_manifest.get("quality_gates", {}).get(
+                                        "citation_required", True
+                                    )
+                                ),
                                 web_available=not bool(synthetic.get("needs_web_evidence", False)),
                             )
                             gate_status = str(gate.get("status", "BLOCKED_REVIEW"))
@@ -398,8 +428,11 @@ class LongRunRunner:
                             phase_results.append(
                                 {
                                     "specialist": specialist_actor.agent_id,
+                                    "role": str(task.get("role", "")),
                                     "gate": gate,
-                                    "internal_artifact": str(artifact_path.relative_to(project_dir)),
+                                    "internal_artifact": str(
+                                        artifact_path.relative_to(project_dir)
+                                    ),
                                 }
                             )
                             self.group_stats[group_id]["specialist_tasks"] += 1
@@ -410,18 +443,34 @@ class LongRunRunner:
                         if self.failed_code != EXIT_OK:
                             break
 
-                        blocked_results = [r for r in phase_results if r["gate"].get("status") != "PASS"]
+                        blocked_results = [
+                            r for r in phase_results if r["gate"].get("status") != "PASS"
+                        ]
+                        integration_pass = [
+                            r
+                            for r in phase_results
+                            if r.get("role") == "integration" and r["gate"].get("status") == "PASS"
+                        ]
                         exposed_payload = {
                             "cycle": cycle,
                             "phase": phase_id,
                             "group_id": group_id,
                             "task": self.config.task,
-                            "accepted_results": [r for r in phase_results if r["gate"].get("status") == "PASS"],
+                            "accepted_results": [
+                                r for r in phase_results if r["gate"].get("status") == "PASS"
+                            ],
                             "blocked_results": [],
+                            "integration_verification": {
+                                "present": bool(integration_pass),
+                                "specialists": [r["specialist"] for r in integration_pass],
+                            },
                         }
 
                         if blocked_results:
-                            if self.config.inject_gate_expose_failure and not self._injected_gate_failure:
+                            if (
+                                self.config.inject_gate_expose_failure
+                                and not self._injected_gate_failure
+                            ):
                                 self._injected_gate_failure = True
                                 exposed_payload["blocked_results"] = blocked_results
                                 self._fail(
@@ -457,16 +506,48 @@ class LongRunRunner:
                             target=exposed_path,
                             content=stable_json(exposed_payload) + "\n",
                         )
-                        latest_path = project_dir / "agent-groups" / group_id / "exposed" / "latest-summary.json"
+                        latest_path = (
+                            project_dir
+                            / "agent-groups"
+                            / group_id
+                            / "exposed"
+                            / "latest-summary.json"
+                        )
                         self._safe_write(
                             actor=head_actor,
                             target=latest_path,
                             content=stable_json(exposed_payload) + "\n",
                         )
+                        notes_path = (
+                            project_dir
+                            / "agent-groups"
+                            / group_id
+                            / "exposed"
+                            / "INTEGRATION_NOTES.md"
+                        )
+                        notes_lines = [
+                            "# Integration Notes",
+                            "",
+                            f"- cycle: {cycle}",
+                            f"- phase: {phase_id}",
+                            f"- integration_verified: {bool(integration_pass)}",
+                        ]
+                        if integration_pass:
+                            notes_lines.append(
+                                "- integration_specialists: "
+                                + ", ".join(r["specialist"] for r in integration_pass)
+                            )
+                        self._safe_write(
+                            actor=head_actor,
+                            target=notes_path,
+                            content="\\n".join(notes_lines) + "\\n",
+                        )
                         self.group_stats[group_id]["head_publications"] += 1
 
                         after = self._snapshot_group_artifacts(project_dir)
-                        self._verify_ownership(before=before, after=after, cycle=cycle, phase_id=phase_id)
+                        self._verify_ownership(
+                            before=before, after=after, cycle=cycle, phase_id=phase_id
+                        )
                         if self.failed_code != EXIT_OK:
                             break
 
@@ -477,7 +558,9 @@ class LongRunRunner:
                     if self.failed_code != EXIT_OK:
                         break
                     consumer_head = self.actor_by_group[consumer]["head"]
-                    source_path = project_dir / "agent-groups" / producer / "exposed" / "latest-summary.json"
+                    source_path = (
+                        project_dir / "agent-groups" / producer / "exposed" / "latest-summary.json"
+                    )
                     self._safe_read(actor=consumer_head, target=source_path)
                     self.covered_edges.add((producer, consumer))
                     self._record_event(
@@ -490,7 +573,11 @@ class LongRunRunner:
                         },
                     )
 
-                if self.config.inject_isolation_violation and not self._injected_isolation and self.failed_code == EXIT_OK:
+                if (
+                    self.config.inject_isolation_violation
+                    and not self._injected_isolation
+                    and self.failed_code == EXIT_OK
+                ):
                     self._injected_isolation = True
                     producer, consumer = active_edges[0]
                     consumer_head = self.actor_by_group[consumer]["head"]
@@ -537,7 +624,9 @@ class LongRunRunner:
         self._record_event("run_end", {"exit_code": self.failed_code, "reason": self.failed_reason})
 
         self._write_artifacts(interaction_graph=interaction_graph)
-        report = self._final_report(coverage=coverage, interaction_graph=interaction_graph, lease_backend=lease_backend)
+        report = self._final_report(
+            coverage=coverage, interaction_graph=interaction_graph, lease_backend=lease_backend
+        )
         write_text(self.output_dir / "final-report.json", stable_json(report) + "\n")
         write_text(self.output_dir / "final-report.md", self._render_report_md(report) + "\n")
         self._checkpoint_progress(
@@ -662,7 +751,9 @@ class LongRunRunner:
         }
         dump_yaml(self.output_dir / "run-config.yaml", run_config)
 
-    def _build_dispatch_plans(self, project_dir: Path, manifest: dict) -> Tuple[Dict[str, dict], Dict[str, dict]]:
+    def _build_dispatch_plans(
+        self, project_dir: Path, manifest: dict
+    ) -> Tuple[Dict[str, dict], Dict[str, dict]]:
         groups_map = manifest.get("groups", {})
         if not isinstance(groups_map, dict):
             raise FabricError("project manifest missing groups map")
@@ -691,8 +782,12 @@ class LongRunRunner:
             dispatch_by_group[group_id] = dispatch
             group_manifest_by_group[group_id] = group_manifest
 
-            self.group_head_id[group_id] = str(group_manifest.get("head", {}).get("agent_id", "head-controller"))
-            actors = {"head": Actor(role="head", group_id=group_id, agent_id=self.group_head_id[group_id])}
+            self.group_head_id[group_id] = str(
+                group_manifest.get("head", {}).get("agent_id", "head-controller")
+            )
+            actors = {
+                "head": Actor(role="head", group_id=group_id, agent_id=self.group_head_id[group_id])
+            }
             for specialist in group_manifest.get("specialists", []):
                 if isinstance(specialist, dict) and specialist.get("agent_id"):
                     actors[str(specialist["agent_id"])] = Actor(
@@ -723,7 +818,9 @@ class LongRunRunner:
                     rows.append((actor, str(task["workdir"])))
         return rows
 
-    def _register_leases(self, lease_backend: LeaseBackend, workdirs: Sequence[Tuple[Actor, str]]) -> None:
+    def _register_leases(
+        self, lease_backend: LeaseBackend, workdirs: Sequence[Tuple[Actor, str]]
+    ) -> None:
         seen_agents = set()
         seen_dirs = set()
         lease_backend.register_agent("lease-blocker")
@@ -759,7 +856,9 @@ class LongRunRunner:
                     {"workdir": workdir, "deadlock": bool(deadlock_now)},
                 )
             except Exception as exc:  # noqa: BLE001
-                self._record_event("lease_conflict_injection_failed", {"workdir": workdir, "error": str(exc)})
+                self._record_event(
+                    "lease_conflict_injection_failed", {"workdir": workdir, "error": str(exc)}
+                )
 
         for attempt in range(1, self.config.max_retries + 1):
             try:
@@ -789,7 +888,11 @@ class LongRunRunner:
                     self._fail(
                         EXIT_LEASE_UNRESOLVED,
                         "Lease contention unresolved",
-                        {"workdir": workdir, "agent": lease_agent_id, "attempts": self.config.max_retries},
+                        {
+                            "workdir": workdir,
+                            "agent": lease_agent_id,
+                            "attempts": self.config.max_retries,
+                        },
                     )
                     return None
                 if self.config.retry_backoff_ms > 0:
@@ -797,7 +900,9 @@ class LongRunRunner:
 
         return None
 
-    def _build_synthetic_output(self, group_id: str, specialist_id: str, cycle: int, phase_id: int) -> dict:
+    def _build_synthetic_output(
+        self, group_id: str, specialist_id: str, cycle: int, phase_id: int
+    ) -> dict:
         claims = [
             {
                 "claim": f"{group_id}/{specialist_id} synthesized claim for cycle {cycle} phase {phase_id}",
@@ -834,7 +939,9 @@ class LongRunRunner:
     def _actor_tag(self, actor: Actor) -> str:
         return f"{actor.role}:{actor.group_id}:{actor.agent_id}"
 
-    def _check_access(self, actor: Actor, target: Path, op: str, project_dir: Path) -> Tuple[bool, str]:
+    def _check_access(
+        self, actor: Actor, target: Path, op: str, project_dir: Path
+    ) -> Tuple[bool, str]:
         try:
             rel = target.relative_to(project_dir)
         except Exception:
@@ -852,12 +959,22 @@ class LongRunRunner:
 
         if actor.role == "specialist":
             if op == "write":
-                if target_group == actor.group_id and section == "internal" and len(parts) >= 4 and parts[3] == actor.agent_id:
+                if (
+                    target_group == actor.group_id
+                    and section == "internal"
+                    and len(parts) >= 4
+                    and parts[3] == actor.agent_id
+                ):
                     return True, "ok"
                 return False, "specialist write must stay in own internal subtree"
 
             if op == "read":
-                if target_group == actor.group_id and section == "internal" and len(parts) >= 4 and parts[3] == actor.agent_id:
+                if (
+                    target_group == actor.group_id
+                    and section == "internal"
+                    and len(parts) >= 4
+                    and parts[3] == actor.agent_id
+                ):
                     return True, "ok"
                 if target_group == actor.group_id and section == "exposed":
                     return True, "ok"
@@ -881,9 +998,18 @@ class LongRunRunner:
         return False, "unknown actor role"
 
     def _safe_read(self, actor: Actor, target: Path) -> str:
-        project_dir = self.config.fabric_root / "generated" / "projects" / slugify(self.config.project_id)
+        project_dir = (
+            self.config.fabric_root / "generated" / "projects" / slugify(self.config.project_id)
+        )
         allowed, reason = self._check_access(actor, target, "read", project_dir)
-        self._record_access(actor=actor, op="read", target=target, allowed=allowed, reason=reason, project_dir=project_dir)
+        self._record_access(
+            actor=actor,
+            op="read",
+            target=target,
+            allowed=allowed,
+            reason=reason,
+            project_dir=project_dir,
+        )
         if not allowed:
             self._fail(
                 EXIT_ISOLATION_VIOLATION,
@@ -901,9 +1027,18 @@ class LongRunRunner:
         return target.read_text(encoding="utf-8")
 
     def _safe_write(self, actor: Actor, target: Path, content: str) -> None:
-        project_dir = self.config.fabric_root / "generated" / "projects" / slugify(self.config.project_id)
+        project_dir = (
+            self.config.fabric_root / "generated" / "projects" / slugify(self.config.project_id)
+        )
         allowed, reason = self._check_access(actor, target, "write", project_dir)
-        self._record_access(actor=actor, op="write", target=target, allowed=allowed, reason=reason, project_dir=project_dir)
+        self._record_access(
+            actor=actor,
+            op="write",
+            target=target,
+            allowed=allowed,
+            reason=reason,
+            project_dir=project_dir,
+        )
         if not allowed:
             self._fail(
                 EXIT_ISOLATION_VIOLATION,
@@ -928,7 +1063,9 @@ class LongRunRunner:
             },
         )
 
-    def _record_access(self, actor: Actor, op: str, target: Path, allowed: bool, reason: str, project_dir: Path) -> None:
+    def _record_access(
+        self, actor: Actor, op: str, target: Path, allowed: bool, reason: str, project_dir: Path
+    ) -> None:
         self.access_ledger.append(
             {
                 "seq": len(self.access_ledger) + 1,
@@ -986,7 +1123,9 @@ class LongRunRunner:
             return f"head:{group_id}:{head_id}"
         return None
 
-    def _verify_ownership(self, before: Dict[str, str], after: Dict[str, str], cycle: int, phase_id: int) -> None:
+    def _verify_ownership(
+        self, before: Dict[str, str], after: Dict[str, str], cycle: int, phase_id: int
+    ) -> None:
         changed = set(before.keys()).union(set(after.keys()))
         changed = {p for p in changed if before.get(p) != after.get(p)}
         for rel in sorted(changed):
@@ -1025,17 +1164,25 @@ class LongRunRunner:
         write_text(path, "\n".join(lines) + ("\n" if lines else ""))
 
     def _write_artifacts(self, interaction_graph: dict) -> None:
-        write_text(self.output_dir / "interaction-graph.json", stable_json(interaction_graph) + "\n")
+        write_text(
+            self.output_dir / "interaction-graph.json", stable_json(interaction_graph) + "\n"
+        )
         self._write_ndjson(self.output_dir / "events.ndjson", self.events)
         self._write_ndjson(self.output_dir / "access-ledger.ndjson", self.access_ledger)
         self._write_ndjson(self.output_dir / "lease-events.ndjson", self.lease_events)
-        write_text(self.output_dir / "violations.json", stable_json({"violations": self.violations}) + "\n")
+        write_text(
+            self.output_dir / "violations.json", stable_json({"violations": self.violations}) + "\n"
+        )
 
     def _audit_skill_target(self, project_dir: Path) -> Path:
         return project_dir / "long-run" / "audit-skills"
 
-    def _final_report(self, coverage: dict, interaction_graph: dict, lease_backend: LeaseBackend) -> dict:
-        project_dir = self.config.fabric_root / "generated" / "projects" / slugify(self.config.project_id)
+    def _final_report(
+        self, coverage: dict, interaction_graph: dict, lease_backend: LeaseBackend
+    ) -> dict:
+        project_dir = (
+            self.config.fabric_root / "generated" / "projects" / slugify(self.config.project_id)
+        )
         audit_skill_target = self._audit_skill_target(project_dir)
         installed_skill_count = 0
         installed_specialist_skill_count = 0
@@ -1068,13 +1215,17 @@ class LongRunRunner:
                 "coverage_percent": coverage["coverage_percent"],
             },
             "isolation": {
-                "violation_count": len([v for v in self.violations if v.get("code") == EXIT_ISOLATION_VIOLATION]),
+                "violation_count": len(
+                    [v for v in self.violations if v.get("code") == EXIT_ISOLATION_VIOLATION]
+                ),
                 "hard_fail": True,
             },
             "lease": {
                 "events": len(self.lease_events),
                 "conflicts": len([e for e in self.events if e.get("event") == "lease_conflict"]),
-                "retry_attempts": len([e for e in self.events if e.get("event") == "lease_conflict"]),
+                "retry_attempts": len(
+                    [e for e in self.events if e.get("event") == "lease_conflict"]
+                ),
             },
             "quality_gates": {
                 "stats": self.gate_stats,
@@ -1096,7 +1247,7 @@ class LongRunRunner:
             "agents-inc long-run",
             f"--fabric-root {self.config.fabric_root}",
             f"--project-id {slugify(self.config.project_id)}",
-            f"--task \"{self.config.task}\"",
+            f'--task "{self.config.task}"',
             f"--groups {','.join(self.config.groups)}",
             f"--duration-min {self.config.duration_min}",
             f"--strict-isolation {self.config.strict_isolation}",
@@ -1163,7 +1314,9 @@ class LongRunRunner:
         if report["top_failed_invariants"]:
             lines.extend(["", "## Top Failed Invariants"])
             for item in report["top_failed_invariants"]:
-                lines.append(f"- `{item.get('reason', 'unknown')}`: `{stable_json(item.get('detail', {}))}`")
+                lines.append(
+                    f"- `{item.get('reason', 'unknown')}`: `{stable_json(item.get('detail', {}))}`"
+                )
 
         return "\n".join(lines)
 
@@ -1187,9 +1340,7 @@ class LongRunRunner:
             primary_group = selected_groups[0] if selected_groups else ""
             router_call = ""
             if primary_group:
-                router_call = (
-                    f"Use $research-router for project {project_id} group {primary_group}: {self.config.task}."
-                )
+                router_call = f"Use $research-router for project {project_id} group {primary_group}: {self.config.task}."
 
             latest_artifacts = {
                 "kickoff": str(state_project_root / "kickoff.md"),
@@ -1207,7 +1358,9 @@ class LongRunRunner:
             }
             isolation_summary = {
                 "stage": stage,
-                "violation_count": len([v for v in self.violations if v.get("code") == EXIT_ISOLATION_VIOLATION]),
+                "violation_count": len(
+                    [v for v in self.violations if v.get("code") == EXIT_ISOLATION_VIOLATION]
+                ),
                 "hard_fail": True,
             }
             if coverage is not None:
@@ -1224,7 +1377,7 @@ class LongRunRunner:
                 ]
 
             payload = {
-                "schema_version": "1.0",
+                "schema_version": "2.0",
                 "project_id": project_id,
                 "project_root": str(state_project_root),
                 "fabric_root": str(self.config.fabric_root),

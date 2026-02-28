@@ -5,7 +5,7 @@ Route and quality-gate specialist outputs for theoretical and computational mate
 
 ## Group Identity
 - `group_id`: `material-scientist`
-- `template_version`: `1.0.0`
+- `template_version`: `2.0.0`
 - `tool_profile`: `science-default`
 - `head_agent`: `material-scientist-head`
 - `head_skill`: `proj-proj-battery-001-material-scientist-material-scientist-head`
@@ -14,11 +14,17 @@ Route and quality-gate specialist outputs for theoretical and computational mate
 - `thermodynamics-specialist`: Phase stability, CALPHAD logic, free-energy reasoning (skill: `proj-proj-battery-001-material-scientist-thermodynamics-6ace8773`)
 - `electronic-structure-specialist`: DFT setup, band structure interpretation, density-of-states analysis (skill: `proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7`)
 - `atomistic-simulation-specialist`: Atomistic simulation strategy, interatomic potential reasoning, trajectory interpretation (skill: `proj-proj-battery-001-material-scientist-atomistic-simu-a6a50b3f`)
+- `integration-specialist`: Cross-artifact integration and consumability checks for Material Scientist Group (skill: `proj-proj-battery-001-material-scientist-integration-specialist`)
+- `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Material Scientist Group (skill: `proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d`)
+- `repro-qa-specialist`: Reproducibility and quality assurance checks for Material Scientist Group (skill: `proj-proj-battery-001-material-scientist-repro-qa-specialist`)
 
 ## Work Directories
 - `generated/projects/proj-battery-001/work/material-scientist/thermodynamics-specialist`
 - `generated/projects/proj-battery-001/work/material-scientist/electronic-structure-specialist`
 - `generated/projects/proj-battery-001/work/material-scientist/atomistic-simulation-specialist`
+- `generated/projects/proj-battery-001/work/material-scientist/integration-specialist`
+- `generated/projects/proj-battery-001/work/material-scientist/evidence-review-specialist`
+- `generated/projects/proj-battery-001/work/material-scientist/repro-qa-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/material-scientist/internal/<specialist>/...`
@@ -62,12 +68,24 @@ END_LOCKED:exposure_policy
 - `assumptions.md` from `thermodynamics-specialist`
 - `claims_with_citations.md` from `thermodynamics-specialist`
 - `phase_stability_notes.md` from `thermodynamics-specialist`
+- `work.md` from `thermodynamics-specialist`
+- `handoff.json` from `thermodynamics-specialist`
 - `assumptions.md` from `electronic-structure-specialist`
 - `claims_with_citations.md` from `electronic-structure-specialist`
 - `electronic_summary.md` from `electronic-structure-specialist`
+- `work.md` from `electronic-structure-specialist`
+- `handoff.json` from `electronic-structure-specialist`
 - `assumptions.md` from `atomistic-simulation-specialist`
 - `claims_with_citations.md` from `atomistic-simulation-specialist`
 - `simulation_plan.md` from `atomistic-simulation-specialist`
+- `work.md` from `atomistic-simulation-specialist`
+- `handoff.json` from `atomistic-simulation-specialist`
+- `work.md` from `integration-specialist`
+- `handoff.json` from `integration-specialist`
+- `work.md` from `evidence-review-specialist`
+- `handoff.json` from `evidence-review-specialist`
+- `work.md` from `repro-qa-specialist`
+- `handoff.json` from `repro-qa-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`

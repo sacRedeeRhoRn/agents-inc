@@ -5,11 +5,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Tuple
 
-from agents_inc.core.fabric_lib import ensure_fabric_root_initialized, resolve_fabric_root, write_text
+from agents_inc.core.fabric_lib import (
+    ensure_fabric_root_initialized,
+    resolve_fabric_root,
+    write_text,
+)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate publication-grade inlined fabric reference docs")
+    parser = argparse.ArgumentParser(
+        description="Generate publication-grade inlined fabric reference docs"
+    )
     parser.add_argument("--fabric-root", default=None, help="path to fabric root")
     parser.add_argument(
         "--output",
@@ -68,10 +74,21 @@ def collect_files(fabric_root: Path, include_generated_projects: bool) -> List[P
                 if not path.is_file():
                     continue
                 rel = path.relative_to(fabric_root).as_posix()
-                if any(
-                    rel.endswith(suffix)
-                    for suffix in ["SKILL.md", "AGENTS.md", "allowlist.yaml", "handoffs.yaml", "manifest.yaml", "group.yaml"]
-                ) and not path.name.startswith(".") and not path.name.endswith(".swp"):
+                if (
+                    any(
+                        rel.endswith(suffix)
+                        for suffix in [
+                            "SKILL.md",
+                            "AGENTS.md",
+                            "allowlist.yaml",
+                            "handoffs.yaml",
+                            "manifest.yaml",
+                            "group.yaml",
+                        ]
+                    )
+                    and not path.name.startswith(".")
+                    and not path.name.endswith(".swp")
+                ):
                     files.append(path)
     return files
 
@@ -97,8 +114,16 @@ def main() -> int:
             ftype, purpose = classify(path, rel)
             text = path.read_text(encoding="utf-8")
             locks = detect_locks(text)
-            validation = "schema-validated" if ftype in {"manifest", "catalog", "tool-policy", "schema"} else "content-reviewed"
-            exposure = "group-scoped" if "/generated/projects/" in rel or rel.startswith("templates/") else "source"
+            validation = (
+                "schema-validated"
+                if ftype in {"manifest", "catalog", "tool-policy", "schema"}
+                else "content-reviewed"
+            )
+            exposure = (
+                "group-scoped"
+                if "/generated/projects/" in rel or rel.startswith("templates/")
+                else "source"
+            )
 
             rows.append(
                 f"| {idx} | `{rel}` | {ftype} | {purpose} | `{locks}` | {validation} | {exposure} |"

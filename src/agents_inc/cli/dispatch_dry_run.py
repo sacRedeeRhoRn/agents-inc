@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 from pathlib import Path
 
@@ -21,7 +22,9 @@ from agents_inc.core.session_state import (
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Dry-run deterministic dispatch plan for project/group objective")
+    parser = argparse.ArgumentParser(
+        description="Dry-run deterministic dispatch plan for project/group objective"
+    )
     parser.add_argument("--project-id", required=True)
     parser.add_argument("--group", required=True, help="group_id")
     parser.add_argument("--objective", required=True)
@@ -39,6 +42,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--ttl", type=int, default=900)
     parser.add_argument("--project-index", default=None, help="global project index path")
+    parser.add_argument(
+        "--locking-mode",
+        default="auto",
+        choices=["required", "auto", "off"],
+        help="lock-plan dependency mode for multi_agent_dirs",
+    )
     return parser.parse_args()
 
 
@@ -60,6 +69,37 @@ def make_lock_commands(
     }
 
 
+def detect_lock_backend(fabric_root: Path) -> dict:
+    try:
+        from controller import DirectoryController  # type: ignore # noqa: F401
+
+        return {
+            "backend": "multi_agent_dirs",
+            "available": True,
+            "note": "imported controller module",
+        }
+    except Exception:
+        pass
+
+    candidate = fabric_root.parent / "multi_agent_dirs" / "controller.py"
+    if candidate.exists():
+        spec = importlib.util.spec_from_file_location(
+            "agents_inc_madir_controller_probe", candidate
+        )
+        if spec and spec.loader:
+            return {
+                "backend": "multi_agent_dirs(local-path)",
+                "available": True,
+                "note": str(candidate),
+            }
+
+    return {
+        "backend": "fallback",
+        "available": False,
+        "note": "multi_agent_dirs controller not detected; lock plan unavailable",
+    }
+
+
 def main() -> int:
     args = parse_args()
     try:
@@ -70,33 +110,52 @@ def main() -> int:
         group_id = args.group
         group_entry = manifest.get("groups", {}).get(group_id)
         if not group_entry:
-            raise FabricError(f"group '{group_id}' is not part of project '{manifest['project_id']}'")
+            raise FabricError(
+                f"group '{group_id}' is not part of project '{manifest['project_id']}'"
+            )
 
         group_manifest_path = project_dir / group_entry["manifest_path"]
         group_manifest = load_yaml(group_manifest_path)
         if not isinstance(group_manifest, dict):
             raise FabricError(f"invalid group manifest: {group_manifest_path}")
 
-        dispatch = build_dispatch_plan(manifest["project_id"], group_id, args.objective, group_manifest)
+        dispatch = build_dispatch_plan(
+            manifest["project_id"], group_id, args.objective, group_manifest
+        )
 
         multi_agent_root = args.multi_agent_root or str(fabric_root.parent)
+        lock_backend = detect_lock_backend(fabric_root)
         lock_plan = []
-        for phase in dispatch["phases"]:
-            phase_locks = []
-            for task in phase["tasks"]:
-                phase_locks.append(
-                    make_lock_commands(
-                        manifest["project_id"],
-                        group_id,
-                        task["agent_id"],
-                        args.ttl,
-                        args.multi_agent_cli,
-                        multi_agent_root,
+
+        if args.locking_mode == "required" and not bool(lock_backend["available"]):
+            raise FabricError(
+                "locking-mode=required but multi_agent_dirs is unavailable. "
+                "Install dependency or use --locking-mode auto/off."
+            )
+
+        if args.locking_mode != "off" and bool(lock_backend["available"]):
+            for phase in dispatch["phases"]:
+                phase_locks = []
+                for task in phase["tasks"]:
+                    phase_locks.append(
+                        make_lock_commands(
+                            manifest["project_id"],
+                            group_id,
+                            task["agent_id"],
+                            args.ttl,
+                            args.multi_agent_cli,
+                            multi_agent_root,
+                        )
                     )
-                )
-            lock_plan.append({"phase_id": phase["phase_id"], "locks": phase_locks})
+                lock_plan.append({"phase_id": phase["phase_id"], "locks": phase_locks})
 
         dispatch["lock_plan"] = lock_plan
+        dispatch["locking"] = {
+            "mode": args.locking_mode,
+            "backend": lock_backend["backend"],
+            "available": bool(lock_backend["available"]),
+            "note": lock_backend["note"],
+        }
 
         text = json.dumps(dispatch, indent=2, sort_keys=True)
         print(text)
@@ -108,7 +167,7 @@ def main() -> int:
 
         project_root = resolve_state_project_root(fabric_root, manifest["project_id"])
         payload = {
-            "schema_version": "1.0",
+            "schema_version": "2.0",
             "project_id": manifest["project_id"],
             "project_root": str(project_root),
             "fabric_root": str(fabric_root),
@@ -117,13 +176,17 @@ def main() -> int:
                 "dispatch_group": group_id,
                 "ttl": args.ttl,
                 "multi_agent_root": multi_agent_root,
+                "locking_mode": args.locking_mode,
+                "lock_backend": lock_backend["backend"],
             },
             "selected_groups": manifest.get("selected_groups", []),
             "primary_group": group_id,
             "group_order_recommendation": manifest.get("selected_groups", []),
             "router_call": f"Use $research-router for project {manifest['project_id']} group {group_id}: {args.objective}.",
             "latest_artifacts": {
-                "dispatch_json_out": str(Path(args.json_out).expanduser().resolve()) if args.json_out else "",
+                "dispatch_json_out": (
+                    str(Path(args.json_out).expanduser().resolve()) if args.json_out else ""
+                ),
             },
             "pending_actions": [
                 "Route objective through $research-router using the generated dispatch plan.",

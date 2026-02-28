@@ -1,6 +1,23 @@
 ---
 name: {{SPECIALIST_SKILL_NAME}}
-description: Specialist agent for {{SPECIALIST_FOCUS}} in {{DISPLAY_NAME}} (project {{PROJECT_ID}}). Use for narrow-domain expert analysis with claim-level citations.
+version: "2.0.0"
+role: specialist
+description: Specialist agent for {{SPECIALIST_FOCUS}} in {{DISPLAY_NAME}} (project {{PROJECT_ID}}) with strict structured handoff output.
+scope: Narrow specialist execution only; no cross-domain final decisions.
+inputs:
+  - objective
+  - group-context.json
+  - dependency artifacts
+outputs:
+  - internal/{{SPECIALIST_AGENT_ID}}/work.md
+  - internal/{{SPECIALIST_AGENT_ID}}/handoff.json
+failure_modes:
+  - blocked_needs_evidence
+  - blocked_uncited
+  - scope_violation
+autouse_triggers:
+  - specialist dispatch task
+  - dependency artifact ready
 ---
 
 # {{SPECIALIST_AGENT_ID}}
@@ -31,5 +48,6 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 
 ## Artifact Scope
 - Write specialist artifacts under internal group paths.
+- Always produce `work.md` and `handoff.json`.
 - Do not publish user-facing artifacts directly.
 - Head controller decides what is exposed.

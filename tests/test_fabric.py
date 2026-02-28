@@ -26,15 +26,16 @@ from fabric_lib import (  # noqa: E402
     gate_specialist_output,
     merge_locked_sections,
 )
+
 try:
     from controller import DirectoryController  # type: ignore  # noqa: E402
 except Exception:  # pragma: no cover
+
     @dataclass
     class _Lease:
         agent_id: str
         directory: str
         expires_at: float
-
 
     class DirectoryController:  # Minimal fallback for isolated CI.
         def __init__(self, root: Path) -> None:
@@ -60,7 +61,12 @@ except Exception:  # pragma: no cover
 
             now = time.monotonic()
             current = self._leases.get(directory)
-            if current and current.expires_at > now and current.agent_id != agent_id and not self._dirs[directory]:
+            if (
+                current
+                and current.expires_at > now
+                and current.agent_id != agent_id
+                and not self._dirs[directory]
+            ):
                 raise RuntimeError("lease conflict")
 
             lease = _Lease(agent_id=agent_id, directory=directory, expires_at=now + ttl_seconds)
@@ -226,7 +232,11 @@ class FabricIntegrationTests(unittest.TestCase):
                     "--sync",
                 ]
             )
-            first_dirs = {p.name for p in target.iterdir() if p.is_dir() and p.name.startswith("proj-proj-test-sync")}
+            first_dirs = {
+                p.name
+                for p in target.iterdir()
+                if p.is_dir() and p.name.startswith("proj-proj-test-sync")
+            }
             self.assertTrue(first_dirs)
 
             run_cmd(
@@ -251,7 +261,11 @@ class FabricIntegrationTests(unittest.TestCase):
                     "--sync",
                 ]
             )
-            second_dirs = {p.name for p in target.iterdir() if p.is_dir() and p.name.startswith("proj-proj-test-sync")}
+            second_dirs = {
+                p.name
+                for p in target.iterdir()
+                if p.is_dir() and p.name.startswith("proj-proj-test-sync")
+            }
             self.assertTrue(second_dirs)
             self.assertNotEqual(first_dirs, second_dirs)
 
@@ -412,10 +426,18 @@ class FabricIntegrationTests(unittest.TestCase):
             self.assertIn("agents-inc long-run", text)
             self.assertIn("--groups all", text)
 
-            self.assertTrue((project_root / ".agents-inc" / "state" / "session-state.yaml").exists())
-            self.assertTrue((project_root / ".agents-inc" / "state" / "latest-checkpoint.yaml").exists())
-            self.assertTrue((project_root / ".agents-inc" / "state" / "latest-compacted.yaml").exists())
-            self.assertTrue((project_root / ".agents-inc" / "state" / "group-sessions.yaml").exists())
+            self.assertTrue(
+                (project_root / ".agents-inc" / "state" / "session-state.yaml").exists()
+            )
+            self.assertTrue(
+                (project_root / ".agents-inc" / "state" / "latest-checkpoint.yaml").exists()
+            )
+            self.assertTrue(
+                (project_root / ".agents-inc" / "state" / "latest-compacted.yaml").exists()
+            )
+            self.assertTrue(
+                (project_root / ".agents-inc" / "state" / "group-sessions.yaml").exists()
+            )
             self.assertTrue(project_index.exists())
 
     def test_init_session_new_mode_non_destructive_without_overwrite(self) -> None:
@@ -539,7 +561,9 @@ class FabricIntegrationTests(unittest.TestCase):
             )
 
             latest = yaml.safe_load(
-                (project_root / ".agents-inc" / "state" / "latest-checkpoint.yaml").read_text(encoding="utf-8")
+                (project_root / ".agents-inc" / "state" / "latest-checkpoint.yaml").read_text(
+                    encoding="utf-8"
+                )
             )
             checkpoint_id = latest["checkpoint_id"]
 
@@ -663,7 +687,9 @@ class FabricIntegrationTests(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            self.assertEqual(proc.returncode, 0, msg=f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}")
+            self.assertEqual(
+                proc.returncode, 0, msg=f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+            )
 
             report = json.loads((output_dir / "final-report.json").read_text(encoding="utf-8"))
             self.assertEqual(report["interaction"]["coverage_percent"], 100.0)
@@ -721,7 +747,11 @@ class FabricIntegrationTests(unittest.TestCase):
             self.assertGreaterEqual(payload.get("count", 0), 1)
             ids = {row.get("project_id") for row in payload.get("sessions", [])}
             self.assertIn("proj-test-list-sessions", ids)
-            row = next(r for r in payload.get("sessions", []) if r.get("project_id") == "proj-test-list-sessions")
+            row = next(
+                r
+                for r in payload.get("sessions", [])
+                if r.get("project_id") == "proj-test-list-sessions"
+            )
             self.assertTrue(str(row.get("session_code", "")))
             self.assertIn("material-scientist", row.get("active_groups", []))
 
@@ -782,9 +812,13 @@ class FabricIntegrationTests(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            self.assertEqual(proc.returncode, 0, msg=f"stdout:\\n{proc.stdout}\\nstderr:\\n{proc.stderr}")
+            self.assertEqual(
+                proc.returncode, 0, msg=f"stdout:\\n{proc.stdout}\\nstderr:\\n{proc.stderr}"
+            )
             self.assertTrue((project_root / "kickoff.md").exists())
-            self.assertIn("Kickoff (Resumed)", (project_root / "kickoff.md").read_text(encoding="utf-8"))
+            self.assertIn(
+                "Kickoff (Resumed)", (project_root / "kickoff.md").read_text(encoding="utf-8")
+            )
 
 
 class ConcurrencyTests(unittest.TestCase):

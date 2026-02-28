@@ -1,5 +1,41 @@
 # Changelog
 
+## v2.0.0
+
+- Hard-cutover schema upgrade to strict v2 contracts.
+  - Group manifests now require `schema_version: "2.0"` with purpose/success criteria, gate profile, publish contract, and dependency artifact semantics.
+  - Project manifests now require `schema_version: "2.0"`.
+  - Session/checkpoint/compaction/index loaders now reject non-v2 payloads and direct users to migration.
+- Added migration command:
+  - `agents-inc migrate-v2 --dry-run|--apply`
+  - supports backup output for changed files.
+- Added runtime version reporting:
+  - `agents-inc --version` and `agents-inc -V`.
+- Added catalog-level group UX:
+  - `agents-inc groups list|show|new|templates`
+  - codex-session-friendly interactive group wizard (`groups new --interactive`) with user-confirmed specialist roster.
+- Added strict skill frontmatter contract v2:
+  - required keys: `name`, `version`, `role`, `description`, `scope`, `inputs`, `outputs`, `failure_modes`, `autouse_triggers`
+  - validation now rejects missing/unknown keys.
+- Added skill harness checks:
+  - role-specific contract checks for head/specialist/router skill content.
+- Redesigned catalog groups to v2 and enforced minimum specialist contract coverage.
+- Added standardized artifact scaffolding in generated groups:
+  - specialists: `internal/<agent>/work.md`, `internal/<agent>/handoff.json`
+  - head: `exposed/summary.md`, `exposed/handoff.json`, `exposed/INTEGRATION_NOTES.md`
+- Extended dispatch contract:
+  - includes `gate_profile`, `specialist_output_schema`, dependency checks, and lock metadata.
+  - new locking mode: `--locking-mode required|auto|off`.
+- Validation hardening:
+  - explicit `multi_agent_dirs` dependency warning,
+  - `.swp` template file detection.
+- Resume launch hardening:
+  - persists `.agents-inc/state/resume-prompt.md`
+  - sanitizes launch prompt payload.
+- Tooling/CI hardening:
+  - added `black` and `ruff` configuration and dev dependencies.
+- Bootstrap and README updated to v2.0.0 and catalog-group workflow.
+
 ## v1.2.0
 
 - Added new primary umbrella CLI: `agents-inc`.

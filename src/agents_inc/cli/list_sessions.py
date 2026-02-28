@@ -9,8 +9,8 @@ from agents_inc.core.fabric_lib import ensure_json_serializable
 from agents_inc.core.session_compaction import load_latest_compacted_summary
 from agents_inc.core.session_state import (
     default_project_index_path,
-    load_checkpoint,
     list_index_projects,
+    load_checkpoint,
     sync_index_from_scan,
 )
 
@@ -23,7 +23,9 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="scan root for project discovery",
     )
-    parser.add_argument("--config-path", default=None, help="config file path (default ~/.agents-inc/config.yaml)")
+    parser.add_argument(
+        "--config-path", default=None, help="config file path (default ~/.agents-inc/config.yaml)"
+    )
     parser.add_argument(
         "--no-scan",
         action="store_true",
@@ -79,7 +81,9 @@ def _print_table(rows: list[dict], project_index_path: Path, scan_stats: dict) -
         return
 
     print("")
-    print("project_id | session_code | active_groups | status | last_checkpoint | updated_at | project_root")
+    print(
+        "project_id | session_code | active_groups | status | last_checkpoint | updated_at | project_root"
+    )
     print("--- | --- | --- | --- | --- | --- | ---")
     for row in rows:
         active_groups = row.get("active_groups", [])
@@ -116,8 +120,8 @@ def main() -> int:
 
         rows = _enrich_rows(
             list_index_projects(
-            project_index_path,
-            include_stale=bool(args.include_stale),
+                project_index_path,
+                include_stale=bool(args.include_stale),
             )
         )
         payload = {

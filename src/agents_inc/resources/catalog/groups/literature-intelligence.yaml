@@ -1,45 +1,143 @@
-group_id: "literature-intelligence"
-display_name: "Literature Intelligence Group"
-template_version: "1.0.0"
-domain: "literature-analysis"
+group_id: literature-intelligence
+display_name: Literature Intelligence Group
+template_version: 2.0.0
+domain: literature-analysis
 head:
-  agent_id: "literature-intelligence-head"
-  skill_name: "grp-literature-intelligence-head"
-  mission: "Extract, compare, and evidence-grade literature claims for project decision support."
+  agent_id: literature-intelligence-head
+  skill_name: grp-literature-intelligence-head
+  mission: Extract, compare, and evidence-grade literature claims for project decision
+    support.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
 specialists:
-  - agent_id: "retrieval-specialist"
-    skill_name: "grp-literature-intelligence-retrieval"
-    focus: "Paper retrieval strategy, inclusion criteria, and source tracking"
-    required_references:
-      - "references/retrieval-core.md"
-    required_outputs:
-      - "source_inventory.md"
-      - "claims_with_citations.md"
-  - agent_id: "evidence-grading-specialist"
-    skill_name: "grp-literature-intelligence-evidence"
-    focus: "Evidence grading, study quality interpretation, and confidence assignment"
-    depends_on:
-      - "retrieval-specialist"
-    required_references:
-      - "references/evidence-grading-core.md"
-    required_outputs:
-      - "evidence_matrix.md"
-      - "claims_with_citations.md"
-  - agent_id: "gap-analysis-specialist"
-    skill_name: "grp-literature-intelligence-gap"
-    focus: "Research gap mapping and risk-aware recommendation framing"
-    depends_on:
-      - "evidence-grading-specialist"
-    required_references:
-      - "references/gap-analysis-core.md"
-    required_outputs:
-      - "gap_map.md"
-      - "claims_with_citations.md"
-tool_profile: "literature-default"
+- agent_id: retrieval-specialist
+  skill_name: grp-literature-intelligence-retrieval
+  focus: Paper retrieval strategy, inclusion criteria, and source tracking
+  required_references:
+  - references/retrieval-core.md
+  required_outputs:
+  - source_inventory.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-grading-specialist
+  skill_name: grp-literature-intelligence-evidence
+  focus: Evidence grading, study quality interpretation, and confidence assignment
+  depends_on:
+  - agent_id: retrieval-specialist
+    required_artifacts:
+    - internal/retrieval-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  required_references:
+  - references/evidence-grading-core.md
+  required_outputs:
+  - evidence_matrix.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: evidence-review
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: gap-analysis-specialist
+  skill_name: grp-literature-intelligence-gap
+  focus: Research gap mapping and risk-aware recommendation framing
+  depends_on:
+  - agent_id: evidence-grading-specialist
+    required_artifacts:
+    - internal/evidence-grading-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  - agent_id: retrieval-specialist
+    required_artifacts:
+    - internal/retrieval-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  required_references:
+  - references/gap-analysis-core.md
+  required_outputs:
+  - gap_map.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: repro-qa
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: integration-specialist
+  skill_name: grp-literature-intelligence-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Literature Intelligence
+    Group
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: retrieval-specialist
+    required_artifacts:
+    - internal/retrieval-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+tool_profile: literature-default
 default_workdirs:
-  - "inputs"
-  - "analysis"
-  - "outputs"
+- inputs
+- analysis
+- outputs
 quality_gates:
   citation_required: true
   unresolved_claims_block: true
@@ -47,3 +145,36 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
+schema_version: '2.0'
+purpose: Coordinate expert specialists for Literature Intelligence Group objectives.
+success_criteria:
+- All required artifacts produced
+- Gate profile satisfied
+- Exposed handoff consumable
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v2
+  specialist_output_schema: specialist-handoff-v2
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+interaction:
+  mode: interactive-separated
+  linked_groups: []
+execution_defaults:
+  remote_transport: local
+  schedulers:
+  - local
+  hardware:
+  - cpu

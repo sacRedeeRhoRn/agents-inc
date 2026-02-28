@@ -8,9 +8,9 @@ from typing import List, Tuple
 from agents_inc.core.fabric_lib import (
     BUNDLE_VERSION,
     DEFAULT_INSTALL_TARGET,
-    FabricError,
     ROUTER_SKILL_NAME,
     TEMPLATE_VERSION,
+    FabricError,
     dump_yaml,
     ensure_fabric_root_initialized,
     ensure_unique_names,
@@ -80,7 +80,9 @@ def render_specialist_block(specialists: List[dict]) -> str:
 
 def render_workdirs_block(project_id: str, group_id: str, specialists: List[dict]) -> str:
     rows = [
-        "- `generated/projects/{0}/work/{1}/{2}`".format(project_id, group_id, specialist["agent_id"])
+        "- `generated/projects/{0}/work/{1}/{2}`".format(
+            project_id, group_id, specialist["agent_id"]
+        )
         for specialist in specialists
     ]
     return "\n".join(rows)
@@ -105,11 +107,22 @@ def render_handoff_block(specialists: List[dict]) -> str:
     rows = []
     for specialist in specialists:
         deps = specialist.get("depends_on", [])
+        dep_names: List[str] = []
+        if isinstance(deps, list):
+            for dep in deps:
+                if isinstance(dep, str):
+                    dep_names.append(dep)
+                elif isinstance(dep, dict) and dep.get("agent_id"):
+                    dep_names.append(str(dep["agent_id"]))
         rows.append(
-            "  - from: \"{0}\"\n    to: \"{1}\"\n    condition: \"{2}\"".format(
+            '  - from: "{0}"\n    to: "{1}"\n    condition: "{2}"'.format(
                 specialist["agent_id"],
                 "head-controller",
-                "after dependencies satisfied" if deps else "after task completion",
+                (
+                    "after dependencies satisfied ({0})".format(", ".join(dep_names))
+                    if dep_names
+                    else "after task completion"
+                ),
             )
         )
     return "\n".join(rows)
@@ -121,7 +134,9 @@ def assign_effective_skill_names(project_id: str, group: dict) -> dict:
         make_skill_name(project_id, group_copy["group_id"], group_copy["head"]["agent_id"])
     ]
     for specialist in group_copy["specialists"]:
-        base_names.append(make_skill_name(project_id, group_copy["group_id"], specialist["agent_id"]))
+        base_names.append(
+            make_skill_name(project_id, group_copy["group_id"], specialist["agent_id"])
+        )
     unique = ensure_unique_names(base_names)
 
     group_copy["head"]["effective_skill_name"] = unique[0]
@@ -131,7 +146,9 @@ def assign_effective_skill_names(project_id: str, group: dict) -> dict:
     return group_copy
 
 
-def write_group_assets(fabric_root: Path, project_id: str, project_dir: Path, group: dict) -> Tuple[str, dict]:
+def write_group_assets(
+    fabric_root: Path, project_id: str, project_dir: Path, group: dict
+) -> Tuple[str, dict]:
     group_id = group["group_id"]
     group_dir = project_dir / "agent-groups" / group_id
     group_dir.mkdir(parents=True, exist_ok=True)
@@ -139,10 +156,18 @@ def write_group_assets(fabric_root: Path, project_id: str, project_dir: Path, gr
     template_agents = read_template(fabric_root, "templates/group/AGENTS.template.md")
     template_handoffs = read_template(fabric_root, "templates/group/handoffs.template.yaml")
     template_allowlist = read_template(fabric_root, "templates/group/tools/allowlist.template.yaml")
-    template_head_skill = read_template(fabric_root, "templates/group/skills/head/SKILL.template.md")
-    template_spec_skill = read_template(fabric_root, "templates/group/skills/specialist/SKILL.template.md")
-    gate_checklist = read_template(fabric_root, "templates/group/references/gate-checklist.template.md")
-    citation_policy = read_template(fabric_root, "templates/group/references/citation-policy.template.md")
+    template_head_skill = read_template(
+        fabric_root, "templates/group/skills/head/SKILL.template.md"
+    )
+    template_spec_skill = read_template(
+        fabric_root, "templates/group/skills/specialist/SKILL.template.md"
+    )
+    gate_checklist = read_template(
+        fabric_root, "templates/group/references/gate-checklist.template.md"
+    )
+    citation_policy = read_template(
+        fabric_root, "templates/group/references/citation-policy.template.md"
+    )
     wrappers_readme = read_template(fabric_root, "templates/group/tools/wrappers/README.txt")
 
     context = {
@@ -183,10 +208,21 @@ def write_group_assets(fabric_root: Path, project_id: str, project_dir: Path, gr
     # Group-scoped artifact partitioning.
     (group_dir / "exposed").mkdir(parents=True, exist_ok=True)
     write_text(group_dir / "exposed" / ".gitkeep", "")
+    write_text(group_dir / "exposed" / "summary.md", "# Summary\n\nPending head publication.\n")
+    write_text(
+        group_dir / "exposed" / "handoff.json",
+        '{\n  "schema_version": "2.0",\n  "status": "PENDING",\n  "artifacts": []\n}\n',
+    )
+    write_text(group_dir / "exposed" / "INTEGRATION_NOTES.md", "# Integration Notes\n\nPending.\n")
     for specialist in group["specialists"]:
         internal_dir = group_dir / "internal" / specialist["agent_id"]
         internal_dir.mkdir(parents=True, exist_ok=True)
         write_text(internal_dir / ".gitkeep", "")
+        write_text(internal_dir / "work.md", "# Work\n\nPending specialist execution.\n")
+        write_text(
+            internal_dir / "handoff.json",
+            '{\n  "schema_version": "2.0",\n  "status": "PENDING",\n  "claims_with_citations": [],\n  "repro_steps": [],\n  "risks": []\n}\n',
+        )
 
     for specialist in group["specialists"]:
         for ref_rel in specialist.get("required_references", []):
@@ -235,7 +271,9 @@ def write_group_assets(fabric_root: Path, project_id: str, project_dir: Path, gr
                 "SPECIALIST_FOCUS": specialist["focus"],
                 "DISPLAY_NAME": group["display_name"],
                 "PROJECT_ID": project_id,
-                "SPECIALIST_REFERENCE_BLOCK": format_bullet(specialist.get("required_references", [])),
+                "SPECIALIST_REFERENCE_BLOCK": format_bullet(
+                    specialist.get("required_references", [])
+                ),
                 "SPECIALIST_OUTPUT_BLOCK": format_bullet(specialist.get("required_outputs", [])),
             },
         )
@@ -296,7 +334,9 @@ def main() -> int:
 
         for group_id in selected_groups:
             group = assign_effective_skill_names(project_id, catalog[group_id])
-            manifest_rel, group_paths = write_group_assets(fabric_root, project_id, project_dir, group)
+            manifest_rel, group_paths = write_group_assets(
+                fabric_root, project_id, project_dir, group
+            )
             group_entries[group_id] = {
                 "manifest_path": manifest_rel,
                 **group_paths,
@@ -304,6 +344,7 @@ def main() -> int:
             template_versions[group_id] = group.get("template_version", TEMPLATE_VERSION)
 
         manifest = {
+            "schema_version": "2.0",
             "project_id": project_id,
             "selected_groups": selected_groups,
             "install_targets": {

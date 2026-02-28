@@ -1,6 +1,23 @@
 ---
 name: research-router
-description: Global router for expert multi-agent group bundles. Use to dispatch project objectives to the correct group head and enforce hard quality gates.
+version: 2.0.0
+role: router
+description: Global router for expert multi-agent group bundles. Dispatch objectives
+  to group heads with strict gate and artifact contracts.
+scope: Project and group dispatch routing only.
+inputs:
+- project_id
+- group_id
+- objective
+outputs:
+- dispatch_plan.json
+- artifact_index.md
+failure_modes:
+- unknown_project
+- unknown_group
+- blocked_gate
+autouse_triggers:
+- router objective command
 ---
 
 # Research Router

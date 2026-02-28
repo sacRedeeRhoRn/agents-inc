@@ -1,4 +1,12 @@
+schema_version: "2.0"
 group_id: "{{GROUP_ID}}"
-head_agent_id: "{{HEAD_AGENT_ID}}"
 handoffs:
 {{HANDOFF_BLOCK}}
+output_contract:
+  specialist_internal:
+    - "internal/<agent-id>/work.md"
+    - "internal/<agent-id>/handoff.json"
+  head_exposed:
+    - "exposed/summary.md"
+    - "exposed/handoff.json"
+    - "exposed/INTEGRATION_NOTES.md"

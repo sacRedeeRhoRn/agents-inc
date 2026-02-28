@@ -1,3 +1,4 @@
+schema_version: '2.0'
 project_id: proj-battery-001
 selected_groups:
 - material-scientist
@@ -6,11 +7,11 @@ selected_groups:
 install_targets:
   codex_skill_dir: /Users/moon.s.june/.codex/skills/local
 router_skill_name: research-router
-bundle_version: 1.0.0
+bundle_version: 2.0.0
 template_versions:
-  material-scientist: 1.0.0
-  developer: 1.0.0
-  quality-assurance: 1.0.0
+  material-scientist: 2.0.0
+  developer: 2.0.0
+  quality-assurance: 2.0.0
 visibility:
   mode: group-only
   audit_override: true
@@ -29,11 +30,17 @@ groups:
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-thermodynamics-6ace8773
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-atomistic-simu-a6a50b3f
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-integration-specialist
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-repro-qa-specialist
     head_skill_dir: agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-material-scientist-head
     specialist_skill_dirs:
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-thermodynamics-6ace8773
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7
     - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-atomistic-simu-a6a50b3f
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-integration-specialist
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d
+    - agent-groups/material-scientist/skills/proj-proj-battery-001-material-scientist-repro-qa-specialist
   developer:
     manifest_path: agent-groups/developer/group.yaml
     skill_dirs:
@@ -41,11 +48,15 @@ groups:
     - agent-groups/developer/skills/proj-proj-battery-001-developer-python-expert
     - agent-groups/developer/skills/proj-proj-battery-001-developer-shell-expert
     - agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-integration-specialist
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-evidence-review-specialist
     head_skill_dir: agent-groups/developer/skills/proj-proj-battery-001-developer-developer-head
     specialist_skill_dirs:
     - agent-groups/developer/skills/proj-proj-battery-001-developer-python-expert
     - agent-groups/developer/skills/proj-proj-battery-001-developer-shell-expert
     - agent-groups/developer/skills/proj-proj-battery-001-developer-ssh-remote-ops-expert
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-integration-specialist
+    - agent-groups/developer/skills/proj-proj-battery-001-developer-evidence-review-specialist
   quality-assurance:
     manifest_path: agent-groups/quality-assurance/group.yaml
     skill_dirs:
@@ -53,8 +64,12 @@ groups:
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-consistency-auditor
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-integration-specialist
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b
     head_skill_dir: agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-quality-assurance-head
     specialist_skill_dirs:
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-reproducibility-auditor
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-consistency-auditor
     - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-risk-auditor
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-integration-specialist
+    - agent-groups/quality-assurance/skills/proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b

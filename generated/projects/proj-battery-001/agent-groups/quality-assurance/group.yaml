@@ -1,12 +1,18 @@
 group_id: quality-assurance
 display_name: Quality Assurance Group
-template_version: 1.0.0
+template_version: 2.0.0
 domain: verification-and-risk
 head:
   agent_id: quality-assurance-head
   skill_name: grp-quality-assurance-head
   mission: Audit technical outputs for reproducibility, consistency, and decision-risk
     control.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
   effective_skill_name: proj-proj-battery-001-quality-assurance-quality-assurance-head
 specialists:
 - agent_id: reproducibility-auditor
@@ -17,6 +23,28 @@ specialists:
   required_outputs:
   - repro_audit.md
   - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: repro-qa
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: consistency-auditor
+    required_artifacts:
+    - internal/consistency-auditor/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
   effective_skill_name: proj-proj-battery-001-quality-assurance-reproducibility-auditor
 - agent_id: consistency-auditor
   skill_name: grp-quality-assurance-consistency
@@ -26,18 +54,115 @@ specialists:
   required_outputs:
   - consistency_audit.md
   - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
   effective_skill_name: proj-proj-battery-001-quality-assurance-consistency-auditor
 - agent_id: risk-auditor
   skill_name: grp-quality-assurance-risk
   focus: Risk classification, severity tagging, and mitigation recommendation framing
   depends_on:
-  - consistency-auditor
+  - agent_id: consistency-auditor
+    required_artifacts:
+    - internal/consistency-auditor/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
   required_references:
   - references/risk-core.md
   required_outputs:
   - risk_register.md
   - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: repro-qa
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
   effective_skill_name: proj-proj-battery-001-quality-assurance-risk-auditor
+- agent_id: integration-specialist
+  skill_name: grp-quality-assurance-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Quality Assurance
+    Group
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: consistency-auditor
+    required_artifacts:
+    - internal/consistency-auditor/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-battery-001-quality-assurance-integration-specialist
+- agent_id: evidence-review-specialist
+  skill_name: grp-quality-assurance-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Quality Assurance
+    Group
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: consistency-auditor
+    required_artifacts:
+    - internal/consistency-auditor/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b
 tool_profile: qa-default
 default_workdirs:
 - inputs
@@ -50,3 +175,36 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
+schema_version: '2.0'
+purpose: Coordinate expert specialists for Quality Assurance Group objectives.
+success_criteria:
+- All required artifacts produced
+- Gate profile satisfied
+- Exposed handoff consumable
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v2
+  specialist_output_schema: specialist-handoff-v2
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+interaction:
+  mode: interactive-separated
+  linked_groups: []
+execution_defaults:
+  remote_transport: local
+  schedulers:
+  - local
+  hardware:
+  - cpu

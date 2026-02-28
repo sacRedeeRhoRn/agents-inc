@@ -1,6 +1,25 @@
 ---
 name: {{HEAD_SKILL_NAME}}
-description: Orchestrate {{DISPLAY_NAME}} for project {{PROJECT_ID}}. Use when routing objective-level work to specialist agents with strict expert quality gates.
+version: "2.0.0"
+role: head
+description: Orchestrate {{DISPLAY_NAME}} for project {{PROJECT_ID}} with strict gate enforcement and artifact publication contracts.
+scope: Group-level orchestration, gate enforcement, and exposed artifact publication.
+inputs:
+  - objective
+  - project_id
+  - group_id
+  - dispatch_plan
+outputs:
+  - exposed/summary.md
+  - exposed/handoff.json
+  - exposed/INTEGRATION_NOTES.md
+failure_modes:
+  - blocked_uncited_claims
+  - unresolved_cross_domain_decision
+  - missing_required_artifact
+autouse_triggers:
+  - group objective dispatch
+  - specialist handoff aggregation
 ---
 
 # {{DISPLAY_NAME}} Head Controller
@@ -30,6 +49,6 @@ Route and merge specialist outputs for `{{GROUP_ID}}` in project `{{PROJECT_ID}}
 {{SPECIALIST_SKILL_BLOCK}}
 
 ## Output Contract
-- `dispatch_plan.json`
-- `decision_log.md`
-- `artifact_index.md`
+- `exposed/summary.md`
+- `exposed/handoff.json`
+- `exposed/INTEGRATION_NOTES.md`

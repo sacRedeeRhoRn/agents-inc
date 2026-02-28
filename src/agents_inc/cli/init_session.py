@@ -45,11 +45,17 @@ def _ask(prompt: str, default: str = "") -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Interactive intake and project bootstrap for agents-inc")
+    parser = argparse.ArgumentParser(
+        description="Interactive intake and project bootstrap for agents-inc"
+    )
     parser.add_argument("--fabric-root", default=None, help="path to fabric root")
     parser.add_argument("--project-root", default=None, help="explicit project directory path")
-    parser.add_argument("--projects-root", default=None, help="base directory containing all project roots")
-    parser.add_argument("--config-path", default=None, help="config file path (default ~/.agents-inc/config.yaml)")
+    parser.add_argument(
+        "--projects-root", default=None, help="base directory containing all project roots"
+    )
+    parser.add_argument(
+        "--config-path", default=None, help="config file path (default ~/.agents-inc/config.yaml)"
+    )
     parser.add_argument("--project-id", default=None)
     parser.add_argument("--groups", default=None, help="comma-separated group ids to activate")
     parser.add_argument("--task", default=None)
@@ -57,7 +63,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--compute", default=None, choices=["cpu", "gpu", "cuda"])
     parser.add_argument("--remote-cluster", default=None, choices=["yes", "no"])
     parser.add_argument("--output-target", default=None)
-    parser.add_argument("--non-interactive", action="store_true", help="require all prompt fields via args")
+    parser.add_argument(
+        "--non-interactive", action="store_true", help="require all prompt fields via args"
+    )
     parser.add_argument("--target-skill-dir", default=None)
     parser.add_argument("--mode", default="ask", choices=["ask", "new", "resume"])
     parser.add_argument("--resume-project-id", default=None)
@@ -113,7 +121,7 @@ def _build_long_run_command(fabric_root: Path, project_id: str, task: str) -> st
             "agents-inc long-run \\",
             f"  --fabric-root {fabric_root} \\",
             f"  --project-id {project_id} \\",
-            f"  --task \"{task}\" \\",
+            f'  --task "{task}" \\',
             "  --groups all \\",
             "  --duration-min 75 \\",
             "  --strict-isolation hard-fail \\",
@@ -316,7 +324,7 @@ def _build_checkpoint_payload(
     isolation_summary: Optional[dict] = None,
 ) -> dict:
     payload = {
-        "schema_version": "1.0",
+        "schema_version": "2.0",
         "project_id": project_id,
         "project_root": str(project_root),
         "fabric_root": str(project_fabric_root),
@@ -392,7 +400,9 @@ def _load_from_compacted(
         compact.get("router_call")
         or f"Use $research-router for project {project_id} group {primary_group}: {task}."
     )
-    checkpoint_id = str(compact.get("latest_checkpoint_id") or compact.get("compact_id") or compact_ref)
+    checkpoint_id = str(
+        compact.get("latest_checkpoint_id") or compact.get("compact_id") or compact_ref
+    )
     return visibility, selected_groups, task, router_call, checkpoint_id, compact
 
 
@@ -430,7 +440,11 @@ def run_resume_flow(
 
     project_id = str(found["project_id"])
     project_root = Path(str(found["project_root"])).expanduser().resolve()
-    project_fabric_root = Path(str(found.get("fabric_root") or (project_root / "agent_group_fabric"))).expanduser().resolve()
+    project_fabric_root = (
+        Path(str(found.get("fabric_root") or (project_root / "agent_group_fabric")))
+        .expanduser()
+        .resolve()
+    )
     ensure_fabric_root_initialized(project_fabric_root)
 
     checkpoint_ref = str(args.resume_checkpoint or "latest")
@@ -454,24 +468,28 @@ def run_resume_flow(
         )
         resume_source = "compact"
     elif resume_mode == "rehydrate":
-        visibility, groups, task, router_call, checkpoint_id, loaded_payload = _load_from_checkpoint(
-            project_root=project_root,
-            project_fabric_root=project_fabric_root,
-            project_id=project_id,
-            checkpoint_ref=checkpoint_ref,
-            task_override=args.task,
+        visibility, groups, task, router_call, checkpoint_id, loaded_payload = (
+            _load_from_checkpoint(
+                project_root=project_root,
+                project_fabric_root=project_fabric_root,
+                project_id=project_id,
+                checkpoint_ref=checkpoint_ref,
+                task_override=args.task,
+            )
         )
         resume_source = "rehydrate"
     else:
         used_compact = False
         if checkpoint_ref == "latest":
             try:
-                visibility, groups, task, router_call, checkpoint_id, loaded_payload = _load_from_compacted(
-                    project_root=project_root,
-                    project_fabric_root=project_fabric_root,
-                    project_id=project_id,
-                    compact_ref="latest",
-                    task_override=args.task,
+                visibility, groups, task, router_call, checkpoint_id, loaded_payload = (
+                    _load_from_compacted(
+                        project_root=project_root,
+                        project_fabric_root=project_fabric_root,
+                        project_id=project_id,
+                        compact_ref="latest",
+                        task_override=args.task,
+                    )
                 )
                 used_compact = True
                 resume_source = "compact"
@@ -479,12 +497,14 @@ def run_resume_flow(
                 used_compact = False
 
         if not used_compact:
-            visibility, groups, task, router_call, checkpoint_id, loaded_payload = _load_from_checkpoint(
-                project_root=project_root,
-                project_fabric_root=project_fabric_root,
-                project_id=project_id,
-                checkpoint_ref=checkpoint_ref,
-                task_override=args.task,
+            visibility, groups, task, router_call, checkpoint_id, loaded_payload = (
+                _load_from_checkpoint(
+                    project_root=project_root,
+                    project_fabric_root=project_fabric_root,
+                    project_id=project_id,
+                    checkpoint_ref=checkpoint_ref,
+                    task_override=args.task,
+                )
             )
             resume_source = "rehydrate"
 
@@ -497,7 +517,9 @@ def run_resume_flow(
         router_call=router_call,
         long_run_command=long_run_command,
         resume_source=resume_source,
-        session_code=str(loaded_payload.get("session_code") or loaded_payload.get("compact_id") or ""),
+        session_code=str(
+            loaded_payload.get("session_code") or loaded_payload.get("compact_id") or ""
+        ),
     )
 
     manifest_path = project_fabric_root / "generated" / "projects" / project_id / "manifest.yaml"
@@ -620,7 +642,9 @@ def main() -> int:
                 if not value
             ]
             if missing:
-                raise FabricError("missing required args in non-interactive mode: " + ", ".join(missing))
+                raise FabricError(
+                    "missing required args in non-interactive mode: " + ", ".join(missing)
+                )
             task = args.task or ""
             timeline = args.timeline or ""
             compute = args.compute or "cpu"
@@ -630,7 +654,9 @@ def main() -> int:
             task = args.task or _ask("What task do you want to start")
             timeline = args.timeline or _ask("Timeline", "2 weeks")
             compute = args.compute or _ask("Compute requirement (cpu/gpu/cuda)", "cpu").lower()
-            remote_cluster = args.remote_cluster or _ask("Remote cluster over SSH? (yes/no)", "yes").lower()
+            remote_cluster = (
+                args.remote_cluster or _ask("Remote cluster over SSH? (yes/no)", "yes").lower()
+            )
             output_target = args.output_target or _ask("Output target", "technical report")
 
         suggested_groups, rationale = suggest_groups(task, compute, remote_cluster, output_target)
@@ -642,7 +668,9 @@ def main() -> int:
             print("Recommended groups:")
             for group_id in suggested_groups:
                 print(f"- {group_id}")
-            selected_groups = _parse_groups(_ask("Groups to activate (comma-separated)", default_groups))
+            selected_groups = _parse_groups(
+                _ask("Groups to activate (comma-separated)", default_groups)
+            )
         if not selected_groups:
             selected_groups = suggested_groups
 
@@ -663,9 +691,11 @@ def main() -> int:
             elif args.non_interactive:
                 projects_root = saved_projects_root
             else:
-                projects_root = Path(
-                    _ask("Projects root directory", str(saved_projects_root))
-                ).expanduser().resolve()
+                projects_root = (
+                    Path(_ask("Projects root directory", str(saved_projects_root)))
+                    .expanduser()
+                    .resolve()
+                )
             project_root = projects_root / project_id
 
         set_projects_root(config_path, projects_root)
@@ -674,7 +704,9 @@ def main() -> int:
         project_fabric_root = project_root / "agent_group_fabric"
         ensure_fabric_root_initialized(project_fabric_root)
 
-        existing_manifest = project_fabric_root / "generated" / "projects" / project_id / "manifest.yaml"
+        existing_manifest = (
+            project_fabric_root / "generated" / "projects" / project_id / "manifest.yaml"
+        )
         if existing_manifest.exists() and not args.overwrite_existing:
             if args.non_interactive:
                 raise FabricError(
@@ -731,7 +763,9 @@ def main() -> int:
         _, manifest = load_project_manifest(project_fabric_root, project_id)
 
         primary_group = selected_groups[0]
-        router_call = f"Use $research-router for project {project_id} group {primary_group}: {task}."
+        router_call = (
+            f"Use $research-router for project {project_id} group {primary_group}: {task}."
+        )
         long_run_command = _build_long_run_command(project_fabric_root, project_id, task)
 
         latest_artifacts = {

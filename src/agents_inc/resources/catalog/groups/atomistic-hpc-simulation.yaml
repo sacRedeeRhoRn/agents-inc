@@ -1,133 +1,310 @@
-group_id: "atomistic-hpc-simulation"
-display_name: "Atomistic HPC Simulation Group"
-template_version: "1.0.0"
-domain: "hpc-atomistic-simulation"
+group_id: atomistic-hpc-simulation
+display_name: Atomistic HPC Simulation Group
+template_version: 2.0.0
+domain: hpc-atomistic-simulation
 head:
-  agent_id: "atomistic-hpc-simulation-head"
-  skill_name: "grp-atomistic-hpc-simulation-head"
-  mission: "Coordinate high-fidelity atomistic simulation workflows across remote HPC resources with strict evidence and reproducibility controls."
+  agent_id: atomistic-hpc-simulation-head
+  skill_name: grp-atomistic-hpc-simulation-head
+  mission: Coordinate high-fidelity atomistic simulation workflows across remote HPC
+    resources with strict evidence and reproducibility controls.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
 specialists:
-  - agent_id: "vasp-expert"
-    skill_name: "grp-atomistic-hpc-simulation-vasp"
-    focus: "VASP workflows including DFT setup, convergence policy, and electronic structure outputs"
-    required_references:
-      - "references/vasp-core.md"
-    required_outputs:
-      - "assumptions.md"
-      - "claims_with_citations.md"
-      - "vasp-plan.md"
-    execution:
-      remote_transport: "ssh"
-      scheduler: "pbs"
-      hardware: "cpu"
-      requires_gpu: false
-  - agent_id: "lammps-expert"
-    skill_name: "grp-atomistic-hpc-simulation-lammps"
-    focus: "LAMMPS MD configuration, potential selection, and production run strategy"
-    required_references:
-      - "references/lammps-core.md"
-    required_outputs:
-      - "assumptions.md"
-      - "claims_with_citations.md"
-      - "lammps-plan.md"
-    execution:
-      remote_transport: "ssh"
-      scheduler: "pbs"
-      hardware: "cpu"
-      requires_gpu: false
-  - agent_id: "metadynamics-expert"
-    skill_name: "grp-atomistic-hpc-simulation-metadynamics"
-    focus: "Enhanced sampling with metadynamics, CV design, and free-energy surface interpretation"
-    depends_on:
-      - "lammps-expert"
-    required_references:
-      - "references/metadynamics-core.md"
-    required_outputs:
-      - "assumptions.md"
-      - "claims_with_citations.md"
-      - "metadynamics-plan.md"
-    execution:
-      remote_transport: "ssh"
-      scheduler: "pbs"
-      hardware: "cpu"
-      requires_gpu: false
-  - agent_id: "scheduler-remote-ops-expert"
-    skill_name: "grp-atomistic-hpc-simulation-scheduler-ops"
-    focus: "SSH orchestration, PBS-first and Slurm-compatible job submission strategy, failure recovery"
-    required_references:
-      - "references/hpc-scheduler-core.md"
-    required_outputs:
-      - "remote-ops-plan.md"
-      - "claims_with_citations.md"
-    execution:
-      remote_transport: "ssh"
-      scheduler: "pbs"
-      hardware: "cpu"
-      requires_gpu: false
-  - agent_id: "cuda-performance-expert"
-    skill_name: "grp-atomistic-hpc-simulation-cuda"
-    focus: "CUDA queue usage, GPU performance tuning, memory and throughput diagnostics"
-    depends_on:
-      - "scheduler-remote-ops-expert"
-    required_references:
-      - "references/cuda-performance-core.md"
-    required_outputs:
-      - "cuda-plan.md"
-      - "claims_with_citations.md"
-    execution:
-      remote_transport: "ssh"
-      scheduler: "slurm"
-      hardware: "cuda-gpu"
-      requires_gpu: true
-  - agent_id: "simulation-postprocessing-expert"
-    skill_name: "grp-atomistic-hpc-simulation-postprocessing"
-    focus: "Trajectory/post-processing pipelines and uncertainty-aware summary extraction"
-    depends_on:
-      - "vasp-expert"
-      - "lammps-expert"
-      - "metadynamics-expert"
-    required_references:
-      - "references/postprocessing-core.md"
-    required_outputs:
-      - "postprocessing-summary.md"
-      - "claims_with_citations.md"
-    execution:
-      remote_transport: "ssh"
-      scheduler: "pbs"
-      hardware: "cpu"
-      requires_gpu: false
-  - agent_id: "developer-bridge-expert"
-    skill_name: "grp-atomistic-hpc-simulation-developer-bridge"
-    focus: "Cross-group integration with developer group for scripts, SSH tooling, and reliability hardening"
-    depends_on:
-      - "scheduler-remote-ops-expert"
-    required_references:
-      - "references/developer-bridge-core.md"
-    required_outputs:
-      - "integration-plan.md"
-      - "claims_with_citations.md"
-    execution:
-      remote_transport: "ssh"
-      scheduler: "pbs"
-      hardware: "cpu"
-      requires_gpu: false
+- agent_id: vasp-expert
+  skill_name: grp-atomistic-hpc-simulation-vasp
+  focus: VASP workflows including DFT setup, convergence policy, and electronic structure
+    outputs
+  required_references:
+  - references/vasp-core.md
+  required_outputs:
+  - assumptions.md
+  - claims_with_citations.md
+  - vasp-plan.md
+  - work.md
+  - handoff.json
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+- agent_id: lammps-expert
+  skill_name: grp-atomistic-hpc-simulation-lammps
+  focus: LAMMPS MD configuration, potential selection, and production run strategy
+  required_references:
+  - references/lammps-core.md
+  required_outputs:
+  - assumptions.md
+  - claims_with_citations.md
+  - lammps-plan.md
+  - work.md
+  - handoff.json
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+- agent_id: metadynamics-expert
+  skill_name: grp-atomistic-hpc-simulation-metadynamics
+  focus: Enhanced sampling with metadynamics, CV design, and free-energy surface interpretation
+  depends_on:
+  - agent_id: lammps-expert
+    required_artifacts:
+    - internal/lammps-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  required_references:
+  - references/metadynamics-core.md
+  required_outputs:
+  - assumptions.md
+  - claims_with_citations.md
+  - metadynamics-plan.md
+  - work.md
+  - handoff.json
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+- agent_id: scheduler-remote-ops-expert
+  skill_name: grp-atomistic-hpc-simulation-scheduler-ops
+  focus: SSH orchestration, PBS-first and Slurm-compatible job submission strategy,
+    failure recovery
+  required_references:
+  - references/hpc-scheduler-core.md
+  required_outputs:
+  - remote-ops-plan.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+- agent_id: cuda-performance-expert
+  skill_name: grp-atomistic-hpc-simulation-cuda
+  focus: CUDA queue usage, GPU performance tuning, memory and throughput diagnostics
+  depends_on:
+  - agent_id: scheduler-remote-ops-expert
+    required_artifacts:
+    - internal/scheduler-remote-ops-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  required_references:
+  - references/cuda-performance-core.md
+  required_outputs:
+  - cuda-plan.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  execution:
+    remote_transport: ssh
+    scheduler: slurm
+    hardware: cuda-gpu
+    requires_gpu: true
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+- agent_id: simulation-postprocessing-expert
+  skill_name: grp-atomistic-hpc-simulation-postprocessing
+  focus: Trajectory/post-processing pipelines and uncertainty-aware summary extraction
+  depends_on:
+  - agent_id: vasp-expert
+    required_artifacts:
+    - internal/vasp-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  - agent_id: lammps-expert
+    required_artifacts:
+    - internal/lammps-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  - agent_id: metadynamics-expert
+    required_artifacts:
+    - internal/metadynamics-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  required_references:
+  - references/postprocessing-core.md
+  required_outputs:
+  - postprocessing-summary.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+- agent_id: developer-bridge-expert
+  skill_name: grp-atomistic-hpc-simulation-developer-bridge
+  focus: Cross-group integration with developer group for scripts, SSH tooling, and
+    reliability hardening
+  depends_on:
+  - agent_id: scheduler-remote-ops-expert
+    required_artifacts:
+    - internal/scheduler-remote-ops-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  - agent_id: vasp-expert
+    required_artifacts:
+    - internal/vasp-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  required_references:
+  - references/developer-bridge-core.md
+  required_outputs:
+  - integration-plan.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  execution:
+    remote_transport: ssh
+    scheduler: pbs
+    hardware: cpu
+    requires_gpu: false
+  role: integration
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+- agent_id: evidence-review-specialist
+  skill_name: grp-atomistic-hpc-simulation-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Atomistic HPC Simulation
+    Group
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: vasp-expert
+    required_artifacts:
+    - internal/vasp-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: repro-qa-specialist
+  skill_name: grp-atomistic-hpc-simulation-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Atomistic HPC Simulation
+    Group
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: vasp-expert
+    required_artifacts:
+    - internal/vasp-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 interaction:
-  mode: "interactive-separated"
+  mode: interactive-separated
   linked_groups:
-    - "developer"
+  - developer
 execution_defaults:
-  remote_transport: "ssh"
+  remote_transport: ssh
   schedulers:
-    - "pbs"
-    - "slurm"
+  - pbs
+  - slurm
   hardware:
-    - "cpu"
-    - "cuda-gpu"
-tool_profile: "hpc-simulation-default"
+  - cpu
+  - cuda-gpu
+tool_profile: hpc-simulation-default
 default_workdirs:
-  - "inputs"
-  - "analysis"
-  - "outputs"
+- inputs
+- analysis
+- outputs
 quality_gates:
   citation_required: true
   unresolved_claims_block: true
@@ -135,3 +312,27 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
+schema_version: '2.0'
+purpose: Coordinate expert specialists for Atomistic HPC Simulation Group objectives.
+success_criteria:
+- All required artifacts produced
+- Gate profile satisfied
+- Exposed handoff consumable
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v2
+  specialist_output_schema: specialist-handoff-v2
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true

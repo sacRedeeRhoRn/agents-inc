@@ -1,7 +1,8 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
-title: "Generated Project Manifest"
+title: "Generated Project Manifest v2"
 type: object
 required:
+  - schema_version
   - project_id
   - selected_groups
   - install_targets
@@ -11,6 +12,9 @@ required:
   - overlays
   - visibility
 properties:
+  schema_version:
+    type: string
+    const: "2.0"
   project_id:
     type: string
     pattern: "^[a-z0-9-]+$"

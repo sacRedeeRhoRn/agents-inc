@@ -5,7 +5,7 @@ Audit technical outputs for reproducibility, consistency, and decision-risk cont
 
 ## Group Identity
 - `group_id`: `quality-assurance`
-- `template_version`: `1.0.0`
+- `template_version`: `2.0.0`
 - `tool_profile`: `qa-default`
 - `head_agent`: `quality-assurance-head`
 - `head_skill`: `proj-proj-battery-001-quality-assurance-quality-assurance-head`
@@ -14,11 +14,15 @@ Audit technical outputs for reproducibility, consistency, and decision-risk cont
 - `reproducibility-auditor`: Reproducibility checks, parameter traceability, and artifact completeness (skill: `proj-proj-battery-001-quality-assurance-reproducibility-auditor`)
 - `consistency-auditor`: Cross-document consistency checks and contradiction detection (skill: `proj-proj-battery-001-quality-assurance-consistency-auditor`)
 - `risk-auditor`: Risk classification, severity tagging, and mitigation recommendation framing (skill: `proj-proj-battery-001-quality-assurance-risk-auditor`)
+- `integration-specialist`: Cross-artifact integration and consumability checks for Quality Assurance Group (skill: `proj-proj-battery-001-quality-assurance-integration-specialist`)
+- `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Quality Assurance Group (skill: `proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b`)
 
 ## Work Directories
 - `generated/projects/proj-battery-001/work/quality-assurance/reproducibility-auditor`
 - `generated/projects/proj-battery-001/work/quality-assurance/consistency-auditor`
 - `generated/projects/proj-battery-001/work/quality-assurance/risk-auditor`
+- `generated/projects/proj-battery-001/work/quality-assurance/integration-specialist`
+- `generated/projects/proj-battery-001/work/quality-assurance/evidence-review-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/quality-assurance/internal/<specialist>/...`
@@ -61,10 +65,20 @@ END_LOCKED:exposure_policy
 ## Expected Deliverables
 - `repro_audit.md` from `reproducibility-auditor`
 - `claims_with_citations.md` from `reproducibility-auditor`
+- `work.md` from `reproducibility-auditor`
+- `handoff.json` from `reproducibility-auditor`
 - `consistency_audit.md` from `consistency-auditor`
 - `claims_with_citations.md` from `consistency-auditor`
+- `work.md` from `consistency-auditor`
+- `handoff.json` from `consistency-auditor`
 - `risk_register.md` from `risk-auditor`
 - `claims_with_citations.md` from `risk-auditor`
+- `work.md` from `risk-auditor`
+- `handoff.json` from `risk-auditor`
+- `work.md` from `integration-specialist`
+- `handoff.json` from `integration-specialist`
+- `work.md` from `evidence-review-specialist`
+- `handoff.json` from `evidence-review-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`

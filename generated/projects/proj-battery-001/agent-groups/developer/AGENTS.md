@@ -5,7 +5,7 @@ Deliver robust implementation, debugging, and automation support for research pr
 
 ## Group Identity
 - `group_id`: `developer`
-- `template_version`: `1.0.0`
+- `template_version`: `2.0.0`
 - `tool_profile`: `developer-default`
 - `head_agent`: `developer-head`
 - `head_skill`: `proj-proj-battery-001-developer-developer-head`
@@ -14,11 +14,15 @@ Deliver robust implementation, debugging, and automation support for research pr
 - `python-expert`: Python architecture, package reliability, tests, and runtime debugging (skill: `proj-proj-battery-001-developer-python-expert`)
 - `shell-expert`: Shell automation, reproducible scripts, CLI hardening (skill: `proj-proj-battery-001-developer-shell-expert`)
 - `ssh-remote-ops-expert`: Remote operations, secure SSH workflows, transfer and execution protocols (skill: `proj-proj-battery-001-developer-ssh-remote-ops-expert`)
+- `integration-specialist`: Cross-artifact integration and consumability checks for Developer Group (skill: `proj-proj-battery-001-developer-integration-specialist`)
+- `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Developer Group (skill: `proj-proj-battery-001-developer-evidence-review-specialist`)
 
 ## Work Directories
 - `generated/projects/proj-battery-001/work/developer/python-expert`
 - `generated/projects/proj-battery-001/work/developer/shell-expert`
 - `generated/projects/proj-battery-001/work/developer/ssh-remote-ops-expert`
+- `generated/projects/proj-battery-001/work/developer/integration-specialist`
+- `generated/projects/proj-battery-001/work/developer/evidence-review-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/developer/internal/<specialist>/...`
@@ -62,10 +66,20 @@ END_LOCKED:exposure_policy
 - `implementation_patch.md` from `python-expert`
 - `test_plan.md` from `python-expert`
 - `claims_with_citations.md` from `python-expert`
+- `work.md` from `python-expert`
+- `handoff.json` from `python-expert`
 - `automation_scripts.md` from `shell-expert`
 - `claims_with_citations.md` from `shell-expert`
+- `work.md` from `shell-expert`
+- `handoff.json` from `shell-expert`
 - `remote_ops_plan.md` from `ssh-remote-ops-expert`
 - `claims_with_citations.md` from `ssh-remote-ops-expert`
+- `work.md` from `ssh-remote-ops-expert`
+- `handoff.json` from `ssh-remote-ops-expert`
+- `work.md` from `integration-specialist`
+- `handoff.json` from `integration-specialist`
+- `work.md` from `evidence-review-specialist`
+- `handoff.json` from `evidence-review-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`

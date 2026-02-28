@@ -16,7 +16,9 @@ from agents_inc.core.fabric_lib import (
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Sync locked sections from templates into generated project overlays")
+    parser = argparse.ArgumentParser(
+        description="Sync locked sections from templates into generated project overlays"
+    )
     parser.add_argument("--project-id", required=True)
     parser.add_argument("--fabric-root", default=None, help="path to fabric root")
     parser.add_argument(
@@ -29,7 +31,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def render_agents_template(fabric_root: Path, project_id: str, group: dict) -> str:
-    template = (fabric_root / "templates" / "group" / "AGENTS.template.md").read_text(encoding="utf-8")
+    template = (fabric_root / "templates" / "group" / "AGENTS.template.md").read_text(
+        encoding="utf-8"
+    )
     specialist_block = "\n".join(
         [
             "- `{0}`: {1} (skill: `{2}`)".format(
@@ -40,7 +44,9 @@ def render_agents_template(fabric_root: Path, project_id: str, group: dict) -> s
     )
     workdir_block = "\n".join(
         [
-            "- `generated/projects/{0}/work/{1}/{2}`".format(project_id, group["group_id"], s["agent_id"])
+            "- `generated/projects/{0}/work/{1}/{2}`".format(
+                project_id, group["group_id"], s["agent_id"]
+            )
             for s in group["specialists"]
         ]
     )
@@ -63,7 +69,9 @@ def render_agents_template(fabric_root: Path, project_id: str, group: dict) -> s
             "TEMPLATE_VERSION": group.get("template_version", "1.0.0"),
             "TOOL_PROFILE": group.get("tool_profile", "default"),
             "HEAD_AGENT_ID": group["head"]["agent_id"],
-            "HEAD_SKILL_NAME": group["head"].get("effective_skill_name", group["head"]["skill_name"]),
+            "HEAD_SKILL_NAME": group["head"].get(
+                "effective_skill_name", group["head"]["skill_name"]
+            ),
             "GROUP_MISSION": group["head"].get("mission", ""),
             "SPECIALIST_BLOCK": specialist_block,
             "WORKDIR_BLOCK": workdir_block,
@@ -97,7 +105,10 @@ def main() -> int:
             if not isinstance(group, dict):
                 raise FabricError(f"invalid group manifest: {group_manifest_path}")
 
-            if args.from_template_version and group.get("template_version") != args.from_template_version:
+            if (
+                args.from_template_version
+                and group.get("template_version") != args.from_template_version
+            ):
                 skipped += 1
                 continue
 
@@ -109,7 +120,9 @@ def main() -> int:
                 template_allowlist, {"TOOL_PROFILE": group.get("tool_profile", "default")}
             )
 
-            merged_agents = merge_locked_sections(agents_path.read_text(encoding="utf-8"), canonical_agents)
+            merged_agents = merge_locked_sections(
+                agents_path.read_text(encoding="utf-8"), canonical_agents
+            )
             merged_allowlist = merge_locked_sections(
                 allowlist_path.read_text(encoding="utf-8"), canonical_allowlist
             )

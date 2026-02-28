@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -28,6 +29,18 @@ class CLIMainTests(unittest.TestCase):
         self.assertEqual(code, 7)
         mocked.assert_called_once()
 
+    def test_main_routes_groups_command(self) -> None:
+        with patch("agents_inc.cli.groups.main", return_value=9) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "groups", "list"]):
+                code = cli_main.main()
+        self.assertEqual(code, 9)
+        mocked.assert_called_once()
+
+    def test_main_version_flag(self) -> None:
+        with patch.object(sys, "argv", ["agents-inc", "--version"]):
+            code = cli_main.main()
+        self.assertEqual(code, 0)
+
     def test_resume_cli_no_launch(self) -> None:
         summary = {
             "project_id": "proj-test",
@@ -43,25 +56,29 @@ class CLIMainTests(unittest.TestCase):
         run_resume.assert_called_once()
 
     def test_resume_cli_launches_codex(self) -> None:
-        summary = {
-            "project_id": "proj-test",
-            "project_root": "/tmp/proj-test",
-            "session_code": "sc-1",
-            "selected_groups": ["developer", "material-scientist"],
-            "router_call": "Use $research-router for project proj-test group developer: test.",
-        }
-        with patch("agents_inc.cli.resume.run_resume_flow", return_value=summary):
-            with patch("agents_inc.cli.resume.shutil.which", return_value="/usr/bin/codex"):
-                with patch("agents_inc.cli.resume.subprocess.run") as mocked_run:
-                    mocked_run.return_value.returncode = 0
-                    with patch.object(sys, "argv", ["agents-inc-resume", "proj-test"]):
-                        code = resume_cli.main()
-        self.assertEqual(code, 0)
-        mocked_run.assert_called_once()
-        cmd = mocked_run.call_args[0][0]
-        self.assertEqual(cmd[0], "/usr/bin/codex")
-        self.assertEqual(cmd[1], "-C")
-        self.assertEqual(cmd[2], "/tmp/proj-test")
+        with tempfile.TemporaryDirectory() as td:
+            summary = {
+                "project_id": "proj-test",
+                "project_root": td,
+                "session_code": "sc-1",
+                "selected_groups": ["developer", "material-scientist"],
+                "router_call": "Use $research-router for project proj-test group developer: test.\nwith newline.",
+            }
+            with patch("agents_inc.cli.resume.run_resume_flow", return_value=summary):
+                with patch("agents_inc.cli.resume.shutil.which", return_value="/usr/bin/codex"):
+                    with patch("agents_inc.cli.resume.subprocess.run") as mocked_run:
+                        mocked_run.return_value.returncode = 0
+                        with patch.object(sys, "argv", ["agents-inc-resume", "proj-test"]):
+                            code = resume_cli.main()
+            self.assertEqual(code, 0)
+            mocked_run.assert_called_once()
+            cmd = mocked_run.call_args[0][0]
+            self.assertEqual(cmd[0], "/usr/bin/codex")
+            self.assertEqual(cmd[1], "-C")
+            self.assertEqual(cmd[2], td)
+            self.assertNotIn("\n", cmd[3])
+            prompt_file = Path(td) / ".agents-inc" / "state" / "resume-prompt.md"
+            self.assertTrue(prompt_file.exists())
 
 
 if __name__ == "__main__":

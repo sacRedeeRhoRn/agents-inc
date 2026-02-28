@@ -1,43 +1,138 @@
-group_id: "publication-packaging"
-display_name: "Publication Packaging Group"
-template_version: "1.0.0"
-domain: "publication-delivery"
+group_id: publication-packaging
+display_name: Publication Packaging Group
+template_version: 2.0.0
+domain: publication-delivery
 head:
-  agent_id: "publication-packaging-head"
-  skill_name: "grp-publication-packaging-head"
-  mission: "Package validated research outputs into publication-ready narrative, figures, and supplements."
+  agent_id: publication-packaging-head
+  skill_name: grp-publication-packaging-head
+  mission: Package validated research outputs into publication-ready narrative, figures,
+    and supplements.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
 specialists:
-  - agent_id: "manuscript-structure-specialist"
-    skill_name: "grp-publication-packaging-manuscript"
-    focus: "Manuscript structure, argument flow, and section-level coherence"
-    required_references:
-      - "references/manuscript-core.md"
-    required_outputs:
-      - "manuscript_outline.md"
-      - "claims_with_citations.md"
-  - agent_id: "figure-table-specialist"
-    skill_name: "grp-publication-packaging-figures"
-    focus: "Figure/table completeness, annotation quality, and caption evidence coverage"
-    required_references:
-      - "references/figure-table-core.md"
-    required_outputs:
-      - "figure_table_index.md"
-      - "claims_with_citations.md"
-  - agent_id: "supplement-specialist"
-    skill_name: "grp-publication-packaging-supplement"
-    focus: "Supplementary methods, robustness notes, and reproducibility appendices"
-    depends_on:
-      - "manuscript-structure-specialist"
-    required_references:
-      - "references/supplement-core.md"
-    required_outputs:
-      - "supplement_plan.md"
-      - "claims_with_citations.md"
-tool_profile: "publication-default"
+- agent_id: manuscript-structure-specialist
+  skill_name: grp-publication-packaging-manuscript
+  focus: Manuscript structure, argument flow, and section-level coherence
+  required_references:
+  - references/manuscript-core.md
+  required_outputs:
+  - manuscript_outline.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: figure-table-specialist
+  skill_name: grp-publication-packaging-figures
+  focus: Figure/table completeness, annotation quality, and caption evidence coverage
+  required_references:
+  - references/figure-table-core.md
+  required_outputs:
+  - figure_table_index.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: evidence-review
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: manuscript-structure-specialist
+    required_artifacts:
+    - internal/manuscript-structure-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: supplement-specialist
+  skill_name: grp-publication-packaging-supplement
+  focus: Supplementary methods, robustness notes, and reproducibility appendices
+  depends_on:
+  - agent_id: manuscript-structure-specialist
+    required_artifacts:
+    - internal/manuscript-structure-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  required_references:
+  - references/supplement-core.md
+  required_outputs:
+  - supplement_plan.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: repro-qa
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: integration-specialist
+  skill_name: grp-publication-packaging-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Publication Packaging
+    Group
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: manuscript-structure-specialist
+    required_artifacts:
+    - internal/manuscript-structure-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+tool_profile: publication-default
 default_workdirs:
-  - "inputs"
-  - "analysis"
-  - "outputs"
+- inputs
+- analysis
+- outputs
 quality_gates:
   citation_required: true
   unresolved_claims_block: true
@@ -45,3 +140,36 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
+schema_version: '2.0'
+purpose: Coordinate expert specialists for Publication Packaging Group objectives.
+success_criteria:
+- All required artifacts produced
+- Gate profile satisfied
+- Exposed handoff consumable
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v2
+  specialist_output_schema: specialist-handoff-v2
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+interaction:
+  mode: interactive-separated
+  linked_groups: []
+execution_defaults:
+  remote_transport: local
+  schedulers:
+  - local
+  hardware:
+  - cpu

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -11,8 +10,9 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import yaml
 
-TEMPLATE_VERSION = "1.0.0"
-BUNDLE_VERSION = "1.0.0"
+SCHEMA_VERSION = "2.0"
+TEMPLATE_VERSION = "2.0.0"
+BUNDLE_VERSION = "2.0.0"
 ROUTER_SKILL_NAME = "research-router"
 DEFAULT_INSTALL_TARGET = str(Path.home() / ".codex" / "skills" / "local")
 LOCKED_SECTION_PATTERN = re.compile(
@@ -21,10 +21,28 @@ LOCKED_SECTION_PATTERN = re.compile(
 )
 SKILL_ALLOWED_FRONTMATTER_KEYS = {
     "name",
+    "version",
+    "role",
     "description",
-    "license",
+    "scope",
+    "inputs",
+    "outputs",
+    "failure_modes",
+    "autouse_triggers",
     "allowed-tools",
     "metadata",
+}
+
+SKILL_REQUIRED_FRONTMATTER_KEYS = {
+    "name",
+    "version",
+    "role",
+    "description",
+    "scope",
+    "inputs",
+    "outputs",
+    "failure_modes",
+    "autouse_triggers",
 }
 REQUIRED_FABRIC_DIRS = ["catalog", "templates", "schemas", "generated/projects"]
 
@@ -64,7 +82,11 @@ def slugify(value: str) -> str:
 
 def default_fabric_root(cwd: Optional[Path] = None) -> Path:
     base = (cwd or Path.cwd()).resolve()
-    if (base / "catalog").exists() and (base / "templates").exists() and (base / "schemas").exists():
+    if (
+        (base / "catalog").exists()
+        and (base / "templates").exists()
+        and (base / "schemas").exists()
+    ):
         return base
     if (base / "agent_group_fabric").exists():
         candidate = (base / "agent_group_fabric").resolve()
@@ -217,21 +239,50 @@ def validate_skill_markdown(path: Path) -> List[str]:
     except Exception as exc:  # noqa: BLE001
         return [str(exc)]
 
-    unexpected = sorted(set(frontmatter.keys()) - SKILL_ALLOWED_FRONTMATTER_KEYS)
-    if unexpected:
+    missing = sorted(SKILL_REQUIRED_FRONTMATTER_KEYS - set(frontmatter.keys()))
+    if missing:
         errors.append(
-            "{0}: unexpected frontmatter key(s): {1}".format(path, ", ".join(unexpected))
+            "{0}: missing required frontmatter key(s): {1}".format(path, ", ".join(missing))
         )
 
+    unexpected = sorted(set(frontmatter.keys()) - SKILL_ALLOWED_FRONTMATTER_KEYS)
+    if unexpected:
+        errors.append("{0}: unexpected frontmatter key(s): {1}".format(path, ", ".join(unexpected)))
+
     name = frontmatter.get("name")
+    version = frontmatter.get("version")
+    role = frontmatter.get("role")
     description = frontmatter.get("description")
+    scope = frontmatter.get("scope")
+    inputs = frontmatter.get("inputs")
+    outputs = frontmatter.get("outputs")
+    failure_modes = frontmatter.get("failure_modes")
+    autouse_triggers = frontmatter.get("autouse_triggers")
     if not isinstance(name, str) or not re.match(r"^[a-z0-9-]+$", name):
         errors.append(f"{path}: frontmatter.name must be hyphen-case")
     elif len(name) > 64:
         errors.append(f"{path}: frontmatter.name too long ({len(name)} > 64)")
 
+    if not isinstance(version, str) or not re.match(r"^[0-9]+\.[0-9]+(?:\.[0-9]+)?$", version):
+        errors.append(f"{path}: frontmatter.version must be semantic version-like")
+
+    if role not in {"head", "specialist", "router"}:
+        errors.append(f"{path}: frontmatter.role must be one of head|specialist|router")
+
     if not isinstance(description, str) or len(description.strip()) < 10:
         errors.append(f"{path}: frontmatter.description must be a meaningful string")
+
+    if not isinstance(scope, str) or len(scope.strip()) < 3:
+        errors.append(f"{path}: frontmatter.scope must be a meaningful string")
+
+    if not isinstance(inputs, list) or not inputs:
+        errors.append(f"{path}: frontmatter.inputs must be non-empty list")
+    if not isinstance(outputs, list) or not outputs:
+        errors.append(f"{path}: frontmatter.outputs must be non-empty list")
+    if not isinstance(failure_modes, list) or not failure_modes:
+        errors.append(f"{path}: frontmatter.failure_modes must be non-empty list")
+    if not isinstance(autouse_triggers, list) or not autouse_triggers:
+        errors.append(f"{path}: frontmatter.autouse_triggers must be non-empty list")
 
     return errors
 
@@ -239,12 +290,17 @@ def validate_skill_markdown(path: Path) -> List[str]:
 def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
     errors: List[str] = []
     required = [
+        "schema_version",
         "group_id",
         "display_name",
         "template_version",
         "domain",
+        "purpose",
+        "success_criteria",
         "head",
         "specialists",
+        "required_artifacts",
+        "gate_profile",
         "tool_profile",
         "default_workdirs",
         "quality_gates",
@@ -256,6 +312,9 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
     if errors:
         return errors
 
+    if str(group.get("schema_version") or "") != SCHEMA_VERSION:
+        errors.append(f"{source}: schema_version must be '{SCHEMA_VERSION}'")
+
     group_id = group.get("group_id")
     if not isinstance(group_id, str) or not re.match(r"^[a-z0-9-]+$", group_id):
         errors.append(f"{source}: group_id must match ^[a-z0-9-]+$")
@@ -263,21 +322,42 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
     if not isinstance(group.get("display_name"), str) or len(group["display_name"].strip()) < 3:
         errors.append(f"{source}: display_name must be a non-trivial string")
 
+    if not isinstance(group.get("purpose"), str) or len(group["purpose"].strip()) < 8:
+        errors.append(f"{source}: purpose must be a meaningful string")
+
+    success = group.get("success_criteria")
+    if not isinstance(success, list) or not success:
+        errors.append(f"{source}: success_criteria must be non-empty list")
+
     head = group.get("head")
     if not isinstance(head, dict):
         errors.append(f"{source}: head must be a map")
     else:
-        for head_key in ["agent_id", "skill_name", "mission"]:
+        for head_key in ["agent_id", "skill_name", "mission", "publish_contract"]:
             if not head.get(head_key):
                 errors.append(f"{source}: head.{head_key} is required")
+        publish_contract = head.get("publish_contract")
+        if not isinstance(publish_contract, dict):
+            errors.append(f"{source}: head.publish_contract must be a map")
+        else:
+            required_exposed = publish_contract.get("exposed_required")
+            if not isinstance(required_exposed, list) or not required_exposed:
+                errors.append(
+                    f"{source}: head.publish_contract.exposed_required must be non-empty list"
+                )
+            if publish_contract.get("visibility") not in {"group-only", "full"}:
+                errors.append(
+                    f"{source}: head.publish_contract.visibility must be 'group-only' or 'full'"
+                )
 
     specialists = group.get("specialists")
-    if not isinstance(specialists, list) or not specialists:
-        errors.append(f"{source}: specialists must be a non-empty list")
+    if not isinstance(specialists, list) or len(specialists) < 4:
+        errors.append(f"{source}: specialists must be a list with at least 4 entries")
         return errors
 
     specialist_ids = set()
     all_agent_ids = set()
+    specialist_roles = set()
 
     if isinstance(head, dict) and head.get("agent_id"):
         all_agent_ids.add(head["agent_id"])
@@ -287,7 +367,16 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
         if not isinstance(specialist, dict):
             errors.append(f"{label} must be a map")
             continue
-        for spec_key in ["agent_id", "skill_name", "focus", "required_references", "required_outputs"]:
+        for spec_key in [
+            "agent_id",
+            "skill_name",
+            "role",
+            "focus",
+            "required_references",
+            "required_outputs",
+            "contract",
+            "depends_on",
+        ]:
             if spec_key not in specialist:
                 errors.append(f"{label}: missing '{spec_key}'")
 
@@ -299,6 +388,14 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
             if agent_id in all_agent_ids:
                 errors.append(f"{label}: agent_id '{agent_id}' conflicts with existing agent")
             all_agent_ids.add(agent_id)
+        else:
+            errors.append(f"{label}: agent_id must be string")
+
+        role = specialist.get("role")
+        if isinstance(role, str):
+            specialist_roles.add(role)
+        else:
+            errors.append(f"{label}: role must be string")
 
         refs = specialist.get("required_references", [])
         outs = specialist.get("required_outputs", [])
@@ -306,20 +403,66 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
             errors.append(f"{label}: required_references must be non-empty list")
         if not isinstance(outs, list) or not outs:
             errors.append(f"{label}: required_outputs must be non-empty list")
+        elif "handoff.json" not in [str(x) for x in outs]:
+            errors.append(f"{label}: required_outputs must include handoff.json")
 
         execution = specialist.get("execution", {})
         if execution and not isinstance(execution, dict):
             errors.append(f"{label}.execution must be a map")
 
-    specialist_id_set = {s.get("agent_id") for s in specialists if isinstance(s, dict) and s.get("agent_id")}
+        contract = specialist.get("contract")
+        if not isinstance(contract, dict):
+            errors.append(f"{label}: contract must be map")
+        else:
+            cin = contract.get("inputs")
+            cout = contract.get("outputs")
+            if not isinstance(cin, list) or not cin:
+                errors.append(f"{label}: contract.inputs must be non-empty list")
+            if not isinstance(cout, list) or not cout:
+                errors.append(f"{label}: contract.outputs must be non-empty list")
+            if not isinstance(contract.get("output_schema"), str) or not contract.get(
+                "output_schema"
+            ):
+                errors.append(f"{label}: contract.output_schema is required")
+
+    specialist_id_set = {
+        s.get("agent_id") for s in specialists if isinstance(s, dict) and s.get("agent_id")
+    }
     for idx, specialist in enumerate(specialists):
         deps = specialist.get("depends_on", []) if isinstance(specialist, dict) else []
         if deps and not isinstance(deps, list):
             errors.append(f"{source}: specialists[{idx}].depends_on must be a list")
             continue
         for dep in deps:
-            if dep not in specialist_id_set:
-                errors.append(f"{source}: specialists[{idx}] depends_on unknown agent '{dep}'")
+            if not isinstance(dep, dict):
+                errors.append(f"{source}: specialists[{idx}].depends_on entries must be maps")
+                continue
+            dep_agent = dep.get("agent_id")
+            if dep_agent not in specialist_id_set:
+                errors.append(
+                    f"{source}: specialists[{idx}] depends_on unknown agent '{dep_agent}'"
+                )
+            required_artifacts = dep.get("required_artifacts")
+            if not isinstance(required_artifacts, list) or not required_artifacts:
+                errors.append(
+                    f"{source}: specialists[{idx}].depends_on.required_artifacts must be non-empty list"
+                )
+            validate_with = dep.get("validate_with")
+            if not isinstance(validate_with, str) or not (
+                validate_with in {"exists", "json-parse"} or validate_with.startswith("schema:")
+            ):
+                errors.append(
+                    f"{source}: specialists[{idx}].depends_on.validate_with must be exists|json-parse|schema:<id>"
+                )
+            on_missing = dep.get("on_missing")
+            if on_missing not in {"request-rerun", "regenerate", "block"}:
+                errors.append(
+                    f"{source}: specialists[{idx}].depends_on.on_missing must be request-rerun|regenerate|block"
+                )
+
+    for role in {"domain-core", "integration", "evidence-review", "repro-qa"}:
+        if role not in specialist_roles:
+            errors.append(f"{source}: specialists must include role '{role}'")
 
     interaction = group.get("interaction", {})
     if interaction:
@@ -328,14 +471,37 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
         else:
             mode = interaction.get("mode")
             if mode and mode not in {"interactive-separated"}:
-                errors.append(f"{source}: interaction.mode must be 'interactive-separated' when provided")
+                errors.append(
+                    f"{source}: interaction.mode must be 'interactive-separated' when provided"
+                )
             linked = interaction.get("linked_groups")
-            if linked is not None and (not isinstance(linked, list) or not all(isinstance(x, str) for x in linked)):
+            if linked is not None and (
+                not isinstance(linked, list) or not all(isinstance(x, str) for x in linked)
+            ):
                 errors.append(f"{source}: interaction.linked_groups must be a list of strings")
 
     execution_defaults = group.get("execution_defaults", {})
     if execution_defaults and not isinstance(execution_defaults, dict):
         errors.append(f"{source}: execution_defaults must be a map")
+
+    required_artifacts = group.get("required_artifacts")
+    if not isinstance(required_artifacts, dict):
+        errors.append(f"{source}: required_artifacts must be a map")
+
+    gate_profile = group.get("gate_profile")
+    if not isinstance(gate_profile, dict):
+        errors.append(f"{source}: gate_profile must be a map")
+    else:
+        if not isinstance(gate_profile.get("profile_id"), str) or not gate_profile.get(
+            "profile_id"
+        ):
+            errors.append(f"{source}: gate_profile.profile_id is required")
+        if not isinstance(
+            gate_profile.get("specialist_output_schema"), str
+        ) or not gate_profile.get("specialist_output_schema"):
+            errors.append(f"{source}: gate_profile.specialist_output_schema is required")
+        if not isinstance(gate_profile.get("checks"), dict):
+            errors.append(f"{source}: gate_profile.checks must be a map")
 
     workdirs = group.get("default_workdirs")
     if not isinstance(workdirs, list) or not workdirs:
@@ -381,6 +547,7 @@ def ensure_tool_policy_shape(policy: dict, source: str = "<unknown>") -> List[st
 def ensure_project_shape(project: dict, source: str = "<unknown>") -> List[str]:
     errors: List[str] = []
     required = [
+        "schema_version",
         "project_id",
         "selected_groups",
         "install_targets",
@@ -388,6 +555,7 @@ def ensure_project_shape(project: dict, source: str = "<unknown>") -> List[str]:
         "bundle_version",
         "template_versions",
         "overlays",
+        "visibility",
     ]
     for key in required:
         if key not in project:
@@ -395,7 +563,12 @@ def ensure_project_shape(project: dict, source: str = "<unknown>") -> List[str]:
     if errors:
         return errors
 
-    if not isinstance(project.get("project_id"), str) or not re.match(r"^[a-z0-9-]+$", project["project_id"]):
+    if str(project.get("schema_version") or "") != SCHEMA_VERSION:
+        errors.append(f"{source}: schema_version must be '{SCHEMA_VERSION}'")
+
+    if not isinstance(project.get("project_id"), str) or not re.match(
+        r"^[a-z0-9-]+$", project["project_id"]
+    ):
         errors.append(f"{source}: project_id must match ^[a-z0-9-]+$")
 
     groups = project.get("selected_groups")
@@ -434,11 +607,17 @@ def ensure_project_shape(project: dict, source: str = "<unknown>") -> List[str]:
                 continue
             if "manifest_path" not in payload:
                 errors.append(f"{source}: groups.{group_id}.manifest_path is required")
-            if "skill_dirs" not in payload or not isinstance(payload["skill_dirs"], list) or not payload["skill_dirs"]:
+            if (
+                "skill_dirs" not in payload
+                or not isinstance(payload["skill_dirs"], list)
+                or not payload["skill_dirs"]
+            ):
                 errors.append(f"{source}: groups.{group_id}.skill_dirs must be non-empty list")
             if "head_skill_dir" in payload and not isinstance(payload["head_skill_dir"], str):
                 errors.append(f"{source}: groups.{group_id}.head_skill_dir must be string")
-            if "specialist_skill_dirs" in payload and not isinstance(payload["specialist_skill_dirs"], list):
+            if "specialist_skill_dirs" in payload and not isinstance(
+                payload["specialist_skill_dirs"], list
+            ):
                 errors.append(f"{source}: groups.{group_id}.specialist_skill_dirs must be list")
 
     return errors
@@ -655,7 +834,9 @@ def resolve_task_execution(group_manifest: dict, specialist: dict) -> dict:
         hardware = defaults.get("hardware", [])
         if isinstance(hardware, list) and hardware:
             merged["hardware"] = str(hardware[0])
-            merged["requires_gpu"] = any("gpu" in str(x).lower() or "cuda" in str(x).lower() for x in hardware)
+            merged["requires_gpu"] = any(
+                "gpu" in str(x).lower() or "cuda" in str(x).lower() for x in hardware
+            )
 
     if isinstance(task_exec, dict):
         if task_exec.get("remote_transport"):
@@ -670,17 +851,63 @@ def resolve_task_execution(group_manifest: dict, specialist: dict) -> dict:
     return merged
 
 
-def build_dispatch_plan(project_id: str, group_id: str, objective: str, group_manifest: dict) -> dict:
+def _normalize_dep_entries(depends_on: Any) -> List[dict]:
+    if not depends_on:
+        return []
+    out: List[dict] = []
+    if isinstance(depends_on, list):
+        for dep in depends_on:
+            if isinstance(dep, str) and dep.strip():
+                aid = dep.strip()
+                out.append(
+                    {
+                        "agent_id": aid,
+                        "required_artifacts": [f"internal/{aid}/handoff.json"],
+                        "validate_with": "json-parse",
+                        "on_missing": "request-rerun",
+                    }
+                )
+                continue
+            if not isinstance(dep, dict):
+                continue
+            aid = str(dep.get("agent_id") or "").strip()
+            if not aid:
+                continue
+            req = dep.get("required_artifacts")
+            required_artifacts = (
+                [str(item) for item in req if str(item).strip()]
+                if isinstance(req, list)
+                else [f"internal/{aid}/handoff.json"]
+            )
+            validate_with = str(dep.get("validate_with") or "exists")
+            on_missing = str(dep.get("on_missing") or "request-rerun")
+            out.append(
+                {
+                    "agent_id": aid,
+                    "required_artifacts": required_artifacts,
+                    "validate_with": validate_with,
+                    "on_missing": on_missing,
+                }
+            )
+    return out
+
+
+def build_dispatch_plan(
+    project_id: str, group_id: str, objective: str, group_manifest: dict
+) -> dict:
     specialists = group_manifest.get("specialists", [])
     if not specialists:
         raise FabricError(f"group '{group_id}' has no specialists")
 
-    spec_map = {}
-    deps_map = {}
+    spec_map: Dict[str, dict] = {}
+    dep_entries_map: Dict[str, List[dict]] = {}
+    deps_map: Dict[str, set] = {}
     for specialist in specialists:
         aid = specialist["agent_id"]
         spec_map[aid] = specialist
-        deps_map[aid] = set(specialist.get("depends_on", []))
+        dep_entries = _normalize_dep_entries(specialist.get("depends_on", []))
+        dep_entries_map[aid] = dep_entries
+        deps_map[aid] = {entry["agent_id"] for entry in dep_entries}
 
     remaining = set(spec_map.keys())
     completed = set()
@@ -702,13 +929,20 @@ def build_dispatch_plan(project_id: str, group_id: str, objective: str, group_ma
         for aid in ready:
             specialist = spec_map[aid]
             exec_meta = resolve_task_execution(group_manifest, specialist)
+            dep_entries = dep_entries_map.get(aid, [])
             tasks.append(
                 {
                     "agent_id": aid,
+                    "role": specialist.get("role", "domain-core"),
                     "focus": specialist.get("focus", ""),
-                    "skill_name": specialist.get("effective_skill_name", specialist.get("skill_name", "")),
+                    "skill_name": specialist.get(
+                        "effective_skill_name", specialist.get("skill_name", "")
+                    ),
                     "depends_on": sorted(list(deps_map[aid])),
-                    "workdir": "generated/projects/{0}/work/{1}/{2}".format(project_id, group_id, aid),
+                    "dependency_checks": dep_entries,
+                    "workdir": "generated/projects/{0}/work/{1}/{2}".format(
+                        project_id, group_id, aid
+                    ),
                     "transport": exec_meta["transport"],
                     "scheduler": exec_meta["scheduler"],
                     "hardware": exec_meta["hardware"],
@@ -722,7 +956,9 @@ def build_dispatch_plan(project_id: str, group_id: str, objective: str, group_ma
         remaining.difference_update(ready)
 
     interaction = group_manifest.get("interaction", {})
-    session_mode = "interactive-separated" if isinstance(interaction, dict) else "interactive-separated"
+    session_mode = (
+        "interactive-separated" if isinstance(interaction, dict) else "interactive-separated"
+    )
     if isinstance(interaction, dict) and interaction.get("mode"):
         session_mode = str(interaction["mode"])
 
@@ -732,14 +968,25 @@ def build_dispatch_plan(project_id: str, group_id: str, objective: str, group_ma
         "objective": objective,
         "dispatch_mode": "hybrid",
         "session_mode": session_mode,
+        "schema_version": SCHEMA_VERSION,
         "head_agent": group_manifest["head"]["agent_id"],
-        "head_skill": group_manifest["head"].get("effective_skill_name", group_manifest["head"]["skill_name"]),
+        "head_skill": group_manifest["head"].get(
+            "effective_skill_name", group_manifest["head"]["skill_name"]
+        ),
+        "specialist_output_schema": str(
+            group_manifest.get("gate_profile", {}).get(
+                "specialist_output_schema", "specialist-handoff-v2"
+            )
+        ),
+        "gate_profile": group_manifest.get("gate_profile", {}),
         "phases": phases,
         "quality_gates": group_manifest.get("quality_gates", {}),
     }
 
 
-def gate_specialist_output(output: dict, citation_required: bool = True, web_available: bool = True) -> dict:
+def gate_specialist_output(
+    output: dict, citation_required: bool = True, web_available: bool = True
+) -> dict:
     if not isinstance(output, dict):
         return {"status": "BLOCKED_INVALID", "reasons": ["output must be a map"]}
 
@@ -774,7 +1021,9 @@ def gate_specialist_output(output: dict, citation_required: bool = True, web_ava
         reasons.append("missing reproducibility steps")
 
     if reasons:
-        blocked_status = "BLOCKED_UNCITED" if any("citation" in r for r in reasons) else "BLOCKED_REVIEW"
+        blocked_status = (
+            "BLOCKED_UNCITED" if any("citation" in r for r in reasons) else "BLOCKED_REVIEW"
+        )
         return {"status": blocked_status, "reasons": reasons}
 
     return {"status": "PASS", "reasons": []}
@@ -784,7 +1033,9 @@ def stable_json(data) -> str:
     return json.dumps(data, sort_keys=True, indent=2)
 
 
-def suggest_groups(task: str, compute: str, remote_cluster: str, output_target: str) -> Tuple[List[str], List[str]]:
+def suggest_groups(
+    task: str, compute: str, remote_cluster: str, output_target: str
+) -> Tuple[List[str], List[str]]:
     text = " ".join([task.lower(), output_target.lower()])
     selected: List[str] = []
     rationale: List[str] = []
@@ -793,9 +1044,13 @@ def suggest_groups(task: str, compute: str, remote_cluster: str, output_target: 
         selected.append("atomistic-hpc-simulation")
         rationale.append("Detected atomistic simulation keywords; add HPC simulation expert group.")
 
-    if any(k in text for k in ["paper", "reproduce", "benchmark", "materials", "phase", "electronic"]):
+    if any(
+        k in text for k in ["paper", "reproduce", "benchmark", "materials", "phase", "electronic"]
+    ):
         selected.append("material-scientist")
-        rationale.append("Research objective suggests materials-science interpretation and validation.")
+        rationale.append(
+            "Research objective suggests materials-science interpretation and validation."
+        )
 
     if any(k in text for k in ["experiment", "synthesis", "characterization", "process"]):
         selected.append("material-engineer")
@@ -803,9 +1058,13 @@ def suggest_groups(task: str, compute: str, remote_cluster: str, output_target: 
 
     if any(k in text for k in ["python", "script", "automation", "ssh", "pipeline", "debug"]):
         selected.append("developer")
-        rationale.append("Implementation/automation requirements suggest developer group involvement.")
+        rationale.append(
+            "Implementation/automation requirements suggest developer group involvement."
+        )
 
-    if any(k in text for k in ["publish", "manuscript", "figure", "presentation", "audience", "slides"]):
+    if any(
+        k in text for k in ["publish", "manuscript", "figure", "presentation", "audience", "slides"]
+    ):
         selected.append("publication-packaging")
         rationale.append("Publication-focused output requires packaging/presentation support.")
 
@@ -816,7 +1075,9 @@ def suggest_groups(task: str, compute: str, remote_cluster: str, output_target: 
     if remote_cluster.strip().lower() in {"yes", "y", "true", "1"}:
         if "developer" not in selected:
             selected.append("developer")
-            rationale.append("Remote cluster workflow requires SSH/automation bridge via developer group.")
+            rationale.append(
+                "Remote cluster workflow requires SSH/automation bridge via developer group."
+            )
 
     if compute.strip().lower() in {"gpu", "cuda"} and "atomistic-hpc-simulation" not in selected:
         selected.append("atomistic-hpc-simulation")

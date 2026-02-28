@@ -22,7 +22,9 @@ MARKER_FILE = ".fabric-managed.json"
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Install generated project skills into Codex local skill directory")
+    parser = argparse.ArgumentParser(
+        description="Install generated project skills into Codex local skill directory"
+    )
     parser.add_argument("--project-id", required=True)
     parser.add_argument("--fabric-root", default=None, help="path to fabric root")
     parser.add_argument("--sync", action="store_true", help="remove stale skills for the project")
@@ -51,9 +53,9 @@ def save_state(path: Path, state: dict) -> None:
 
 
 def install_router_skill(fabric_root: Path, target: Path) -> None:
-    template = (fabric_root / "templates" / "router" / "research-router" / "SKILL.template.md").read_text(
-        encoding="utf-8"
-    )
+    template = (
+        fabric_root / "templates" / "router" / "research-router" / "SKILL.template.md"
+    ).read_text(encoding="utf-8")
     rendered = render_template(template, {"FABRIC_ROOT": str(fabric_root)})
     router_dir = target / "research-router"
     router_dir.mkdir(parents=True, exist_ok=True)
@@ -85,7 +87,9 @@ def main() -> int:
             or (isinstance(visibility, dict) and visibility.get("mode") == "full")
         )
 
-        records = collect_project_skill_records(project_dir, manifest, include_specialists=include_specialists)
+        records = collect_project_skill_records(
+            project_dir, manifest, include_specialists=include_specialists
+        )
         if not records:
             raise FabricError("no skill records found in project manifest")
 

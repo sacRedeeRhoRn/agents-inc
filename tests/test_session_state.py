@@ -14,17 +14,6 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from agents_inc.core.session_state import (  # noqa: E402
-    find_resume_project,
-    load_checkpoint,
-    load_project_index,
-    load_session_state,
-    list_index_projects,
-    mark_stale_index_entries,
-    resolve_state_project_root,
-    sync_index_from_scan,
-    write_checkpoint,
-)
 from agents_inc.core.config_state import (  # noqa: E402
     default_config_path,
     get_projects_root,
@@ -33,8 +22,19 @@ from agents_inc.core.config_state import (  # noqa: E402
 from agents_inc.core.session_compaction import (  # noqa: E402
     compact_session,
     load_compacted,
-    load_latest_compacted_summary,
     load_group_sessions,
+    load_latest_compacted_summary,
+)
+from agents_inc.core.session_state import (  # noqa: E402
+    find_resume_project,
+    list_index_projects,
+    load_checkpoint,
+    load_project_index,
+    load_session_state,
+    mark_stale_index_entries,
+    resolve_state_project_root,
+    sync_index_from_scan,
+    write_checkpoint,
 )
 
 
@@ -42,7 +42,9 @@ class SessionStateTests(unittest.TestCase):
     def test_config_projects_root_roundtrip(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             config_path = Path(td) / "config.yaml"
-            self.assertEqual(get_projects_root(config_path), (Path.home() / "codex-projects").resolve())
+            self.assertEqual(
+                get_projects_root(config_path), (Path.home() / "codex-projects").resolve()
+            )
 
             custom_root = Path(td) / "research-projects"
             set_projects_root(config_path, custom_root)
@@ -63,8 +65,16 @@ class SessionStateTests(unittest.TestCase):
                 "pending_actions": ["act"],
                 "latest_artifacts": {},
             }
-            first = compact_session(project_root=project_root, payload=payload, selected_groups=payload["selected_groups"])
-            second = compact_session(project_root=project_root, payload=payload, selected_groups=payload["selected_groups"])
+            first = compact_session(
+                project_root=project_root,
+                payload=payload,
+                selected_groups=payload["selected_groups"],
+            )
+            second = compact_session(
+                project_root=project_root,
+                payload=payload,
+                selected_groups=payload["selected_groups"],
+            )
             self.assertNotEqual(first["compact_id"], second["compact_id"])
 
             latest = load_compacted(project_root, "latest")
@@ -110,8 +120,12 @@ class SessionStateTests(unittest.TestCase):
                 "pending_actions": [],
                 "latest_artifacts": {},
             }
-            compact_a = compact_session(project_root=project_a, payload=payload_a, selected_groups=["developer"])
-            compact_b = compact_session(project_root=project_b, payload=payload_b, selected_groups=["developer"])
+            compact_a = compact_session(
+                project_root=project_a, payload=payload_a, selected_groups=["developer"]
+            )
+            compact_b = compact_session(
+                project_root=project_b, payload=payload_b, selected_groups=["developer"]
+            )
             self.assertNotEqual(
                 compact_a["group_session_map"]["developer"],
                 compact_b["group_session_map"]["developer"],
@@ -135,8 +149,12 @@ class SessionStateTests(unittest.TestCase):
                 "latest_artifacts": {},
                 "pending_actions": ["act"],
             }
-            first = write_checkpoint(project_root=project_root, payload=payload, project_index_path=index_path)
-            second = write_checkpoint(project_root=project_root, payload=payload, project_index_path=index_path)
+            first = write_checkpoint(
+                project_root=project_root, payload=payload, project_index_path=index_path
+            )
+            second = write_checkpoint(
+                project_root=project_root, payload=payload, project_index_path=index_path
+            )
 
             self.assertNotEqual(first["checkpoint_id"], second["checkpoint_id"])
 
@@ -151,7 +169,9 @@ class SessionStateTests(unittest.TestCase):
             self.assertEqual(state["latest_checkpoint_id"], second["checkpoint_id"])
 
             index_data = load_project_index(index_path)
-            self.assertEqual(index_data["projects"]["proj-a"]["last_checkpoint"], second["checkpoint_id"])
+            self.assertEqual(
+                index_data["projects"]["proj-a"]["last_checkpoint"], second["checkpoint_id"]
+            )
             self.assertEqual(index_data["projects"]["proj-a"]["status"], "active")
 
     def test_mark_stale_entries(self) -> None:
@@ -172,7 +192,9 @@ class SessionStateTests(unittest.TestCase):
                 "latest_artifacts": {},
                 "pending_actions": [],
             }
-            write_checkpoint(project_root=project_root, payload=payload, project_index_path=index_path)
+            write_checkpoint(
+                project_root=project_root, payload=payload, project_index_path=index_path
+            )
             shutil.rmtree(project_root)
 
             updated = mark_stale_index_entries(index_path)
@@ -191,7 +213,9 @@ class SessionStateTests(unittest.TestCase):
                 / "manifest.yaml"
             )
             manifest_path.parent.mkdir(parents=True, exist_ok=True)
-            manifest_path.write_text(yaml.safe_dump({"project_id": "proj-fallback"}, sort_keys=False), encoding="utf-8")
+            manifest_path.write_text(
+                yaml.safe_dump({"project_id": "proj-fallback"}, sort_keys=False), encoding="utf-8"
+            )
 
             index_path = Path(td) / "projects-index.yaml"
             found = find_resume_project(
@@ -224,7 +248,9 @@ class SessionStateTests(unittest.TestCase):
                 "latest_artifacts": {},
                 "pending_actions": [],
             }
-            write_checkpoint(project_root=project_root, payload=payload, project_index_path=index_path)
+            write_checkpoint(
+                project_root=project_root, payload=payload, project_index_path=index_path
+            )
             shutil.rmtree(project_root)
 
             active = list_index_projects(index_path, include_stale=False)
@@ -247,7 +273,9 @@ class SessionStateTests(unittest.TestCase):
                 / "manifest.yaml"
             )
             manifest_path.parent.mkdir(parents=True, exist_ok=True)
-            manifest_path.write_text(yaml.safe_dump({"project_id": "proj-sync"}, sort_keys=False), encoding="utf-8")
+            manifest_path.write_text(
+                yaml.safe_dump({"project_id": "proj-sync"}, sort_keys=False), encoding="utf-8"
+            )
             latest_path = project_root / ".agents-inc" / "state" / "latest-checkpoint.yaml"
             latest_path.parent.mkdir(parents=True, exist_ok=True)
             latest_path.write_text(
@@ -255,7 +283,13 @@ class SessionStateTests(unittest.TestCase):
                     {
                         "project_id": "proj-sync",
                         "checkpoint_id": "20260301T000000Z-000001",
-                        "checkpoint_path": str(project_root / ".agents-inc" / "state" / "checkpoints" / "20260301T000000Z-000001.yaml"),
+                        "checkpoint_path": str(
+                            project_root
+                            / ".agents-inc"
+                            / "state"
+                            / "checkpoints"
+                            / "20260301T000000Z-000001.yaml"
+                        ),
                     },
                     sort_keys=False,
                 ),

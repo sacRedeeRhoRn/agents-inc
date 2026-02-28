@@ -1,12 +1,18 @@
 group_id: material-scientist
 display_name: Material Scientist Group
-template_version: 1.0.0
+template_version: 2.0.0
 domain: materials-research
 head:
   agent_id: material-scientist-head
   skill_name: grp-material-scientist-head
   mission: Route and quality-gate specialist outputs for theoretical and computational
     materials science.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
   effective_skill_name: proj-proj-battery-001-material-scientist-material-scientist-head
 specialists:
 - agent_id: thermodynamics-specialist
@@ -18,18 +24,55 @@ specialists:
   - assumptions.md
   - claims_with_citations.md
   - phase_stability_notes.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
   effective_skill_name: proj-proj-battery-001-material-scientist-thermodynamics-6ace8773
 - agent_id: electronic-structure-specialist
   skill_name: grp-material-scientist-electronic-structure
   focus: DFT setup, band structure interpretation, density-of-states analysis
   depends_on:
-  - thermodynamics-specialist
+  - agent_id: thermodynamics-specialist
+    required_artifacts:
+    - internal/thermodynamics-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
   required_references:
   - references/electronic-structure-core.md
   required_outputs:
   - assumptions.md
   - claims_with_citations.md
   - electronic_summary.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
   effective_skill_name: proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7
 - agent_id: atomistic-simulation-specialist
   skill_name: grp-material-scientist-atomistic
@@ -41,7 +84,113 @@ specialists:
   - assumptions.md
   - claims_with_citations.md
   - simulation_plan.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
   effective_skill_name: proj-proj-battery-001-material-scientist-atomistic-simu-a6a50b3f
+- agent_id: integration-specialist
+  skill_name: grp-material-scientist-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Material Scientist
+    Group
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: thermodynamics-specialist
+    required_artifacts:
+    - internal/thermodynamics-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-battery-001-material-scientist-integration-specialist
+- agent_id: evidence-review-specialist
+  skill_name: grp-material-scientist-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Material Scientist
+    Group
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: thermodynamics-specialist
+    required_artifacts:
+    - internal/thermodynamics-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-battery-001-material-scientist-evidence-revie-a7b4e65d
+- agent_id: repro-qa-specialist
+  skill_name: grp-material-scientist-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Material Scientist Group
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: thermodynamics-specialist
+    required_artifacts:
+    - internal/thermodynamics-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: proj-proj-battery-001-material-scientist-repro-qa-specialist
 tool_profile: science-default
 default_workdirs:
 - inputs
@@ -54,3 +203,36 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
+schema_version: '2.0'
+purpose: Coordinate expert specialists for Material Scientist Group objectives.
+success_criteria:
+- All required artifacts produced
+- Gate profile satisfied
+- Exposed handoff consumable
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v2
+  specialist_output_schema: specialist-handoff-v2
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+interaction:
+  mode: interactive-separated
+  linked_groups: []
+execution_defaults:
+  remote_transport: local
+  schedulers:
+  - local
+  hardware:
+  - cpu

@@ -18,6 +18,7 @@ from agents_inc.core.fabric_lib import (
     stable_json,
     validate_skill_markdown,
 )
+from agents_inc.core.skill_harness import validate_skill_contract
 
 REQUIRED_TEMPLATE_FILES = [
     "templates/group/AGENTS.template.md",
@@ -41,7 +42,9 @@ REQUIRED_SCHEMA_FILES = [
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Strict validation for agent group fabric")
     parser.add_argument("--fabric-root", default=None, help="path to fabric root")
-    parser.add_argument("--all", action="store_true", help="validate catalog, templates, and all generated projects")
+    parser.add_argument(
+        "--all", action="store_true", help="validate catalog, templates, and all generated projects"
+    )
     parser.add_argument("--project-id", default=None, help="validate a single generated project")
     return parser.parse_args()
 
@@ -52,7 +55,29 @@ def validate_templates_and_schemas(fabric_root: Path) -> List[str]:
         path = fabric_root / rel
         if not path.exists():
             errors.append(f"missing required file: {path}")
+    for path in sorted((fabric_root / "templates").glob("**/*.swp")):
+        errors.append(f"temporary editor file must be removed: {path}")
+    for path in sorted(
+        (fabric_root / "src" / "agents_inc" / "resources" / "templates").glob("**/*.swp")
+    ):
+        errors.append(f"temporary editor file must be removed: {path}")
     return errors
+
+
+def validate_lock_dependency(fabric_root: Path) -> List[str]:
+    warnings: List[str] = []
+    try:
+        from controller import DirectoryController  # type: ignore # noqa: F401
+
+        return warnings
+    except Exception:
+        pass
+    candidate = fabric_root.parent / "multi_agent_dirs" / "controller.py"
+    if not candidate.exists():
+        warnings.append(
+            "multi_agent_dirs dependency not detected; dispatch lock plans require --locking-mode auto/off until installed"
+        )
+    return warnings
 
 
 def validate_catalog(fabric_root: Path) -> List[str]:
@@ -157,6 +182,27 @@ def validate_project(fabric_root: Path, project_dir: Path) -> List[str]:
         required_group_files = [agents_md, handoffs_yaml]
         if manifest.get("visibility"):
             required_group_files.append(group_manifest_path.parent / "exposed")
+            required_group_files.extend(
+                [
+                    group_manifest_path.parent / "exposed" / "summary.md",
+                    group_manifest_path.parent / "exposed" / "handoff.json",
+                    group_manifest_path.parent / "exposed" / "INTEGRATION_NOTES.md",
+                ]
+            )
+        specialists = group_manifest.get("specialists", [])
+        if isinstance(specialists, list):
+            for specialist in specialists:
+                if not isinstance(specialist, dict):
+                    continue
+                aid = specialist.get("agent_id")
+                if not isinstance(aid, str) or not aid:
+                    continue
+                required_group_files.extend(
+                    [
+                        group_manifest_path.parent / "internal" / aid / "work.md",
+                        group_manifest_path.parent / "internal" / aid / "handoff.json",
+                    ]
+                )
         for required_file in required_group_files:
             if not required_file.exists():
                 errors.append(f"missing required group artifact: {required_file}")
@@ -178,6 +224,7 @@ def validate_project(fabric_root: Path, project_dir: Path) -> List[str]:
                 errors.append(f"missing SKILL.md: {skill_md}")
                 continue
             errors.extend(validate_skill_markdown(skill_md))
+            errors.extend(validate_skill_contract(skill_md))
 
         try:
             first = build_dispatch_plan(
@@ -193,7 +240,9 @@ def validate_project(fabric_root: Path, project_dir: Path) -> List[str]:
                 group_manifest,
             )
             if stable_json(first) != stable_json(second):
-                errors.append(f"dispatch plan non-deterministic for group {group_id} in {manifest_path}")
+                errors.append(
+                    f"dispatch plan non-deterministic for group {group_id} in {manifest_path}"
+                )
         except Exception as exc:  # noqa: BLE001
             errors.append(f"dispatch plan failed for group {group_id} in {manifest_path}: {exc}")
 
@@ -225,6 +274,12 @@ def main() -> int:
             for err in errors:
                 print(f"- {err}")
             return 1
+
+        lock_warnings = validate_lock_dependency(fabric_root)
+        if lock_warnings:
+            print("validation warnings:")
+            for warning in lock_warnings:
+                print(f"- {warning}")
 
         print("validation passed")
         return 0

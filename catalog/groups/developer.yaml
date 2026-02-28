@@ -1,42 +1,161 @@
-group_id: "developer"
-display_name: "Developer Group"
-template_version: "1.0.0"
-domain: "software-and-infra"
+group_id: developer
+display_name: Developer Group
+template_version: 2.0.0
+domain: software-and-infra
 head:
-  agent_id: "developer-head"
-  skill_name: "grp-developer-head"
-  mission: "Deliver robust implementation, debugging, and automation support for research projects."
+  agent_id: developer-head
+  skill_name: grp-developer-head
+  mission: Deliver robust implementation, debugging, and automation support for research
+    projects.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
 specialists:
-  - agent_id: "python-expert"
-    skill_name: "grp-developer-python"
-    focus: "Python architecture, package reliability, tests, and runtime debugging"
-    required_references:
-      - "references/python-engineering-core.md"
-    required_outputs:
-      - "implementation_patch.md"
-      - "test_plan.md"
-      - "claims_with_citations.md"
-  - agent_id: "shell-expert"
-    skill_name: "grp-developer-shell"
-    focus: "Shell automation, reproducible scripts, CLI hardening"
-    required_references:
-      - "references/shell-engineering-core.md"
-    required_outputs:
-      - "automation_scripts.md"
-      - "claims_with_citations.md"
-  - agent_id: "ssh-remote-ops-expert"
-    skill_name: "grp-developer-ssh"
-    focus: "Remote operations, secure SSH workflows, transfer and execution protocols"
-    required_references:
-      - "references/ssh-ops-core.md"
-    required_outputs:
-      - "remote_ops_plan.md"
-      - "claims_with_citations.md"
-tool_profile: "developer-default"
+- agent_id: python-expert
+  skill_name: grp-developer-python
+  focus: Python architecture, package reliability, tests, and runtime debugging
+  required_references:
+  - references/python-engineering-core.md
+  required_outputs:
+  - implementation_patch.md
+  - test_plan.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: shell-expert
+  skill_name: grp-developer-shell
+  focus: Shell automation, reproducible scripts, CLI hardening
+  required_references:
+  - references/shell-engineering-core.md
+  required_outputs:
+  - automation_scripts.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: repro-qa
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: python-expert
+    required_artifacts:
+    - internal/python-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: ssh-remote-ops-expert
+  skill_name: grp-developer-ssh
+  focus: Remote operations, secure SSH workflows, transfer and execution protocols
+  required_references:
+  - references/ssh-ops-core.md
+  required_outputs:
+  - remote_ops_plan.md
+  - claims_with_citations.md
+  - work.md
+  - handoff.json
+  role: domain-core
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: integration-specialist
+  skill_name: grp-developer-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Developer Group
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: python-expert
+    required_artifacts:
+    - internal/python-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-review-specialist
+  skill_name: grp-developer-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Developer Group
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: python-expert
+    required_artifacts:
+    - internal/python-expert/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+tool_profile: developer-default
 default_workdirs:
-  - "inputs"
-  - "analysis"
-  - "outputs"
+- inputs
+- analysis
+- outputs
 quality_gates:
   citation_required: true
   unresolved_claims_block: true
@@ -44,3 +163,36 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
+schema_version: '2.0'
+purpose: Coordinate expert specialists for Developer Group objectives.
+success_criteria:
+- All required artifacts produced
+- Gate profile satisfied
+- Exposed handoff consumable
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v2
+  specialist_output_schema: specialist-handoff-v2
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+interaction:
+  mode: interactive-separated
+  linked_groups: []
+execution_defaults:
+  remote_transport: local
+  schedulers:
+  - local
+  hardware:
+  - cpu

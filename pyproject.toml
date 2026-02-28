@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agents-inc"
-version = "1.2.0"
+version = "2.0.0"
 description = "Publication-ready multi-agent group fabric and router orchestration toolkit for Codex sessions"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -25,7 +25,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=7.0"
+  "pytest>=7.0",
+  "black>=24.0",
+  "ruff>=0.6.0"
 ]
 
 [project.urls]
@@ -35,6 +37,8 @@ Issues = "https://github.com/sacRedeeRhoRn/agents-inc/issues"
 
 [project.scripts]
 agents-inc = "agents_inc.cli.main:main"
+agents-inc-groups = "agents_inc.cli.groups:main"
+agents-inc-migrate-v2 = "agents_inc.cli.migrate_v2:main"
 agents-inc-new-group = "agents_inc.cli.deprecated_aliases:new_group_alias"
 agents-inc-new-project = "agents_inc.cli.deprecated_aliases:new_project_alias"
 agents-inc-install-skills = "agents_inc.cli.deprecated_aliases:install_skills_alias"
@@ -57,3 +61,15 @@ agents_inc = [
   "resources/**/*",
   "docs/internal/*.md"
 ]
+
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]

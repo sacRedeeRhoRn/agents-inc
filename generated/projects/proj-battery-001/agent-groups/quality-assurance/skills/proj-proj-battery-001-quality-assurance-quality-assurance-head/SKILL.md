@@ -1,6 +1,25 @@
 ---
 name: proj-proj-battery-001-quality-assurance-quality-assurance-head
-description: Orchestrate Quality Assurance Group for project proj-battery-001. Use when routing objective-level work to specialist agents with strict expert quality gates.
+version: "2.0.0"
+role: head
+description: Orchestrate Quality Assurance Group for project proj-battery-001 with strict gate enforcement and artifact publication contracts.
+scope: Group-level orchestration, gate enforcement, and exposed artifact publication.
+inputs:
+  - objective
+  - project_id
+  - group_id
+  - dispatch_plan
+outputs:
+  - exposed/summary.md
+  - exposed/handoff.json
+  - exposed/INTEGRATION_NOTES.md
+failure_modes:
+  - blocked_uncited_claims
+  - unresolved_cross_domain_decision
+  - missing_required_artifact
+autouse_triggers:
+  - group objective dispatch
+  - specialist handoff aggregation
 ---
 
 # Quality Assurance Group Head Controller
@@ -30,8 +49,10 @@ Route and merge specialist outputs for `quality-assurance` in project `proj-batt
 - reproducibility-auditor: `proj-proj-battery-001-quality-assurance-reproducibility-auditor`
 - consistency-auditor: `proj-proj-battery-001-quality-assurance-consistency-auditor`
 - risk-auditor: `proj-proj-battery-001-quality-assurance-risk-auditor`
+- integration-specialist: `proj-proj-battery-001-quality-assurance-integration-specialist`
+- evidence-review-specialist: `proj-proj-battery-001-quality-assurance-evidence-review-b028fe4b`
 
 ## Output Contract
-- `dispatch_plan.json`
-- `decision_log.md`
-- `artifact_index.md`
+- `exposed/summary.md`
+- `exposed/handoff.json`
+- `exposed/INTEGRATION_NOTES.md`
