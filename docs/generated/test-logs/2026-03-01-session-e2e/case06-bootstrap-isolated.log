@@ -1,0 +1,9 @@
+## Case 6: README pinned bootstrap command in isolated env
+Sun Mar  1 00:48:41 KST 2026
+
+### Step 1: download bootstrap + checksum
+
+### Step 2: verify bootstrap checksum
+shasum: bootstrap.sh: No such file or directory
+bootstrap.sh: FAILED open or read
+shasum: WARNING: 1 listed file could not be read

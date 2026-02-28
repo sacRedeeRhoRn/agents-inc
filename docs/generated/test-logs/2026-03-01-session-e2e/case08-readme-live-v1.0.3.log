@@ -1,0 +1,110 @@
+## Case 8: exact README command against live v1.0.3 release
+Sun Mar  1 00:52:51 KST 2026
+bootstrap.sh: OK
+agents_inc-1.0.3-py3-none-any.whl: OK
+Collecting pip
+  Downloading https://files.pythonhosted.org/packages/c9/bc/b7db44f5f39f9d0494071bddae6880eb645970366d0a200022a1a93d57f5/pip-25.0.1-py3-none-any.whl (1.8MB)
+Collecting setuptools
+  Downloading https://files.pythonhosted.org/packages/cd/b1/961ba076c7d3732e3a97e6681c55ef647afb795fe8bfcd27becec8a762ce/setuptools-75.3.4-py3-none-any.whl (1.3MB)
+Collecting wheel
+  Downloading https://files.pythonhosted.org/packages/0b/2c/87f3254fd8ffd29e4c02732eee68a83a1d3c346ae39bc6822dcbcb697f2b/wheel-0.45.1-py3-none-any.whl (72kB)
+Installing collected packages: pip, setuptools, wheel
+  Found existing installation: pip 19.2.3
+    Uninstalling pip-19.2.3:
+      Successfully uninstalled pip-19.2.3
+  Found existing installation: setuptools 41.2.0
+    Uninstalling setuptools-41.2.0:
+      Successfully uninstalled setuptools-41.2.0
+Successfully installed pip-25.0.1 setuptools-75.3.4 wheel-0.45.1
+Processing /var/folders/8r/cg_03l3d5rd7zrwh09rggt8m0000gn/T/tmp.Zj7JwDK2Va/agents_inc-1.0.3-py3-none-any.whl
+Collecting PyYAML>=6.0 (from agents-inc==1.0.3)
+  Downloading PyYAML-6.0.3-cp38-cp38-macosx_10_13_x86_64.whl.metadata (2.1 kB)
+Downloading PyYAML-6.0.3-cp38-cp38-macosx_10_13_x86_64.whl (186 kB)
+Installing collected packages: PyYAML, agents-inc
+  Attempting uninstall: agents-inc
+    Found existing installation: agents-inc 1.0.2
+    Uninstalling agents-inc-1.0.2:
+      Successfully uninstalled agents-inc-1.0.2
+Successfully installed PyYAML-6.0.3 agents-inc-1.0.3
+session intake doc: /Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/site-packages/agents_inc/docs/internal/session-intake.md
+agents-inc intake wizard
+What task do you want to start: Timeline [2 weeks]: Compute requirement (cpu/gpu/cuda) [cpu]: Remote cluster over SSH? (yes/no) [yes]: Output target [technical report]: {
+  "artifacts": {
+    "kickoff": "/tmp/agi-readme-live-home/codex-projects/reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking/kickoff.md",
+    "project_manifest": "/tmp/agi-readme-live-home/codex-projects/reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking/project-manifest.yaml",
+    "router_call": "/tmp/agi-readme-live-home/codex-projects/reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking/router-call.txt"
+  },
+  "fabric_root": "/tmp/agi-readme-live-home/codex-projects/reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking/agent_group_fabric",
+  "next_actions": [
+    "Paste router-call.txt into the Codex session.",
+    "Use --audit in install command only when specialist-level inspection is required."
+  ],
+  "project_id": "reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking",
+  "project_root": "/tmp/agi-readme-live-home/codex-projects/reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking",
+  "rationale": [
+    "Detected atomistic simulation keywords; add HPC simulation expert group.",
+    "Research objective suggests materials-science interpretation and validation.",
+    "Publication-focused output requires packaging/presentation support.",
+    "Remote cluster workflow requires SSH/automation bridge via developer group."
+  ],
+  "router_call": "Use $research-router for project reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking group material-scientist: Reproduce cathode phase stability with DFT and CALPHAD cross-checking.",
+  "selected_groups": [
+    "material-scientist",
+    "atomistic-hpc-simulation",
+    "developer",
+    "publication-packaging"
+  ],
+  "visibility": {
+    "audit_override": true,
+    "mode": "group-only"
+  }
+}
+
+---
+
+# Kickoff - reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking
+
+## Task
+Reproduce cathode phase stability with DFT and CALPHAD cross-checking
+
+## Constraints
+- timeline: 3 weeks
+- compute: cuda
+- remote_cluster: yes
+- output_target: publication package with figures
+
+## Suggested Groups
+- material-scientist
+- atomistic-hpc-simulation
+- developer
+- publication-packaging
+
+## Rationale
+- Detected atomistic simulation keywords; add HPC simulation expert group.
+- Research objective suggests materials-science interpretation and validation.
+- Publication-focused output requires packaging/presentation support.
+- Remote cluster workflow requires SSH/automation bridge via developer group.
+
+## Connector Guidance
+- user <-> head-controller: objective refinement and acceptance
+- head-controller <-> specialists: internal execution and cross-checking
+- specialist artifacts stay internal by default; only exposed outputs are surfaced
+
+## Router Call
+`Use $research-router for project reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking group material-scientist: Reproduce cathode phase stability with DFT and CALPHAD cross-checking.`
+
+### Verify new-session outputs
+/tmp/agi-readme-live-home/codex-projects/reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking/kickoff.md
+/tmp/agi-readme-live-home/codex-projects/reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking/project-manifest.yaml
+/tmp/agi-readme-live-home/codex-projects/reproduce-cathode-phase-stability-with-dft-and-calphad-cross-checking/router-call.txt
+
+### Verify installed router exists
+total 8
+drwxr-xr-x@ 8 moon.s.june  wheel  256 Mar  1 00:53 .
+drwxr-xr-x@ 3 moon.s.june  wheel   96 Mar  1 00:53 ..
+-rw-r--r--@ 1 moon.s.june  wheel  403 Mar  1 00:53 .fabric-install-state.json
+drwxr-xr-x@ 4 moon.s.june  wheel  128 Mar  1 00:53 proj-reproduce-cathode-phase-stability-with-dft-and-cal-1e77c60b
+drwxr-xr-x@ 4 moon.s.june  wheel  128 Mar  1 00:53 proj-reproduce-cathode-phase-stability-with-dft-and-cal-9a15d3fb
+drwxr-xr-x@ 4 moon.s.june  wheel  128 Mar  1 00:53 proj-reproduce-cathode-phase-stability-with-dft-and-cal-d904cce6
+drwxr-xr-x@ 4 moon.s.june  wheel  128 Mar  1 00:53 proj-reproduce-cathode-phase-stability-with-dft-and-cal-ed0a05a8
+drwxr-xr-x@ 4 moon.s.june  wheel  128 Mar  1 00:53 research-router

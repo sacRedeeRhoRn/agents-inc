@@ -1,0 +1,192 @@
+## Case 5: dispatch dry-run metadata
+Sun Mar  1 00:48:18 KST 2026
+{
+  "dispatch_mode": "hybrid",
+  "group_id": "atomistic-hpc-simulation",
+  "head_agent": "atomistic-hpc-simulation-head",
+  "head_skill": "proj-proj-repro-si-anode-atomistic-hpc-simulation-atomi-43a1dbd7",
+  "lock_plan": [
+    {
+      "locks": [
+        {
+          "acquire": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root acquire lammps-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/lammps-expert --ttl 900",
+          "heartbeat": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root heartbeat <lease_token> --ttl 900",
+          "release": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root release lammps-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/lammps-expert",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/lammps-expert"
+        },
+        {
+          "acquire": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root acquire scheduler-remote-ops-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/scheduler-remote-ops-expert --ttl 900",
+          "heartbeat": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root heartbeat <lease_token> --ttl 900",
+          "release": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root release scheduler-remote-ops-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/scheduler-remote-ops-expert",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/scheduler-remote-ops-expert"
+        },
+        {
+          "acquire": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root acquire vasp-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/vasp-expert --ttl 900",
+          "heartbeat": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root heartbeat <lease_token> --ttl 900",
+          "release": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root release vasp-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/vasp-expert",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/vasp-expert"
+        }
+      ],
+      "phase_id": 1
+    },
+    {
+      "locks": [
+        {
+          "acquire": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root acquire cuda-performance-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/cuda-performance-expert --ttl 900",
+          "heartbeat": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root heartbeat <lease_token> --ttl 900",
+          "release": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root release cuda-performance-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/cuda-performance-expert",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/cuda-performance-expert"
+        },
+        {
+          "acquire": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root acquire developer-bridge-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/developer-bridge-expert --ttl 900",
+          "heartbeat": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root heartbeat <lease_token> --ttl 900",
+          "release": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root release developer-bridge-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/developer-bridge-expert",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/developer-bridge-expert"
+        },
+        {
+          "acquire": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root acquire metadynamics-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/metadynamics-expert --ttl 900",
+          "heartbeat": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root heartbeat <lease_token> --ttl 900",
+          "release": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root release metadynamics-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/metadynamics-expert",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/metadynamics-expert"
+        }
+      ],
+      "phase_id": 2
+    },
+    {
+      "locks": [
+        {
+          "acquire": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root acquire simulation-postprocessing-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/simulation-postprocessing-expert --ttl 900",
+          "heartbeat": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root heartbeat <lease_token> --ttl 900",
+          "release": "python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root release simulation-postprocessing-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/simulation-postprocessing-expert",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/simulation-postprocessing-expert"
+        }
+      ],
+      "phase_id": 3
+    }
+  ],
+  "objective": "Run VASP + LAMMPS + metadynamics pipeline for reproduction",
+  "phases": [
+    {
+      "mode": "parallel",
+      "phase_id": 1,
+      "tasks": [
+        {
+          "agent_id": "lammps-expert",
+          "depends_on": [],
+          "focus": "LAMMPS MD configuration, potential selection, and production run strategy",
+          "hardware": "cpu",
+          "requires_gpu": false,
+          "scheduler": "pbs",
+          "skill_name": "proj-proj-repro-si-anode-atomistic-hpc-simulation-lammps-expert",
+          "transport": "ssh",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/lammps-expert"
+        },
+        {
+          "agent_id": "scheduler-remote-ops-expert",
+          "depends_on": [],
+          "focus": "SSH orchestration, PBS-first and Slurm-compatible job submission strategy, failure recovery",
+          "hardware": "cpu",
+          "requires_gpu": false,
+          "scheduler": "pbs",
+          "skill_name": "proj-proj-repro-si-anode-atomistic-hpc-simulation-sched-cdf5199f",
+          "transport": "ssh",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/scheduler-remote-ops-expert"
+        },
+        {
+          "agent_id": "vasp-expert",
+          "depends_on": [],
+          "focus": "VASP workflows including DFT setup, convergence policy, and electronic structure outputs",
+          "hardware": "cpu",
+          "requires_gpu": false,
+          "scheduler": "pbs",
+          "skill_name": "proj-proj-repro-si-anode-atomistic-hpc-simulation-vasp-expert",
+          "transport": "ssh",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/vasp-expert"
+        }
+      ]
+    },
+    {
+      "mode": "parallel",
+      "phase_id": 2,
+      "tasks": [
+        {
+          "agent_id": "cuda-performance-expert",
+          "depends_on": [
+            "scheduler-remote-ops-expert"
+          ],
+          "focus": "CUDA queue usage, GPU performance tuning, memory and throughput diagnostics",
+          "hardware": "cuda-gpu",
+          "requires_gpu": true,
+          "scheduler": "slurm",
+          "skill_name": "proj-proj-repro-si-anode-atomistic-hpc-simulation-cuda-de03374b",
+          "transport": "ssh",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/cuda-performance-expert"
+        },
+        {
+          "agent_id": "developer-bridge-expert",
+          "depends_on": [
+            "scheduler-remote-ops-expert"
+          ],
+          "focus": "Cross-group integration with developer group for scripts, SSH tooling, and reliability hardening",
+          "hardware": "cpu",
+          "requires_gpu": false,
+          "scheduler": "pbs",
+          "skill_name": "proj-proj-repro-si-anode-atomistic-hpc-simulation-devel-ec84edc6",
+          "transport": "ssh",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/developer-bridge-expert"
+        },
+        {
+          "agent_id": "metadynamics-expert",
+          "depends_on": [
+            "lammps-expert"
+          ],
+          "focus": "Enhanced sampling with metadynamics, CV design, and free-energy surface interpretation",
+          "hardware": "cpu",
+          "requires_gpu": false,
+          "scheduler": "pbs",
+          "skill_name": "proj-proj-repro-si-anode-atomistic-hpc-simulation-metad-d776acff",
+          "transport": "ssh",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/metadynamics-expert"
+        }
+      ]
+    },
+    {
+      "mode": "sequential",
+      "phase_id": 3,
+      "tasks": [
+        {
+          "agent_id": "simulation-postprocessing-expert",
+          "depends_on": [
+            "lammps-expert",
+            "metadynamics-expert",
+            "vasp-expert"
+          ],
+          "focus": "Trajectory/post-processing pipelines and uncertainty-aware summary extraction",
+          "hardware": "cpu",
+          "requires_gpu": false,
+          "scheduler": "pbs",
+          "skill_name": "proj-proj-repro-si-anode-atomistic-hpc-simulation-simul-0529ae1a",
+          "transport": "ssh",
+          "workdir": "generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/simulation-postprocessing-expert"
+        }
+      ]
+    }
+  ],
+  "project_id": "proj-repro-si-anode",
+  "quality_gates": {
+    "citation_required": true,
+    "consistency_required": true,
+    "peer_check_required": true,
+    "reproducibility_required": true,
+    "scope_required": true,
+    "unresolved_claims_block": true
+  },
+  "session_mode": "interactive-separated"
+}
+written: /tmp/agi-dispatch-hpc.json
+
+### Validate output schema expectations
+phase_count 3
+task_count 7
+sample_task {'agent_id': 'lammps-expert', 'depends_on': [], 'focus': 'LAMMPS MD configuration, potential selection, and production run strategy', 'hardware': 'cpu', 'requires_gpu': False, 'scheduler': 'pbs', 'skill_name': 'proj-proj-repro-si-anode-atomistic-hpc-simulation-lammps-expert', 'transport': 'ssh', 'workdir': 'generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/lammps-expert'}
+sample_lock {'acquire': 'python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root acquire lammps-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/lammps-expert --ttl 900', 'heartbeat': 'python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root heartbeat <lease_token> --ttl 900', 'release': 'python3 multi_agent_dirs/cli.py --root /tmp/multi-agent-root release lammps-expert generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/lammps-expert', 'workdir': 'generated/projects/proj-repro-si-anode/work/atomistic-hpc-simulation/lammps-expert'}

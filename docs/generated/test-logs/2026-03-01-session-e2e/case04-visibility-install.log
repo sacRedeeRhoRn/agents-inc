@@ -1,0 +1,49 @@
+## Case 4: install visibility modes
+Sun Mar  1 00:48:09 KST 2026
+
+### Default install (group-only => head only)
+installed skills:
+- proj-proj-repro-si-anode-atomistic-hpc-simulation-atomi-43a1dbd7
+- proj-proj-repro-si-anode-developer-developer-head
+- proj-proj-repro-si-anode-material-scientist-material-sc-418e757e
+- proj-proj-repro-si-anode-publication-packaging-publicat-002907ac
+include_specialists: False
+router installed: /private/tmp/agi-visibility-skill-target/research-router
+target: /private/tmp/agi-visibility-skill-target
+
+Installed role markers after default install
+count 4
+roles ['head']
+skills ['proj-proj-repro-si-anode-atomistic-hpc-simulation-atomi-43a1dbd7', 'proj-proj-repro-si-anode-developer-developer-head', 'proj-proj-repro-si-anode-material-scientist-material-sc-418e757e', 'proj-proj-repro-si-anode-publication-packaging-publicat-002907ac']
+
+### Audit install (include specialists)
+installed skills:
+- proj-proj-repro-si-anode-atomistic-hpc-simulation-atomi-43a1dbd7
+- proj-proj-repro-si-anode-atomistic-hpc-simulation-cuda-de03374b
+- proj-proj-repro-si-anode-atomistic-hpc-simulation-devel-ec84edc6
+- proj-proj-repro-si-anode-atomistic-hpc-simulation-lammps-expert
+- proj-proj-repro-si-anode-atomistic-hpc-simulation-metad-d776acff
+- proj-proj-repro-si-anode-atomistic-hpc-simulation-sched-cdf5199f
+- proj-proj-repro-si-anode-atomistic-hpc-simulation-simul-0529ae1a
+- proj-proj-repro-si-anode-atomistic-hpc-simulation-vasp-expert
+- proj-proj-repro-si-anode-developer-developer-head
+- proj-proj-repro-si-anode-developer-python-expert
+- proj-proj-repro-si-anode-developer-shell-expert
+- proj-proj-repro-si-anode-developer-ssh-remote-ops-expert
+- proj-proj-repro-si-anode-material-scientist-atomistic-s-df6cd503
+- proj-proj-repro-si-anode-material-scientist-electronic-43ccae0c
+- proj-proj-repro-si-anode-material-scientist-material-sc-418e757e
+- proj-proj-repro-si-anode-material-scientist-thermodynam-07d629d0
+- proj-proj-repro-si-anode-publication-packaging-figure-t-7f0b6cc5
+- proj-proj-repro-si-anode-publication-packaging-manuscri-d835237b
+- proj-proj-repro-si-anode-publication-packaging-publicat-002907ac
+- proj-proj-repro-si-anode-publication-packaging-suppleme-f5209b4a
+include_specialists: True
+router installed: /private/tmp/agi-visibility-skill-target/research-router
+target: /private/tmp/agi-visibility-skill-target
+
+Installed role markers after audit install
+count 20
+head_count 4
+specialist_count 16
+sample_specialists ['proj-proj-repro-si-anode-atomistic-hpc-simulation-cuda-de03374b', 'proj-proj-repro-si-anode-atomistic-hpc-simulation-devel-ec84edc6', 'proj-proj-repro-si-anode-atomistic-hpc-simulation-lammps-expert', 'proj-proj-repro-si-anode-atomistic-hpc-simulation-metad-d776acff', 'proj-proj-repro-si-anode-atomistic-hpc-simulation-sched-cdf5199f', 'proj-proj-repro-si-anode-atomistic-hpc-simulation-simul-0529ae1a', 'proj-proj-repro-si-anode-atomistic-hpc-simulation-vasp-expert', 'proj-proj-repro-si-anode-developer-python-expert']

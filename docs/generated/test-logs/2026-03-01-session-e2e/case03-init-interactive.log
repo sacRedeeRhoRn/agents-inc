@@ -1,0 +1,102 @@
+## Case 3: init-session interactive (piped stdin)
+Sun Mar  1 00:47:56 KST 2026
+agents-inc intake wizard
+What task do you want to start: Timeline [2 weeks]: Compute requirement (cpu/gpu/cuda) [cpu]: Remote cluster over SSH? (yes/no) [yes]: Output target [technical report]: {
+  "artifacts": {
+    "kickoff": "/private/tmp/agi-session-interactive/kickoff.md",
+    "project_manifest": "/private/tmp/agi-session-interactive/project-manifest.yaml",
+    "router_call": "/private/tmp/agi-session-interactive/router-call.txt"
+  },
+  "fabric_root": "/private/tmp/agi-session-interactive/agent_group_fabric",
+  "next_actions": [
+    "Paste router-call.txt into the Codex session.",
+    "Use --audit in install command only when specialist-level inspection is required."
+  ],
+  "project_id": "reproduce-metadynamics-free-energy-profile-for-li-migration-in-sulfide-electrolyte",
+  "project_root": "/private/tmp/agi-session-interactive",
+  "rationale": [
+    "Detected atomistic simulation keywords; add HPC simulation expert group.",
+    "Research objective suggests materials-science interpretation and validation.",
+    "Remote cluster workflow requires SSH/automation bridge via developer group."
+  ],
+  "router_call": "Use $research-router for project reproduce-metadynamics-free-energy-profile-for-li-migration-in-sulfide-electrolyte group material-scientist: Reproduce metadynamics free-energy profile for Li migration in sulfide electrolyte.",
+  "selected_groups": [
+    "material-scientist",
+    "atomistic-hpc-simulation",
+    "developer"
+  ],
+  "visibility": {
+    "audit_override": true,
+    "mode": "group-only"
+  }
+}
+
+---
+
+# Kickoff - reproduce-metadynamics-free-energy-profile-for-li-migration-in-sulfide-electrolyte
+
+## Task
+Reproduce metadynamics free-energy profile for Li migration in sulfide electrolyte
+
+## Constraints
+- timeline: 3 weeks
+- compute: cuda
+- remote_cluster: yes
+- output_target: conference slide deck with appendix
+
+## Suggested Groups
+- material-scientist
+- atomistic-hpc-simulation
+- developer
+
+## Rationale
+- Detected atomistic simulation keywords; add HPC simulation expert group.
+- Research objective suggests materials-science interpretation and validation.
+- Remote cluster workflow requires SSH/automation bridge via developer group.
+
+## Connector Guidance
+- user <-> head-controller: objective refinement and acceptance
+- head-controller <-> specialists: internal execution and cross-checking
+- specialist artifacts stay internal by default; only exposed outputs are surfaced
+
+## Router Call
+`Use $research-router for project reproduce-metadynamics-free-energy-profile-for-li-migration-in-sulfide-electrolyte group material-scientist: Reproduce metadynamics free-energy profile for Li migration in sulfide electrolyte.`
+
+### Verify artifacts
+total 32
+drwxr-xr-x@  6 moon.s.june  wheel   192 Mar  1 00:47 .
+drwxrwxrwt  16 root         wheel   512 Mar  1 00:47 ..
+drwxr-xr-x@  6 moon.s.june  wheel   192 Mar  1 00:47 agent_group_fabric
+-rw-r--r--@  1 moon.s.june  wheel  1128 Mar  1 00:47 kickoff.md
+-rw-r--r--@  1 moon.s.june  wheel  4532 Mar  1 00:47 project-manifest.yaml
+-rw-r--r--@  1 moon.s.june  wheel   226 Mar  1 00:47 router-call.txt
+
+### Kickoff excerpt
+# Kickoff - reproduce-metadynamics-free-energy-profile-for-li-migration-in-sulfide-electrolyte
+
+## Task
+Reproduce metadynamics free-energy profile for Li migration in sulfide electrolyte
+
+## Constraints
+- timeline: 3 weeks
+- compute: cuda
+- remote_cluster: yes
+- output_target: conference slide deck with appendix
+
+## Suggested Groups
+- material-scientist
+- atomistic-hpc-simulation
+- developer
+
+## Rationale
+- Detected atomistic simulation keywords; add HPC simulation expert group.
+- Research objective suggests materials-science interpretation and validation.
+- Remote cluster workflow requires SSH/automation bridge via developer group.
+
+## Connector Guidance
+- user <-> head-controller: objective refinement and acceptance
+- head-controller <-> specialists: internal execution and cross-checking
+- specialist artifacts stay internal by default; only exposed outputs are surfaced
+
+## Router Call
+`Use $research-router for project reproduce-metadynamics-free-energy-profile-for-li-migration-in-sulfide-electrolyte group material-scientist: Reproduce metadynamics free-energy profile for Li migration in sulfide electrolyte.`

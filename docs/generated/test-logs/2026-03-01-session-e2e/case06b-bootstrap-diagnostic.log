@@ -1,0 +1,7 @@
+## Case 6b: bootstrap with filename-fixed command (diagnostic)
+Sun Mar  1 00:48:54 KST 2026
+bootstrap.sh: OK
+agents_inc-1.0.2-py3-none-any.whl: OK
+shasum: agents_inc-1.0.2.tar.gz: No such file or directory
+agents_inc-1.0.2.tar.gz: FAILED open or read
+shasum: WARNING: 1 listed file could not be read

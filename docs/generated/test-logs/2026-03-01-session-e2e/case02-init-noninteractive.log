@@ -1,0 +1,170 @@
+## Case 2: init-session non-interactive
+Sun Mar  1 00:47:45 KST 2026
+{
+  "artifacts": {
+    "kickoff": "/private/tmp/agi-session-noninteractive/kickoff.md",
+    "project_manifest": "/private/tmp/agi-session-noninteractive/project-manifest.yaml",
+    "router_call": "/private/tmp/agi-session-noninteractive/router-call.txt"
+  },
+  "fabric_root": "/private/tmp/agi-session-noninteractive/agent_group_fabric",
+  "next_actions": [
+    "Paste router-call.txt into the Codex session.",
+    "Use --audit in install command only when specialist-level inspection is required."
+  ],
+  "project_id": "proj-repro-si-anode",
+  "project_root": "/private/tmp/agi-session-noninteractive",
+  "rationale": [
+    "Detected atomistic simulation keywords; add HPC simulation expert group.",
+    "Research objective suggests materials-science interpretation and validation.",
+    "Implementation/automation requirements suggest developer group involvement.",
+    "Publication-focused output requires packaging/presentation support."
+  ],
+  "router_call": "Use $research-router for project proj-repro-si-anode group material-scientist: Reproduce SI anode diffusion barriers from published DFT paper with VASP and NEB.",
+  "selected_groups": [
+    "material-scientist",
+    "atomistic-hpc-simulation",
+    "developer",
+    "publication-packaging"
+  ],
+  "visibility": {
+    "audit_override": true,
+    "mode": "group-only"
+  }
+}
+
+---
+
+# Kickoff - proj-repro-si-anode
+
+## Task
+Reproduce SI anode diffusion barriers from published DFT paper with VASP and NEB
+
+## Constraints
+- timeline: 10 days
+- compute: cuda
+- remote_cluster: yes
+- output_target: manuscript-ready technical report
+
+## Suggested Groups
+- material-scientist
+- atomistic-hpc-simulation
+- developer
+- publication-packaging
+
+## Rationale
+- Detected atomistic simulation keywords; add HPC simulation expert group.
+- Research objective suggests materials-science interpretation and validation.
+- Implementation/automation requirements suggest developer group involvement.
+- Publication-focused output requires packaging/presentation support.
+
+## Connector Guidance
+- user <-> head-controller: objective refinement and acceptance
+- head-controller <-> specialists: internal execution and cross-checking
+- specialist artifacts stay internal by default; only exposed outputs are surfaced
+
+## Router Call
+`Use $research-router for project proj-repro-si-anode group material-scientist: Reproduce SI anode diffusion barriers from published DFT paper with VASP and NEB.`
+
+### Verify artifacts
+total 32
+drwxr-xr-x@  6 moon.s.june  wheel   192 Mar  1 00:47 .
+drwxrwxrwt  14 root         wheel   448 Mar  1 00:47 ..
+drwxr-xr-x@  6 moon.s.june  wheel   192 Mar  1 00:47 agent_group_fabric
+-rw-r--r--@  1 moon.s.june  wheel  1090 Mar  1 00:47 kickoff.md
+-rw-r--r--@  1 moon.s.june  wheel  5486 Mar  1 00:47 project-manifest.yaml
+-rw-r--r--@  1 moon.s.june  wheel   161 Mar  1 00:47 router-call.txt
+
+### Verify suggested groups in manifest
+project_id: proj-repro-si-anode
+selected_groups:
+- material-scientist
+- atomistic-hpc-simulation
+- developer
+- publication-packaging
+install_targets:
+  codex_skill_dir: /tmp/agi-session-noninteractive-skills
+router_skill_name: research-router
+bundle_version: 1.0.0
+template_versions:
+  material-scientist: 1.0.0
+  atomistic-hpc-simulation: 1.0.0
+  developer: 1.0.0
+  publication-packaging: 1.0.0
+visibility:
+  mode: group-only
+  audit_override: true
+overlays:
+  allow_project_overrides: true
+  protected_sections:
+  - safety_policy
+  - citation_gate
+  - tool_restrictions
+  - routing_audit
+groups:
+  material-scientist:
+    manifest_path: agent-groups/material-scientist/group.yaml
+    skill_dirs:
+    - agent-groups/material-scientist/skills/proj-proj-repro-si-anode-material-scientist-material-sc-418e757e
+    - agent-groups/material-scientist/skills/proj-proj-repro-si-anode-material-scientist-thermodynam-07d629d0
+    - agent-groups/material-scientist/skills/proj-proj-repro-si-anode-material-scientist-electronic-43ccae0c
+    - agent-groups/material-scientist/skills/proj-proj-repro-si-anode-material-scientist-atomistic-s-df6cd503
+    head_skill_dir: agent-groups/material-scientist/skills/proj-proj-repro-si-anode-material-scientist-material-sc-418e757e
+    specialist_skill_dirs:
+    - agent-groups/material-scientist/skills/proj-proj-repro-si-anode-material-scientist-thermodynam-07d629d0
+    - agent-groups/material-scientist/skills/proj-proj-repro-si-anode-material-scientist-electronic-43ccae0c
+    - agent-groups/material-scientist/skills/proj-proj-repro-si-anode-material-scientist-atomistic-s-df6cd503
+  atomistic-hpc-simulation:
+    manifest_path: agent-groups/atomistic-hpc-simulation/group.yaml
+    skill_dirs:
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-atomi-43a1dbd7
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-vasp-expert
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-lammps-expert
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-metad-d776acff
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-sched-cdf5199f
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-cuda-de03374b
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-simul-0529ae1a
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-devel-ec84edc6
+    head_skill_dir: agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-atomi-43a1dbd7
+    specialist_skill_dirs:
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-vasp-expert
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-lammps-expert
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-metad-d776acff
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-sched-cdf5199f
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-cuda-de03374b
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-simul-0529ae1a
+    - agent-groups/atomistic-hpc-simulation/skills/proj-proj-repro-si-anode-atomistic-hpc-simulation-devel-ec84edc6
+  developer:
+    manifest_path: agent-groups/developer/group.yaml
+    skill_dirs:
+    - agent-groups/developer/skills/proj-proj-repro-si-anode-developer-developer-head
+    - agent-groups/developer/skills/proj-proj-repro-si-anode-developer-python-expert
+    - agent-groups/developer/skills/proj-proj-repro-si-anode-developer-shell-expert
+    - agent-groups/developer/skills/proj-proj-repro-si-anode-developer-ssh-remote-ops-expert
+    head_skill_dir: agent-groups/developer/skills/proj-proj-repro-si-anode-developer-developer-head
+    specialist_skill_dirs:
+    - agent-groups/developer/skills/proj-proj-repro-si-anode-developer-python-expert
+    - agent-groups/developer/skills/proj-proj-repro-si-anode-developer-shell-expert
+    - agent-groups/developer/skills/proj-proj-repro-si-anode-developer-ssh-remote-ops-expert
+  publication-packaging:
+    manifest_path: agent-groups/publication-packaging/group.yaml
+    skill_dirs:
+    - agent-groups/publication-packaging/skills/proj-proj-repro-si-anode-publication-packaging-publicat-002907ac
+    - agent-groups/publication-packaging/skills/proj-proj-repro-si-anode-publication-packaging-manuscri-d835237b
+    - agent-groups/publication-packaging/skills/proj-proj-repro-si-anode-publication-packaging-figure-t-7f0b6cc5
+    - agent-groups/publication-packaging/skills/proj-proj-repro-si-anode-publication-packaging-suppleme-f5209b4a
+    head_skill_dir: agent-groups/publication-packaging/skills/proj-proj-repro-si-anode-publication-packaging-publicat-002907ac
+    specialist_skill_dirs:
+    - agent-groups/publication-packaging/skills/proj-proj-repro-si-anode-publication-packaging-manuscri-d835237b
+    - agent-groups/publication-packaging/skills/proj-proj-repro-si-anode-publication-packaging-figure-t-7f0b6cc5
+    - agent-groups/publication-packaging/skills/proj-proj-repro-si-anode-publication-packaging-suppleme-f5209b4a
+
+### Verify skills installed
+total 8
+drwxr-xr-x@  8 moon.s.june  wheel  256 Mar  1 00:47 .
+drwxrwxrwt  14 root         wheel  448 Mar  1 00:47 ..
+-rw-r--r--@  1 moon.s.june  wheel  338 Mar  1 00:47 .fabric-install-state.json
+drwxr-xr-x@  4 moon.s.june  wheel  128 Mar  1 00:47 proj-proj-repro-si-anode-atomistic-hpc-simulation-atomi-43a1dbd7
+drwxr-xr-x@  4 moon.s.june  wheel  128 Mar  1 00:47 proj-proj-repro-si-anode-developer-developer-head
+drwxr-xr-x@  4 moon.s.june  wheel  128 Mar  1 00:47 proj-proj-repro-si-anode-material-scientist-material-sc-418e757e
+drwxr-xr-x@  4 moon.s.june  wheel  128 Mar  1 00:47 proj-proj-repro-si-anode-publication-packaging-publicat-002907ac
+drwxr-xr-x@  4 moon.s.june  wheel  128 Mar  1 00:47 research-router

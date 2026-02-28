@@ -1,0 +1,73 @@
+## Case 1: Local package sanity
+Sun Mar  1 00:47:16 KST 2026
+Obtaining file:///Users/moon.s.june/Documents/Playground/agent_group_fabric
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: PyYAML>=6.0 in /Users/moon.s.june/Library/Python/3.8/lib/python/site-packages (from agents-inc==1.0.2) (6.0.3)
+Building wheels for collected packages: agents-inc
+  Building editable for agents-inc (pyproject.toml): started
+  Building editable for agents-inc (pyproject.toml): finished with status 'done'
+  Created wheel for agents-inc: filename=agents_inc-1.0.2-0.editable-py3-none-any.whl size=3567 sha256=e247799d820d9fa77a7ade80a78d3bb9364df648b88ce1a5f6c9cb87dd5fabaf
+  Stored in directory: /private/var/folders/8r/cg_03l3d5rd7zrwh09rggt8m0000gn/T/pip-ephem-wheel-cache-xgw6oiwq/wheels/e2/02/4d/91eb83f1e67652c8239d143f65ae6cb963d3511fa3cff8b4c2
+Successfully built agents-inc
+Installing collected packages: agents-inc
+  Attempting uninstall: agents-inc
+    Found existing installation: agents-inc 1.0.0
+    Uninstalling agents-inc-1.0.0:
+      Successfully uninstalled agents-inc-1.0.0
+Successfully installed agents-inc-1.0.2
+
+### Entry points --help
+
+agents-inc-new-group --help
+ok: agents-inc-new-group
+
+agents-inc-new-project --help
+ok: agents-inc-new-project
+
+agents-inc-install-skills --help
+ok: agents-inc-install-skills
+
+agents-inc-sync-overlays --help
+ok: agents-inc-sync-overlays
+
+agents-inc-validate --help
+ok: agents-inc-validate
+
+agents-inc-dispatch-dry-run --help
+ok: agents-inc-dispatch-dry-run
+
+agents-inc-init-session --help
+ok: agents-inc-init-session
+
+agents-inc-generate-docs --help
+ok: agents-inc-generate-docs
+
+### Validate
+validation passed
+
+### Unit tests
+test_lease_conflict_and_expiry (test_fabric.ConcurrencyTests) ... ok
+test_dispatch_dry_run_deterministic (test_fabric.FabricIntegrationTests) ... ok
+test_dispatch_includes_execution_metadata_for_hpc_group (test_fabric.FabricIntegrationTests) ... ok
+test_generate_full_docs_reference (test_fabric.FabricIntegrationTests) ... ok
+test_generate_two_projects_with_overlap_unique_skill_ids (test_fabric.FabricIntegrationTests) ... ok
+test_install_sync_removes_stale_skills (test_fabric.FabricIntegrationTests) ... ok
+test_manifest_has_group_only_visibility (test_fabric.FabricIntegrationTests) ... ok
+test_manifest_validation_rejects_invalid_group (test_fabric.FabricUnitTests) ... ok
+test_overlay_sync_preserves_unlocked_and_updates_locked (test_fabric.FabricUnitTests) ... ok
+test_quality_gate_passes_with_citation (test_fabric.FabricUnitTests) ... ok
+test_quality_gate_uncited_blocks (test_fabric.FabricUnitTests) ... ok
+test_quality_gate_web_unavailable_blocks (test_fabric.FabricUnitTests) ... ok
+test_skill_name_collision_resolution (test_fabric.FabricUnitTests) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 6.205s
+
+OK

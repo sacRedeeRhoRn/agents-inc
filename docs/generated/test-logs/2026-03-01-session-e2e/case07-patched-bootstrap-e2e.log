@@ -1,0 +1,33 @@
+## Case 7: patched bootstrap script end-to-end (isolated)
+Sun Mar  1 00:49:36 KST 2026
+agents_inc-1.0.2-py3-none-any.whl: OK
+Processing /var/folders/8r/cg_03l3d5rd7zrwh09rggt8m0000gn/T/tmp.9913blJaIx/agents_inc-1.0.2-py3-none-any.whl
+Collecting PyYAML>=6.0 (from agents-inc==1.0.2)
+  Downloading https://files.pythonhosted.org/packages/05/8e/961c0007c59b8dd7729d542c61a4d537767a59645b82a0b521206e1e25c2/pyyaml-6.0.3.tar.gz (130kB)
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+ERROR: Exception:
+Traceback (most recent call last):
+  File "/private/tmp/agi-bootstrap-venv-fixed/lib/python3.8/site-packages/pip/_internal/cli/base_command.py", line 188, in main
+    status = self.run(options, args)
+  File "/private/tmp/agi-bootstrap-venv-fixed/lib/python3.8/site-packages/pip/_internal/commands/install.py", line 345, in run
+    resolver.resolve(requirement_set)
+  File "/private/tmp/agi-bootstrap-venv-fixed/lib/python3.8/site-packages/pip/_internal/legacy_resolve.py", line 196, in resolve
+    self._resolve_one(requirement_set, req)
+  File "/private/tmp/agi-bootstrap-venv-fixed/lib/python3.8/site-packages/pip/_internal/legacy_resolve.py", line 359, in _resolve_one
+    abstract_dist = self._get_abstract_dist_for(req_to_install)
+  File "/private/tmp/agi-bootstrap-venv-fixed/lib/python3.8/site-packages/pip/_internal/legacy_resolve.py", line 305, in _get_abstract_dist_for
+    abstract_dist = self.preparer.prepare_linked_requirement(
+  File "/private/tmp/agi-bootstrap-venv-fixed/lib/python3.8/site-packages/pip/_internal/operations/prepare.py", line 214, in prepare_linked_requirement
+    abstract_dist.prepare_distribution_metadata(
+  File "/private/tmp/agi-bootstrap-venv-fixed/lib/python3.8/site-packages/pip/_internal/distributions/source.py", line 70, in prepare_distribution_metadata
+    reqs = self.req.pep517_backend.get_requires_for_build_wheel()
+  File "/private/tmp/agi-bootstrap-venv-fixed/lib/python3.8/site-packages/pip/_vendor/pep517/wrappers.py", line 70, in get_requires_for_build_wheel
+    return self._call_hook('get_requires_for_build_wheel', {
+  File "/private/tmp/agi-bootstrap-venv-fixed/lib/python3.8/site-packages/pip/_vendor/pep517/wrappers.py", line 162, in _call_hook
+    raise BackendUnavailable
+pip._vendor.pep517.wrappers.BackendUnavailable
+WARNING: You are using pip version 19.2.3, however version 25.0.1 is available.
+You should consider upgrading via the 'pip install --upgrade pip' command.
