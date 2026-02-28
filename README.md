@@ -2,9 +2,16 @@
 
 Publication-ready multi-agent group fabric for Codex sessions with restart-safe orchestration state.
 
+## Where To Run What
+
+Use this rule everywhere in this README:
+
+- `Terminal`: run in shell (`zsh`/`bash`)
+- `Codex Chat`: paste as a normal chat message to Codex (not as a shell command)
+
 ## Quick Start (Pinned Bootstrap v1.1.0)
 
-Paste this in a brand-new Codex session:
+Run in `Terminal`:
 
 ```bash
 export AGI_VER="v1.1.0" && \
@@ -23,7 +30,7 @@ Bootstrap does:
 
 ## First Session: New vs Resume
 
-Run interactively:
+Run in `Terminal`:
 
 ```bash
 agents-inc-init-session --mode ask
@@ -50,13 +57,15 @@ agents-inc-init-session --mode resume --resume-project-id <project-id>
 Generated file:
 - `router-call.txt`
 
-Pattern:
+Paste in `Codex Chat`:
 
 ```text
 Use $research-router for project <project-id> group <group-id>: <objective>.
 ```
 
 ### 3) Dry-Run Dispatch (Optional)
+
+Run in `Terminal`:
 
 ```bash
 agents-inc-dispatch-dry-run \
@@ -67,6 +76,8 @@ agents-inc-dispatch-dry-run \
 ```
 
 ### 4) Validate Full Multi-Group Interaction
+
+Run in `Terminal`:
 
 ```bash
 agents-inc-long-run-test \
@@ -83,7 +94,7 @@ agents-inc-long-run-test \
 ### 5) Continue in Later Sessions
 - Re-run bootstrap or call `agents-inc-init-session`.
 - Choose `resume`.
-- Paste regenerated `router-call.txt`.
+- Paste regenerated `router-call.txt` in `Codex Chat`.
 
 ## Resume After Shutdown / Reboot
 
@@ -97,11 +108,15 @@ Project state files:
 
 Quick resume:
 
+Run in `Terminal`:
+
 ```bash
 agents-inc-init-session --mode resume --resume-project-id <project-id>
 ```
 
 ## Recover Specific Checkpoint
+
+Run in `Terminal`:
 
 ```bash
 agents-inc-init-session \
@@ -118,17 +133,23 @@ agents-inc-init-session \
 
 List every resumable project session:
 
+Run in `Terminal`:
+
 ```bash
 agents-inc-list-sessions
 ```
 
 Machine-readable output:
 
+Run in `Terminal`:
+
 ```bash
 agents-inc-list-sessions --json
 ```
 
 Include stale entries:
+
+Run in `Terminal`:
 
 ```bash
 agents-inc-list-sessions --include-stale
@@ -161,6 +182,8 @@ Execution model:
 - Only exposed artifacts cross group boundaries.
 
 ## Core Commands
+
+Run all of these in `Terminal`:
 
 ```bash
 agents-inc-new-group --group-id <id> --display-name "<name>" --domain "<domain>"
@@ -200,6 +223,8 @@ Resume issues:
   `docs/generated/full-template-skill-reference.md`
 
 ## Development
+
+Run in `Terminal`:
 
 ```bash
 cd /Users/moon.s.june/Documents/Playground/agent_group_fabric
