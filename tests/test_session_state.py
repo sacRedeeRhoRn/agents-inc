@@ -27,12 +27,14 @@ from agents_inc.core.session_compaction import (  # noqa: E402
 )
 from agents_inc.core.session_state import (  # noqa: E402
     find_resume_project,
+    get_index_project,
     list_index_projects,
     load_checkpoint,
     load_project_index,
     load_session_state,
     mark_stale_index_entries,
     resolve_state_project_root,
+    set_index_project_status,
     sync_index_from_scan,
     write_checkpoint,
 )
@@ -305,6 +307,38 @@ class SessionStateTests(unittest.TestCase):
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0]["project_id"], "proj-sync")
             self.assertEqual(rows[0]["last_checkpoint"], "20260301T000000Z-000001")
+
+    def test_sync_index_preserves_inactive_status(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            scan_root = Path(td) / "codex-projects"
+            project_root = scan_root / "proj-inactive"
+            project_root.mkdir(parents=True, exist_ok=True)
+            index_path = Path(td) / "projects-index.yaml"
+            payload = {
+                "project_id": "proj-inactive",
+                "project_root": str(project_root),
+                "fabric_root": str(project_root / "agent_group_fabric"),
+                "task": "x",
+                "constraints": {},
+                "selected_groups": ["developer"],
+                "primary_group": "developer",
+                "group_order_recommendation": ["developer"],
+                "router_call": "Use $research-router for project proj-inactive group developer: x.",
+                "latest_artifacts": {},
+                "pending_actions": [],
+            }
+            write_checkpoint(
+                project_root=project_root, payload=payload, project_index_path=index_path
+            )
+            set_index_project_status(index_path, "proj-inactive", "inactive")
+
+            stats = sync_index_from_scan(index_path, scan_root)
+            self.assertEqual(stats["created"], 0)
+
+            row = get_index_project(index_path, "proj-inactive")
+            self.assertIsNotNone(row)
+            assert row is not None
+            self.assertEqual(row.get("status"), "inactive")
 
     def test_resolve_state_project_root_prefers_parent_project_root(self) -> None:
         with tempfile.TemporaryDirectory() as td:

@@ -752,8 +752,8 @@ class FabricIntegrationTests(unittest.TestCase):
                 for r in payload.get("sessions", [])
                 if r.get("project_id") == "proj-test-list-sessions"
             )
-            self.assertTrue(str(row.get("session_code", "")))
-            self.assertIn("material-scientist", row.get("active_groups", []))
+            self.assertEqual(row.get("status"), "active")
+            self.assertTrue(str(row.get("root", "")))
 
     def test_resume_cli_auto_falls_back_to_checkpoint_when_compact_missing(self) -> None:
         with tempfile.TemporaryDirectory() as td:

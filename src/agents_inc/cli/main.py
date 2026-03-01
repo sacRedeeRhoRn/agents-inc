@@ -5,6 +5,8 @@ from typing import Callable, Dict, List
 
 from agents_inc import __version__
 from agents_inc.cli import (
+    deactivate_project,
+    delete_project,
     dispatch_dry_run,
     generate_docs,
     groups,
@@ -45,6 +47,8 @@ def _print_help() -> None:
     print("  init         interactive/new/resume project intake")
     print("  list         list resumable project sessions")
     print("  resume       resume a project and launch codex")
+    print("  deactivate   deactivate a project by project-id")
+    print("  delete       delete a project by project-id")
     print("  dispatch     dry-run project/group dispatch plan")
     print("  groups       catalog-level group management")
     print("  skills       project-scoped skill activation and cleanup")
@@ -70,6 +74,8 @@ def main() -> int:
         "init": init_session.main,
         "list": list_sessions.main,
         "resume": resume.main,
+        "deactivate": deactivate_project.main,
+        "delete": delete_project.main,
         "dispatch": dispatch_dry_run.main,
         "groups": groups.main,
         "skills": skills.main,

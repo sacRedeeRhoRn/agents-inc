@@ -125,6 +125,9 @@ def mark_stale_index_entries(index_path: Path) -> dict:
     for payload in projects.values():
         if not isinstance(payload, dict):
             continue
+        if str(payload.get("status") or "") == "inactive":
+            # Explicitly deactivated projects stay inactive until user reactivates them.
+            continue
         project_root_raw = payload.get("project_root")
         if not isinstance(project_root_raw, str):
             continue
@@ -178,6 +181,46 @@ def list_index_projects(index_path: Path, include_stale: bool = False) -> List[d
             continue
         out.append({"project_id": project_id, **payload})
     return out
+
+
+def get_index_project(index_path: Path, project_id: str) -> Optional[dict]:
+    index_data = mark_stale_index_entries(index_path)
+    projects = index_data.get("projects", {})
+    if not isinstance(projects, dict):
+        return None
+    payload = projects.get(project_id)
+    if not isinstance(payload, dict):
+        return None
+    return {"project_id": project_id, **payload}
+
+
+def set_index_project_status(index_path: Path, project_id: str, status: str) -> dict:
+    normalized = str(status).strip().lower()
+    if normalized not in {"active", "stale", "inactive"}:
+        raise FabricError(f"unsupported project status: {status}")
+    index_data = load_project_index(index_path)
+    projects = index_data.setdefault("projects", {})
+    if not isinstance(projects, dict) or project_id not in projects:
+        raise FabricError(f"project '{project_id}' not found in index")
+    payload = projects.get(project_id)
+    if not isinstance(payload, dict):
+        raise FabricError(f"invalid project entry for '{project_id}'")
+    payload["status"] = normalized
+    payload["updated_at"] = now_iso()
+    save_project_index(index_path, index_data)
+    return {"project_id": project_id, **payload}
+
+
+def remove_index_project(index_path: Path, project_id: str) -> bool:
+    index_data = load_project_index(index_path)
+    projects = index_data.setdefault("projects", {})
+    if not isinstance(projects, dict):
+        return False
+    if project_id not in projects:
+        return False
+    projects.pop(project_id, None)
+    save_project_index(index_path, index_data)
+    return True
 
 
 def _find_local_project_manifest(project_root: Path, project_id: str) -> Optional[Path]:
@@ -262,6 +305,9 @@ def sync_index_from_scan(index_path: Path, scan_root: Path) -> Dict[str, int]:
             changed = True
             continue
 
+        if str(prev.get("status") or "") == "inactive":
+            next_payload["status"] = "inactive"
+
         stable_prev = dict(prev)
         stable_prev.pop("updated_at", None)
         stable_next = dict(next_payload)
@@ -286,9 +332,18 @@ def find_resume_project(
 ) -> Optional[dict]:
     active = list_active_index_projects(index_path)
     if project_id:
+        indexed = get_index_project(index_path, project_id)
+        if isinstance(indexed, dict) and str(indexed.get("status") or "") == "inactive":
+            return None
+
         for payload in active:
             if payload.get("project_id") == project_id:
                 return payload
+
+        # If a project has an explicit index entry (active/stale/inactive), do not
+        # silently replace it by scan fallback.
+        if isinstance(indexed, dict):
+            return None
 
         for found in discover_projects(fallback_scan_root):
             if found.get("project_id") != project_id:

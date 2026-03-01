@@ -48,13 +48,20 @@ python3 -m pip install --upgrade "/tmp/${WHEEL}"
 
 Terminal anchors state. Codex drives orchestration.
 
-## Start Or Resume In 3 Commands
+## Session Commands
 
 ```bash
 agents-inc init
 agents-inc list
 agents-inc resume <project-id>
+agents-inc deactivate <project-id>
+agents-inc delete <project-id> --yes
 ```
+
+`agents-inc list` now shows only:
+- `project_id`
+- `status`
+- `root`
 
 ## Project-Scoped Skills
 

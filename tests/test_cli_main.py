@@ -29,6 +29,20 @@ class CLIMainTests(unittest.TestCase):
         self.assertEqual(code, 7)
         mocked.assert_called_once()
 
+    def test_main_routes_deactivate_command(self) -> None:
+        with patch("agents_inc.cli.deactivate_project.main", return_value=8) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "deactivate", "proj-x"]):
+                code = cli_main.main()
+        self.assertEqual(code, 8)
+        mocked.assert_called_once()
+
+    def test_main_routes_delete_command(self) -> None:
+        with patch("agents_inc.cli.delete_project.main", return_value=12) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "delete", "proj-x", "--yes"]):
+                code = cli_main.main()
+        self.assertEqual(code, 12)
+        mocked.assert_called_once()
+
     def test_main_routes_groups_command(self) -> None:
         with patch("agents_inc.cli.groups.main", return_value=9) as mocked:
             with patch.object(sys, "argv", ["agents-inc", "groups", "list"]):

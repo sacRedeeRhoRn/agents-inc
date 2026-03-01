@@ -7,11 +7,20 @@
   - `README.md`
   - `OVERVIEW.md`
   - `docs/bootstrap/START_IN_CODEX.md`
+- Simplified `agents-inc list` output to only show:
+  - `project_id`
+  - `status`
+  - `root`
+- Added project-level commands:
+  - `agents-inc deactivate <project-id>`
+  - `agents-inc delete <project-id> --yes`
 - Fixed CLI project resolution for commands run outside project roots:
   - `agents-inc orchestrator-reply` now resolves project `fabric_root` via project index/scan fallback when `--fabric-root` is omitted.
   - `agents-inc dispatch` now resolves project `fabric_root` the same way when `--fabric-root` is omitted.
 - Added regression tests for project-resolution behavior:
   - `tests/test_cli_project_resolution.py`
+- Added regression tests for deactivate/delete controls:
+  - `tests/test_project_control.py`
 - Bumped package version to `2.2.2`.
 
 ## v2.2.1
