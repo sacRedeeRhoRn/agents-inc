@@ -22,11 +22,11 @@ class BootstrapFlowTests(unittest.TestCase):
         self.assertLess(first_contract_idx, question_idx)
         self.assertLess(question_idx, install_idx)
 
-    def test_readme_quick_start_points_to_v2_2_1_bootstrap(self) -> None:
+    def test_readme_quick_start_points_to_v2_2_2_bootstrap(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn('export AGI_VER="v2.2.1"', readme)
+        self.assertIn('export AGI_VER="v2.2.2"', readme)
         self.assertIn("docs/bootstrap/START_IN_CODEX.md", readme)
-        self.assertIn("## Quick Start (Codex Orchestrator, v2.2.1)", readme)
+        self.assertIn("## Quick Start (Codex Orchestrator, v2.2.2)", readme)
         self.assertIn("[OVERVIEW.md](./OVERVIEW.md)", readme)
 
 

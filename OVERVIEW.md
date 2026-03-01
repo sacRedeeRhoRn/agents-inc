@@ -21,11 +21,11 @@ git --version
 ### Recommended Install (Release-Pinned + Checksum)
 
 ```bash
-export AGI_VER="v2.2.1" && \
-WHEEL="agents_inc-2.2.1-py3-none-any.whl" && \
+export AGI_VER="v2.2.2" && \
+WHEEL="agents_inc-2.2.2-py3-none-any.whl" && \
 curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/${WHEEL}" -o "/tmp/${WHEEL}" && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/agents_inc-2.2.1.sha256" -o /tmp/agents_inc-2.2.1.sha256 && \
-(cd /tmp && grep "  ${WHEEL}$" agents_inc-2.2.1.sha256 > wheel.sha256 && shasum -a 256 -c wheel.sha256) && \
+curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/agents_inc-2.2.2.sha256" -o /tmp/agents_inc-2.2.2.sha256 && \
+(cd /tmp && grep "  ${WHEEL}$" agents_inc-2.2.2.sha256 > wheel.sha256 && shasum -a 256 -c wheel.sha256) && \
 python3 -m pip install --upgrade pip setuptools wheel && \
 python3 -m pip install --upgrade "/tmp/${WHEEL}"
 ```
@@ -37,14 +37,14 @@ agents-inc --version
 agents-inc --help
 ```
 
-Expected version for this guide: `2.2.1`.
+Expected version for this guide: `2.2.2`.
 
 ## 3. Start Your Codex Orchestrator Session
 
 Run this in Terminal to open a new Codex session with the onboarding markdown prompt:
 
 ```bash
-export AGI_VER="v2.2.1" && \
+export AGI_VER="v2.2.2" && \
 export AGI_BOOTSTRAP_URL="https://raw.githubusercontent.com/sacRedeeRhoRn/agents-inc/${AGI_VER}/docs/bootstrap/START_IN_CODEX.md" && \
 export AGI_BOOTSTRAP_HOME="$HOME/.agents-inc/bootstrap-codex-home" && \
 mkdir -p "$AGI_BOOTSTRAP_HOME/skills/local" && \

@@ -1,5 +1,19 @@
 # Changelog
 
+## v2.2.2
+
+- Synced publication tag to include post-`v2.2.1` fixes already on `main`.
+- Updated pinned quick-start/install/bootstrap references from `v2.2.1` to `v2.2.2` in:
+  - `README.md`
+  - `OVERVIEW.md`
+  - `docs/bootstrap/START_IN_CODEX.md`
+- Fixed CLI project resolution for commands run outside project roots:
+  - `agents-inc orchestrator-reply` now resolves project `fabric_root` via project index/scan fallback when `--fabric-root` is omitted.
+  - `agents-inc dispatch` now resolves project `fabric_root` the same way when `--fabric-root` is omitted.
+- Added regression tests for project-resolution behavior:
+  - `tests/test_cli_project_resolution.py`
+- Bumped package version to `2.2.2`.
+
 ## v2.2.1
 
 - Reconstructed top-level documentation into a two-layer operator experience:
