@@ -31,10 +31,12 @@ Use a release-pinned, checksum-verified install:
 
 ```bash
 export AGI_VER="v2.2.1" && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/bootstrap.sh" -o /tmp/agents-inc-bootstrap.sh && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/bootstrap.sh.sha256" -o /tmp/agents-inc-bootstrap.sh.sha256 && \
-(cd /tmp && shasum -a 256 -c agents-inc-bootstrap.sh.sha256) && \
-bash /tmp/agents-inc-bootstrap.sh --owner sacRedeeRhoRn --repo agents-inc --release "${AGI_VER}"
+WHEEL="agents_inc-2.2.1-py3-none-any.whl" && \
+curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/${WHEEL}" -o "/tmp/${WHEEL}" && \
+curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/agents_inc-2.2.1.sha256" -o /tmp/agents_inc-2.2.1.sha256 && \
+(cd /tmp && grep "  ${WHEEL}$" agents_inc-2.2.1.sha256 > wheel.sha256 && shasum -a 256 -c wheel.sha256) && \
+python3 -m pip install --upgrade pip setuptools wheel && \
+python3 -m pip install --upgrade "/tmp/${WHEEL}"
 ```
 
 ## Terminal vs Codex
