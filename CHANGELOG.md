@@ -1,5 +1,46 @@
 # Changelog
 
+## v2.2.1
+
+- Reconstructed top-level documentation into a two-layer operator experience:
+  - `README.md` is now a minimal entrypoint with essential lifecycle commands.
+  - new `OVERVIEW.md` provides full step-by-step orchestration guidance and example task run.
+- Updated all primary quick-start and bootstrap references to `v2.2.1`.
+- Hardened bootstrap install guidance in `docs/bootstrap/START_IN_CODEX.md`:
+  - release-pinned checksum-verified install path first,
+  - source-install fallback for cases where release assets are not yet available.
+- Added explicit sensitive-data guidance for materials workflows:
+  - docs now use `MATERIALS_PROJECT_API_KEY` placeholder and prohibit hardcoded key usage.
+- Bumped package version to `2.2.1`.
+
+## v2.2.0
+
+- Hardened bootstrap startup behavior:
+  - `docs/bootstrap/START_IN_CODEX.md` now enforces an immediate first-turn question:
+    - `Start new project or resume existing project?`
+  - onboarding checks/install guidance remain, but must run only after the first answer.
+- Added strict project-scoped skill management (no global managed-skill default install):
+  - new command family:
+    - `agents-inc skills list --project-id <id> [--json]`
+    - `agents-inc skills activate --project-id <id> --groups g1,g2 [--specialists] [--sync]`
+    - `agents-inc skills deactivate --project-id <id> --groups g1,g2 [--sync]`
+    - `agents-inc skills cleanup-global [--dry-run|--apply]`
+- Added project `CODEX_HOME` subsystem:
+  - `<project-root>/.agents-inc/codex-home`
+  - `<project-root>/.agents-inc/state/codex-home.yaml`
+  - `<project-root>/.agents-inc/state/skill-activation.yaml`
+  - links/copies global auth/config into project-scoped codex-home.
+- Updated `init` and `resume` integration:
+  - default skill target is project-scoped codex-home skills dir
+  - initial activation installs head skills only
+  - specialist skills require explicit activation
+  - resume launch now sets `CODEX_HOME=<project-root>/.agents-inc/codex-home`.
+- Added tests for v2.2.0 hardening:
+  - bootstrap first-question contract and README quick-start version checks
+  - project-scoped skill isolation, selective specialist activation, deactivation behavior
+  - managed-global cleanup safety checks.
+- Bumped package version to `2.2.0`.
+
 ## v2.1.0
 
 - Added strict turn-mode orchestration command:

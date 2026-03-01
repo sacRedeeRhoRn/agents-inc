@@ -36,6 +36,13 @@ class CLIMainTests(unittest.TestCase):
         self.assertEqual(code, 9)
         mocked.assert_called_once()
 
+    def test_main_routes_skills_command(self) -> None:
+        with patch("agents_inc.cli.skills.main", return_value=10) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "skills", "list", "--project-id", "x"]):
+                code = cli_main.main()
+        self.assertEqual(code, 10)
+        mocked.assert_called_once()
+
     def test_main_routes_orchestrate_command(self) -> None:
         with patch("agents_inc.cli.orchestrate.main", return_value=11) as mocked:
             with patch.object(sys, "argv", ["agents-inc", "orchestrate", "--project-id", "x"]):
@@ -102,6 +109,11 @@ class CLIMainTests(unittest.TestCase):
             self.assertEqual(cmd[1], "-C")
             self.assertEqual(cmd[2], td)
             self.assertNotIn("\n", cmd[3])
+            env = mocked_run.call_args[1].get("env", {})
+            self.assertEqual(
+                Path(str(env.get("CODEX_HOME", ""))).resolve(),
+                (Path(td) / ".agents-inc" / "codex-home").resolve(),
+            )
             prompt_file = Path(td) / ".agents-inc" / "state" / "resume-prompt.md"
             self.assertTrue(prompt_file.exists())
 

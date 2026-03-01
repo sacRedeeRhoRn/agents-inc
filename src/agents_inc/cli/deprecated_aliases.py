@@ -8,7 +8,7 @@ from agents_inc.cli.main import main as router_main
 
 def _run_alias(old_name: str, new_cmd: str, argv: List[str]) -> int:
     print(
-        f"deprecated: '{old_name}' is an alias and will be removed after v2.0.x. Use 'agents-inc {new_cmd}' instead.",
+        f"deprecated: '{old_name}' is an alias and will be removed after v2.2.x. Use 'agents-inc {new_cmd}' instead.",
         file=sys.stderr,
     )
     prev = sys.argv

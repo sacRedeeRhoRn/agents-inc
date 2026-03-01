@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agents-inc"
-version = "2.1.0"
+version = "2.2.1"
 description = "Publication-ready multi-agent group fabric and router orchestration toolkit for Codex sessions"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -37,6 +37,7 @@ Issues = "https://github.com/sacRedeeRhoRn/agents-inc/issues"
 
 [project.scripts]
 agents-inc = "agents_inc.cli.main:main"
+agents-inc-skills = "agents_inc.cli.skills:main"
 agents-inc-groups = "agents_inc.cli.groups:main"
 agents-inc-migrate-v2 = "agents_inc.cli.migrate_v2:main"
 agents-inc-orchestrate = "agents_inc.cli.orchestrate:main"

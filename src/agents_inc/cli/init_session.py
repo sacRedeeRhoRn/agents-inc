@@ -8,6 +8,13 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from agents_inc.cli.install_skills import install_project_skills
+from agents_inc.core.codex_home import (
+    ensure_project_codex_home,
+    ensure_skill_activation_state,
+    save_skill_activation_state,
+    skill_activation_state_path,
+)
 from agents_inc.core.config_state import (
     default_config_path,
     get_projects_root,
@@ -216,6 +223,10 @@ def _build_resume_kickoff(
             "- user <-> head-controller: objective refinement and acceptance",
             "- head-controller <-> specialists: internal execution and cross-checking",
             "- specialist artifacts stay internal by default; only exposed outputs are surfaced",
+            "- each project uses isolated CODEX_HOME under `.agents-inc/codex-home`",
+            "- specialist skills are group-selective; activate explicitly via `agents-inc skills activate --project-id {0} --groups <group-id> --specialists`".format(
+                project_id
+            ),
             "- requests starting with `[non-group]` run concise direct reasoning without delegation",
             "- all other requests run group-routed publication-grade detailed orchestration",
             "",
@@ -273,6 +284,10 @@ def _build_new_kickoff(
             "- user <-> head-controller: objective refinement and acceptance",
             "- head-controller <-> specialists: internal execution and cross-checking",
             "- specialist artifacts stay internal by default; only exposed outputs are surfaced",
+            "- each project uses isolated CODEX_HOME under `.agents-inc/codex-home`",
+            "- specialist skills are group-selective; activate explicitly via `agents-inc skills activate --project-id {0} --groups <group-id> --specialists`".format(
+                project_id
+            ),
             "- requests starting with `[non-group]` run concise direct reasoning without delegation",
             "- all other requests run group-routed publication-grade detailed orchestration",
             "",
@@ -515,6 +530,39 @@ def run_resume_flow(
             )
             resume_source = "rehydrate"
 
+    codex_home_state = ensure_project_codex_home(project_root, project_id=project_id)
+    activation_state = ensure_skill_activation_state(
+        project_root,
+        default_head_groups=groups,
+    )
+    allowed_groups = set(groups)
+    active_head_groups = [
+        group_id
+        for group_id in activation_state.get("active_head_groups", [])
+        if group_id in allowed_groups
+    ]
+    if not active_head_groups:
+        active_head_groups = list(groups)
+    active_specialist_groups = [
+        group_id
+        for group_id in activation_state.get("active_specialist_groups", [])
+        if group_id in allowed_groups
+    ]
+    activation_state = save_skill_activation_state(
+        project_root,
+        active_head_groups=active_head_groups,
+        active_specialist_groups=active_specialist_groups,
+    )
+    install_project_skills(
+        fabric_root=project_fabric_root,
+        project_id=project_id,
+        target=Path(str(codex_home_state["skills_dir"])),
+        sync=True,
+        head_groups=activation_state["active_head_groups"],
+        specialist_groups=activation_state["active_specialist_groups"],
+        include_specialists=bool(activation_state["active_specialist_groups"]),
+    )
+
     upsert_specialist_sessions(
         project_root=project_root,
         project_fabric_root=project_fabric_root,
@@ -554,6 +602,8 @@ def run_resume_flow(
         "specialist_sessions": str(
             project_root / ".agents-inc" / "state" / "specialist-sessions.yaml"
         ),
+        "codex_home_state": str(project_root / ".agents-inc" / "state" / "codex-home.yaml"),
+        "skill_activation": str(skill_activation_state_path(project_root)),
     }
 
     payload = _build_checkpoint_payload(
@@ -569,6 +619,7 @@ def run_resume_flow(
             "Paste router-call.txt into the Codex session.",
             "Use agents-inc orchestrator-reply for detailed-by-default group responses.",
             "Run long-run-command.sh to validate all-group interaction and isolation.",
+            "Use agents-inc skills activate --project-id <id> --groups <group-id> --specialists for group-selective specialist skills.",
             "Continue with agents-inc dispatch for focused group objectives.",
         ],
     )
@@ -596,6 +647,8 @@ def run_resume_flow(
             / ".agents-inc"
             / "state"
             / "specialist-sessions.yaml",
+            "codex_home_state": project_root / ".agents-inc" / "state" / "codex-home.yaml",
+            "skill_activation": skill_activation_state_path(project_root),
             "checkpoint": records["checkpoint"]["checkpoint_path"],
             "compact": records["compact"]["compact_path"],
             "project_index": records["checkpoint"]["project_index_path"],
@@ -727,6 +780,12 @@ def main() -> int:
         project_root.mkdir(parents=True, exist_ok=True)
         project_fabric_root = project_root / "agent_group_fabric"
         ensure_fabric_root_initialized(project_fabric_root)
+        codex_home_state = ensure_project_codex_home(project_root, project_id=project_id)
+        project_skill_target = (
+            Path(args.target_skill_dir).expanduser().resolve()
+            if args.target_skill_dir
+            else Path(str(codex_home_state["skills_dir"]))
+        )
 
         existing_manifest = (
             project_fabric_root / "generated" / "projects" / project_id / "manifest.yaml"
@@ -763,29 +822,30 @@ def main() -> int:
             "--visibility-mode",
             "group-only",
             "--audit-override",
+            "--target-skill-dir",
+            str(project_skill_target),
         ]
         if args.overwrite_existing:
             new_project_cmd.append("--force")
-        if args.target_skill_dir:
-            new_project_cmd.extend(["--target-skill-dir", args.target_skill_dir])
         run_cmd(new_project_cmd, env=cmd_env)
-
-        install_cmd = [
-            sys.executable,
-            "-m",
-            "agents_inc.cli.install_skills",
-            "--fabric-root",
-            str(project_fabric_root),
-            "--project-id",
-            project_id,
-            "--sync",
-        ]
-        if args.target_skill_dir:
-            install_cmd.extend(["--target", args.target_skill_dir])
-        run_cmd(install_cmd, env=cmd_env)
 
         _, manifest = load_project_manifest(project_fabric_root, project_id)
         ensure_response_policy(project_root)
+        activation_state = save_skill_activation_state(
+            project_root,
+            active_head_groups=selected_groups,
+            active_specialist_groups=[],
+        )
+        install_project_skills(
+            fabric_root=project_fabric_root,
+            project_id=project_id,
+            target=project_skill_target,
+            sync=True,
+            head_groups=activation_state["active_head_groups"],
+            specialist_groups=activation_state["active_specialist_groups"],
+            include_specialists=False,
+        )
+        ensure_skill_activation_state(project_root, default_head_groups=selected_groups)
         upsert_specialist_sessions(
             project_root=project_root,
             project_fabric_root=project_fabric_root,
@@ -808,6 +868,8 @@ def main() -> int:
             "specialist_sessions": str(
                 project_root / ".agents-inc" / "state" / "specialist-sessions.yaml"
             ),
+            "codex_home_state": str(project_root / ".agents-inc" / "state" / "codex-home.yaml"),
+            "skill_activation": str(skill_activation_state_path(project_root)),
         }
 
         payload = _build_checkpoint_payload(
@@ -828,7 +890,7 @@ def main() -> int:
                 "Paste router-call.txt into the Codex session.",
                 "Use agents-inc orchestrator-reply for detailed-by-default group responses.",
                 "Run long-run-command.sh to validate all-group interaction and isolation.",
-                "Use --audit in install command only when specialist-level inspection is required.",
+                "Use agents-inc skills activate --project-id <id> --groups <group-id> --specialists for group-selective specialist skills.",
             ],
         )
 
@@ -884,6 +946,8 @@ def main() -> int:
                 / ".agents-inc"
                 / "state"
                 / "specialist-sessions.yaml",
+                "codex_home_state": project_root / ".agents-inc" / "state" / "codex-home.yaml",
+                "skill_activation": skill_activation_state_path(project_root),
                 "checkpoint": records["checkpoint"]["checkpoint_path"],
                 "compact": records["compact"]["compact_path"],
                 "project_index": records["checkpoint"]["project_index_path"],
@@ -893,7 +957,7 @@ def main() -> int:
                 "Paste router-call.txt into the Codex session.",
                 "Use agents-inc orchestrator-reply for detailed-by-default group responses.",
                 "Run long-run-command.sh to validate all-group interaction and isolation.",
-                "Use --audit in install command only when specialist-level inspection is required.",
+                "Use agents-inc skills activate --project-id <id> --groups <group-id> --specialists for group-selective specialist skills.",
             ],
         }
 

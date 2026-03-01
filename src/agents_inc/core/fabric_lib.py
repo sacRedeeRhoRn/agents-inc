@@ -754,21 +754,40 @@ def collect_project_skill_records(
     project_dir: Path,
     manifest: dict,
     include_specialists: bool,
+    groups: Optional[List[str]] = None,
+    specialist_groups: Optional[List[str]] = None,
 ) -> List[SkillRecord]:
     records: List[SkillRecord] = []
-    groups = manifest.get("groups", {})
-    if not isinstance(groups, dict):
+    manifest_groups = manifest.get("groups", {})
+    if not isinstance(manifest_groups, dict):
         return records
-    for group_id, payload in groups.items():
+
+    available_group_ids = [str(group_id) for group_id in manifest_groups.keys()]
+    head_group_set = set(available_group_ids)
+    if isinstance(groups, list) and groups:
+        head_group_set = {str(group_id).strip() for group_id in groups if str(group_id).strip()}
+
+    specialist_group_set = set()
+    if include_specialists:
+        if isinstance(specialist_groups, list) and specialist_groups:
+            specialist_group_set = {
+                str(group_id).strip() for group_id in specialist_groups if str(group_id).strip()
+            }
+        else:
+            specialist_group_set = set(head_group_set)
+
+    for group_id, payload in manifest_groups.items():
         if not isinstance(payload, dict):
+            continue
+        if group_id not in head_group_set and group_id not in specialist_group_set:
             continue
 
         head_dir = payload.get("head_skill_dir")
         spec_dirs = payload.get("specialist_skill_dirs", [])
         selected_dirs: List[Tuple[str, str]] = []
-        if head_dir:
+        if head_dir and group_id in head_group_set:
             selected_dirs.append((head_dir, "head"))
-        if include_specialists:
+        if include_specialists and group_id in specialist_group_set:
             for rel in spec_dirs:
                 selected_dirs.append((rel, "specialist"))
 
@@ -799,6 +818,18 @@ def collect_project_skill_records(
                 )
             )
     return records
+
+
+def find_managed_skill_dirs(target: Path, marker_file: str = ".fabric-managed.json") -> List[Path]:
+    if not target.exists():
+        return []
+    out: List[Path] = []
+    for entry in sorted(target.iterdir()):
+        if not entry.is_dir():
+            continue
+        if (entry / marker_file).exists():
+            out.append(entry)
+    return out
 
 
 def extract_locked_sections(text: str) -> Dict[str, str]:

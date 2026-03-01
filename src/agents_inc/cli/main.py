@@ -19,6 +19,7 @@ from agents_inc.cli import (
     orchestrate_report,
     orchestrator_reply,
     resume,
+    skills,
     sync_overlays,
     validate,
 )
@@ -46,6 +47,7 @@ def _print_help() -> None:
     print("  resume       resume a project and launch codex")
     print("  dispatch     dry-run project/group dispatch plan")
     print("  groups       catalog-level group management")
+    print("  skills       project-scoped skill activation and cleanup")
     print("  orchestrator-reply one-turn orchestrator reply (group-detailed or [non-group])")
     print("  orchestrate  run live orchestrator evidence campaign")
     print("  orchestrate-report regenerate report from existing run directory")
@@ -70,6 +72,7 @@ def main() -> int:
         "resume": resume.main,
         "dispatch": dispatch_dry_run.main,
         "groups": groups.main,
+        "skills": skills.main,
         "orchestrator-reply": orchestrator_reply.main,
         "orchestrate": orchestrate.main,
         "orchestrate-report": orchestrate_report.main,

@@ -7,6 +7,12 @@ import subprocess
 from pathlib import Path
 
 from agents_inc.cli.init_session import run_resume_flow
+from agents_inc.core.codex_home import (
+    codex_launch_env,
+    ensure_project_codex_home,
+    ensure_skill_activation_state,
+    resolve_project_codex_home,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,18 +37,22 @@ def _build_resume_prompt(summary: dict) -> str:
     project_id = str(summary.get("project_id", ""))
     session_code = str(summary.get("session_code", ""))
     router_call = str(summary.get("router_call", ""))
+    project_root = Path(str(summary.get("project_root", ""))).expanduser().resolve()
     groups = summary.get("selected_groups", [])
     if not isinstance(groups, list):
         groups = []
     groups_text = ", ".join(str(group_id) for group_id in groups)
+    codex_home = resolve_project_codex_home(project_root)
     return (
         "Resume orchestrator for project "
         f"{project_id}. Session code: {session_code}. "
         f"Active groups: {groups_text}. "
+        f"Project CODEX_HOME: {codex_home}. "
         f"Start from router call: {router_call} "
         "Keep group artifacts isolated by project and only exchange through exposed/ paths. "
         "Default mode is group-detailed publication-grade synthesis. "
-        "Use strict prefix [non-group] only for concise direct state queries."
+        "Use strict prefix [non-group] only for concise direct state queries. "
+        "Activate specialist skills per group with agents-inc skills activate --project-id <id> --groups <group-id> --specialists."
     )
 
 
@@ -61,7 +71,7 @@ def _sanitize_prompt(prompt: str, max_len: int = 1200) -> str:
     return single[: max_len - 3].rstrip() + "..."
 
 
-def _launch_codex(project_root: str, prompt: str) -> int:
+def _launch_codex(project_root: str, prompt: str, env: dict) -> int:
     codex_bin = shutil.which("codex")
     if not codex_bin:
         print(
@@ -70,7 +80,7 @@ def _launch_codex(project_root: str, prompt: str) -> int:
         return 0
     cmd = [codex_bin, "-C", project_root, prompt]
     print(f"launching: {' '.join(cmd[:3])} <prompt>")
-    proc = subprocess.run(cmd)
+    proc = subprocess.run(cmd, env=env)
     return int(proc.returncode)
 
 
@@ -93,11 +103,23 @@ def main() -> int:
         if args.no_launch:
             return 0
         project_root = str(summary.get("project_root", ""))
+        project_root_path = Path(project_root).expanduser().resolve()
+        project_id = str(summary.get("project_id", args.project_id))
+        selected_groups = summary.get("selected_groups", [])
+        if not isinstance(selected_groups, list):
+            selected_groups = []
+        ensure_project_codex_home(project_root_path, project_id=project_id)
+        ensure_skill_activation_state(
+            project_root_path,
+            default_head_groups=[str(group_id) for group_id in selected_groups],
+        )
         prompt = _build_resume_prompt(summary)
         prompt_path = _persist_resume_prompt(project_root, prompt)
         prompt = _sanitize_prompt(prompt)
         print(f"resume prompt saved: {prompt_path}")
-        return _launch_codex(project_root, prompt)
+        env = codex_launch_env(project_root_path)
+        print(f"using CODEX_HOME: {env.get('CODEX_HOME', '')}")
+        return _launch_codex(project_root, prompt, env=env)
     except Exception as exc:  # noqa: BLE001
         print(f"error: {exc}")
         return 1
