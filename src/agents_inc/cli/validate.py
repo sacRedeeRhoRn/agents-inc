@@ -22,12 +22,18 @@ from agents_inc.core.skill_harness import validate_skill_contract
 
 REQUIRED_TEMPLATE_FILES = [
     "templates/group/AGENTS.template.md",
+    "templates/group/specialist-AGENTS.template.md",
     "templates/group/handoffs.template.yaml",
     "templates/group/tools/allowlist.template.yaml",
     "templates/group/skills/head/SKILL.template.md",
     "templates/group/skills/specialist/SKILL.template.md",
     "templates/group/references/gate-checklist.template.md",
     "templates/group/references/citation-policy.template.md",
+    "templates/group/references/starters/domain-core.md",
+    "templates/group/references/starters/web-research.md",
+    "templates/group/references/starters/evidence-review.md",
+    "templates/group/references/starters/repro-qa.md",
+    "templates/group/references/starters/integration.md",
     "templates/router/research-router/SKILL.template.md",
 ]
 
@@ -36,6 +42,8 @@ REQUIRED_SCHEMA_FILES = [
     "schemas/project.schema.yaml",
     "schemas/tool_policy.schema.yaml",
     "schemas/dispatch.schema.yaml",
+    "schemas/escalation.schema.yaml",
+    "schemas/connection.schema.yaml",
 ]
 
 
@@ -199,6 +207,7 @@ def validate_project(fabric_root: Path, project_dir: Path) -> List[str]:
                     continue
                 required_group_files.extend(
                     [
+                        group_manifest_path.parent / "internal" / aid / "AGENTS.md",
                         group_manifest_path.parent / "internal" / aid / "work.md",
                         group_manifest_path.parent / "internal" / aid / "handoff.json",
                     ]

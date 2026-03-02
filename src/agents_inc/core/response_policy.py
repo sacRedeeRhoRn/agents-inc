@@ -3,10 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import yaml
-
 from agents_inc.core.fabric_lib import FabricError, load_project_manifest, load_yaml, slugify
-from agents_inc.core.session_state import now_iso, state_dir
+from agents_inc.core.session_state import state_dir
+from agents_inc.core.util.fs import dump_yaml
+from agents_inc.core.util.time import now_iso
 
 RESPONSE_POLICY_SCHEMA_VERSION = "3.0"
 SPECIALIST_SESSIONS_SCHEMA_VERSION = "3.0"
@@ -26,12 +26,6 @@ def response_policy_path(project_root: Path) -> Path:
 
 def specialist_sessions_path(project_root: Path) -> Path:
     return state_dir(project_root) / "specialist-sessions.yaml"
-
-
-def _dump_yaml(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as handle:
-        yaml.safe_dump(payload, handle, sort_keys=False)
 
 
 def load_response_policy(project_root: Path) -> dict:
@@ -63,7 +57,7 @@ def _normalize_policy(policy: dict) -> dict:
 
 def ensure_response_policy(project_root: Path) -> dict:
     policy = load_response_policy(project_root)
-    _dump_yaml(response_policy_path(project_root), policy)
+    dump_yaml(response_policy_path(project_root), policy)
     return policy
 
 
@@ -192,7 +186,7 @@ def upsert_specialist_sessions(
     state["specialist_counters"] = counters
     state["sessions"] = sessions
     state["updated_at"] = now
-    _dump_yaml(specialist_sessions_path(project_root), state)
+    dump_yaml(specialist_sessions_path(project_root), state)
     return out
 
 
@@ -221,7 +215,7 @@ def prune_specialist_sessions(project_root: Path, keep_groups: List[str]) -> dic
     state["sessions"] = filtered_sessions
     state["specialist_counters"] = filtered_counters
     state["updated_at"] = now_iso()
-    _dump_yaml(specialist_sessions_path(project_root), state)
+    dump_yaml(specialist_sessions_path(project_root), state)
     return state
 
 

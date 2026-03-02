@@ -26,6 +26,14 @@ from agents_inc.core.fabric_lib import (
     write_text,
 )
 
+REFERENCE_STARTER_BY_ROLE = {
+    "domain-core": "domain-core.md",
+    "web-research": "web-research.md",
+    "evidence-review": "evidence-review.md",
+    "repro-qa": "repro-qa.md",
+    "integration": "integration.md",
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate reusable multi-agent project bundle")
@@ -128,6 +136,80 @@ def render_handoff_block(specialists: List[dict]) -> str:
     return "\n".join(rows)
 
 
+def render_gate_checks_block(group: dict) -> str:
+    checks = group.get("gate_profile", {}).get("checks", {})
+    if not isinstance(checks, dict) or not checks:
+        return "- `citation_required`: `true`\n- `scope_enforced`: `true`\n- `repro_required`: `true`"
+    rows: List[str] = []
+    for key, value in checks.items():
+        rows.append("- `{0}`: `{1}`".format(key, bool(value)))
+    return "\n".join(rows)
+
+
+def render_specialist_definition_of_done(group: dict, specialist: dict) -> str:
+    rows: List[str] = []
+    for output in specialist.get("required_outputs", []):
+        rows.append("Produce `{0}`.".format(output))
+    checks = group.get("gate_profile", {}).get("checks", {})
+    if isinstance(checks, dict):
+        for key, value in checks.items():
+            if bool(value):
+                rows.append("Pass gate check `{0}`.".format(key))
+    return format_bullet(rows)
+
+
+def render_specialist_method(specialist: dict) -> str:
+    deps = specialist.get("depends_on", [])
+    dep_names: List[str] = []
+    if isinstance(deps, list):
+        for dep in deps:
+            if isinstance(dep, str) and dep.strip():
+                dep_names.append(dep.strip())
+            elif isinstance(dep, dict):
+                dep_name = str(dep.get("agent_id") or "").strip()
+                if dep_name:
+                    dep_names.append(dep_name)
+    steps = [
+        "1. Parse the objective and isolate the sub-problem tied to this specialist focus.",
+        "2. Load required references first; mark unknowns before claiming conclusions.",
+        "3. Build claim-level outputs with explicit evidence and assumptions.",
+        "4. Write required artifacts and ensure paths are reproducible by peers.",
+    ]
+    if dep_names:
+        steps.insert(
+            2,
+            "3. Consume dependency artifacts from: {0}.".format(", ".join(sorted(dep_names))),
+        )
+        steps[3] = "4. Build claim-level outputs with explicit evidence and assumptions."
+        steps[4] = "5. Write required artifacts and ensure paths are reproducible by peers."
+    return "\n".join(steps)
+
+
+def render_specialist_failure_modes(group: dict) -> str:
+    rows = [
+        "Missing citations for key claims -> return `BLOCKED_UNCITED`.",
+        "Missing required evidence -> return `BLOCKED_NEEDS_EVIDENCE`.",
+        "Scope creep into other specialists' responsibilities -> return `BLOCKED_REVIEW`.",
+    ]
+    checks = group.get("gate_profile", {}).get("checks", {})
+    if isinstance(checks, dict):
+        for key, value in checks.items():
+            if bool(value):
+                rows.append("Gate `{0}` violation -> return `BLOCKED_REVIEW`.".format(key))
+    return format_bullet(rows)
+
+
+def _load_reference_starter(fabric_root: Path, role: str) -> str:
+    starter_name = REFERENCE_STARTER_BY_ROLE.get(str(role).strip().lower(), "domain-core.md")
+    starter_path = fabric_root / "templates" / "group" / "references" / "starters" / starter_name
+    if starter_path.exists():
+        return starter_path.read_text(encoding="utf-8")
+    fallback = fabric_root / "templates" / "group" / "references" / "starters" / "domain-core.md"
+    if fallback.exists():
+        return fallback.read_text(encoding="utf-8")
+    return ""
+
+
 def assign_effective_skill_names(project_id: str, group: dict) -> dict:
     group_copy = copy.deepcopy(group)
     base_names = [
@@ -161,6 +243,9 @@ def write_group_assets(
     )
     template_spec_skill = read_template(
         fabric_root, "templates/group/skills/specialist/SKILL.template.md"
+    )
+    template_specialist_agents = read_template(
+        fabric_root, "templates/group/specialist-AGENTS.template.md"
     )
     gate_checklist = read_template(
         fabric_root, "templates/group/references/gate-checklist.template.md"
@@ -218,6 +303,24 @@ def write_group_assets(
         internal_dir = group_dir / "internal" / specialist["agent_id"]
         internal_dir.mkdir(parents=True, exist_ok=True)
         write_text(internal_dir / ".gitkeep", "")
+        specialist_agents = render_template(
+            template_specialist_agents,
+            {
+                "PROJECT_ID": project_id,
+                "GROUP_ID": group_id,
+                "DISPLAY_NAME": group["display_name"],
+                "SPECIALIST_AGENT_ID": specialist["agent_id"],
+                "SPECIALIST_ROLE": str(specialist.get("role") or "domain-core"),
+                "SPECIALIST_FOCUS": str(specialist.get("focus") or ""),
+                "SPECIALIST_SKILL_NAME": specialist["effective_skill_name"],
+                "SPECIALIST_OUTPUT_BLOCK": format_bullet(specialist.get("required_outputs", [])),
+                "SPECIALIST_REFERENCE_BLOCK": format_bullet(
+                    specialist.get("required_references", [])
+                ),
+                "GATE_CHECKS_BLOCK": render_gate_checks_block(group),
+            },
+        )
+        write_text(internal_dir / "AGENTS.md", specialist_agents)
         write_text(internal_dir / "work.md", "# Work\n\nPending specialist execution.\n")
         write_text(
             internal_dir / "handoff.json",
@@ -228,14 +331,36 @@ def write_group_assets(
         for ref_rel in specialist.get("required_references", []):
             ref_path = group_dir / ref_rel
             if not ref_path.exists():
-                title = Path(ref_rel).stem.replace("-", " ").title()
-                write_text(
-                    ref_path,
-                    "# {0}\n\nProject-specific reference placeholder for `{1}`.\n".format(
-                        title,
-                        specialist["agent_id"],
-                    ),
+                starter_template = _load_reference_starter(
+                    fabric_root,
+                    str(specialist.get("role") or "domain-core"),
                 )
+                if starter_template:
+                    write_text(
+                        ref_path,
+                        render_template(
+                            starter_template,
+                            {
+                                "PROJECT_ID": project_id,
+                                "GROUP_ID": group_id,
+                                "DISPLAY_NAME": group["display_name"],
+                                "SPECIALIST_AGENT_ID": specialist["agent_id"],
+                                "SPECIALIST_ROLE": str(
+                                    specialist.get("role") or "domain-core"
+                                ),
+                                "REFERENCE_TITLE": Path(ref_rel).stem.replace("-", " ").title(),
+                            },
+                        ),
+                    )
+                else:
+                    title = Path(ref_rel).stem.replace("-", " ").title()
+                    write_text(
+                        ref_path,
+                        "# {0}\n\nProject-specific reference placeholder for `{1}`.\n".format(
+                            title,
+                            specialist["agent_id"],
+                        ),
+                    )
 
     specialist_skill_block = format_bullet(
         [
@@ -250,6 +375,9 @@ def write_group_assets(
             "DISPLAY_NAME": group["display_name"],
             "GROUP_ID": group_id,
             "PROJECT_ID": project_id,
+            "GROUP_PURPOSE": str(group.get("purpose") or group["head"].get("mission") or ""),
+            "GROUP_SUCCESS_CRITERIA_BLOCK": format_bullet(group.get("success_criteria", [])),
+            "GATE_CHECKS_BLOCK": render_gate_checks_block(group),
             "SPECIALIST_SKILL_BLOCK": specialist_skill_block,
         },
     )
@@ -269,8 +397,16 @@ def write_group_assets(
                 "SPECIALIST_SKILL_NAME": specialist["effective_skill_name"],
                 "SPECIALIST_AGENT_ID": specialist["agent_id"],
                 "SPECIALIST_FOCUS": specialist["focus"],
+                "SPECIALIST_ROLE": str(specialist.get("role") or "domain-core"),
                 "DISPLAY_NAME": group["display_name"],
+                "GROUP_ID": group_id,
                 "PROJECT_ID": project_id,
+                "GROUP_PURPOSE": str(group.get("purpose") or group["head"].get("mission") or ""),
+                "GROUP_SUCCESS_CRITERIA_BLOCK": format_bullet(group.get("success_criteria", [])),
+                "SPECIALIST_DONE_BLOCK": render_specialist_definition_of_done(group, specialist),
+                "SPECIALIST_METHOD_BLOCK": render_specialist_method(specialist),
+                "SPECIALIST_FAILURE_BLOCK": render_specialist_failure_modes(group),
+                "GATE_CHECKS_BLOCK": render_gate_checks_block(group),
                 "SPECIALIST_REFERENCE_BLOCK": format_bullet(
                     specialist.get("required_references", [])
                 ),

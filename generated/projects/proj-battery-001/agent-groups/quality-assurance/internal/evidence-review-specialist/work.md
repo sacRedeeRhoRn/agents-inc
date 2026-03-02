@@ -1,3 +1,0 @@
-# Work
-
-Pending specialist execution.

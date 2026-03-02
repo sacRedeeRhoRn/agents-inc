@@ -4,6 +4,7 @@ from __future__ import annotations
 import sys
 import tempfile
 import unittest
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -100,6 +101,26 @@ class CLIMainTests(unittest.TestCase):
         self.assertEqual(code, 13)
         mocked.assert_called_once()
 
+    def test_main_routes_eval_command(self) -> None:
+        with patch("agents_inc.cli.eval.main", return_value=16) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "eval", "--project-id", "x"]):
+                code = cli_main.main()
+        self.assertEqual(code, 16)
+        mocked.assert_called_once()
+
+    def test_main_deprecated_alias_subcommand_warns_and_routes(self) -> None:
+        with patch("agents_inc.cli.dispatch_dry_run.main", return_value=17) as mocked:
+            with patch("sys.stderr", new_callable=StringIO) as stderr:
+                with patch.object(
+                    sys,
+                    "argv",
+                    ["agents-inc", "dispatch-dry-run", "--project-id", "x", "--group", "g"],
+                ):
+                    code = cli_main.main()
+        self.assertEqual(code, 17)
+        mocked.assert_called_once()
+        self.assertIn("deprecated", stderr.getvalue())
+
     def test_main_version_flag(self) -> None:
         with patch.object(sys, "argv", ["agents-inc", "--version"]):
             code = cli_main.main()
@@ -125,7 +146,7 @@ class CLIMainTests(unittest.TestCase):
                 "project_id": "proj-test",
                 "project_root": td,
                 "session_code": "sc-1",
-                "selected_groups": ["developer", "material-scientist"],
+                "selected_groups": ["developer", "integration-delivery"],
                 "router_call": "Use $research-router for project proj-test group developer: test.\nwith newline.",
             }
             with patch("agents_inc.cli.resume.run_resume_flow", return_value=summary):

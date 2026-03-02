@@ -1,36 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import yaml
-
 from agents_inc.core.fabric_lib import FabricError, load_yaml
+from agents_inc.core.util.fs import dump_yaml, load_yaml_map
+from agents_inc.core.util.time import now_iso, to_stamp  # noqa: F401  (now_iso re-exported)
 
 STATE_SCHEMA_VERSION = "3.0"
 INDEX_SCHEMA_VERSION = "3.0"
 STATE_REL_DIR = Path(".agents-inc") / "state"
 DEFAULT_INDEX_PATH = Path.home() / ".agents-inc" / "projects-index.yaml"
-
-
-def now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-def _stamp(iso_value: str) -> str:
-    return iso_value.replace("-", "").replace(":", "").replace("+00:00", "Z").replace(".", "")
-
-
-def _load_yaml_map(path: Path, default: dict) -> dict:
-    if not path.exists():
-        return dict(default)
-    loaded = load_yaml(path)
-    if not isinstance(loaded, dict):
-        return dict(default)
-    out = dict(default)
-    out.update(loaded)
-    return out
 
 
 def _require_schema(path: Path, payload: dict, expected: str, kind: str) -> None:
@@ -41,12 +21,6 @@ def _require_schema(path: Path, payload: dict, expected: str, kind: str) -> None
         f"{kind} schema_version '{found or '<missing>'}' is not supported. "
         "Run 'agents-inc migrate-v2 --apply' before continuing."
     )
-
-
-def _dump_yaml(path: Path, value: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as handle:
-        yaml.safe_dump(value, handle, sort_keys=False)
 
 
 def state_dir(project_root: Path) -> Path:
@@ -81,12 +55,12 @@ def load_session_state(project_root: Path) -> dict:
         "checkpoint_counter": 0,
     }
     path = session_state_path(project_root)
-    loaded = _load_yaml_map(path, default)
+    loaded = load_yaml_map(path, default)
     if path.exists():
         found = str(loaded.get("schema_version") or "")
         if found != STATE_SCHEMA_VERSION:
             loaded["schema_version"] = STATE_SCHEMA_VERSION
-            _dump_yaml(path, loaded)
+            dump_yaml(path, loaded)
     return loaded
 
 
@@ -94,7 +68,7 @@ def save_session_state(project_root: Path, state: dict) -> None:
     ensure_state_dirs(project_root)
     clean = dict(state)
     clean["schema_version"] = STATE_SCHEMA_VERSION
-    _dump_yaml(session_state_path(project_root), clean)
+    dump_yaml(session_state_path(project_root), clean)
 
 
 def load_project_index(path: Path) -> dict:
@@ -102,7 +76,7 @@ def load_project_index(path: Path) -> dict:
         "schema_version": INDEX_SCHEMA_VERSION,
         "projects": {},
     }
-    data = _load_yaml_map(path, default)
+    data = load_yaml_map(path, default)
     if path.exists():
         found = str(data.get("schema_version") or "")
         if found != INDEX_SCHEMA_VERSION:
@@ -123,7 +97,7 @@ def save_project_index(path: Path, index_data: dict) -> None:
     projects = clean.get("projects")
     if not isinstance(projects, dict):
         clean["projects"] = {}
-    _dump_yaml(path, clean)
+    dump_yaml(path, clean)
 
 
 def mark_stale_index_entries(index_path: Path) -> dict:
@@ -272,7 +246,7 @@ def _checkpoint_info_for_project_root(project_root: Path) -> Dict[str, str]:
     checkpoint_path = latest_checkpoint_path(project_root)
     checkpoint_id = "latest"
     if checkpoint_path.exists():
-        loaded = _load_yaml_map(checkpoint_path, {})
+        loaded = load_yaml_map(checkpoint_path, {})
         if isinstance(loaded.get("checkpoint_id"), str):
             checkpoint_id = loaded["checkpoint_id"]
     return {
@@ -364,7 +338,7 @@ def find_resume_project(
                 checkpoint = "latest"
                 checkpoint_path = latest_checkpoint_path(root)
                 if checkpoint_path.exists():
-                    latest = _load_yaml_map(checkpoint_path, {})
+                    latest = load_yaml_map(checkpoint_path, {})
                     if isinstance(latest.get("checkpoint_id"), str):
                         checkpoint = latest["checkpoint_id"]
                 upsert_project_index_entry(
@@ -394,7 +368,7 @@ def find_resume_project(
 
 def load_checkpoint(project_root: Path, checkpoint_id: str = "latest") -> dict:
     if checkpoint_id == "latest":
-        latest = _load_yaml_map(latest_checkpoint_path(project_root), {})
+        latest = load_yaml_map(latest_checkpoint_path(project_root), {})
         cp_path_raw = latest.get("checkpoint_path")
         if not isinstance(cp_path_raw, str):
             raise FabricError(f"latest checkpoint does not exist: {project_root}")
@@ -410,7 +384,7 @@ def load_checkpoint(project_root: Path, checkpoint_id: str = "latest") -> dict:
     found = str(data.get("schema_version") or "")
     if found != STATE_SCHEMA_VERSION:
         data["schema_version"] = STATE_SCHEMA_VERSION
-        _dump_yaml(cp_path, data)
+        dump_yaml(cp_path, data)
     return data
 
 
@@ -443,7 +417,7 @@ def write_checkpoint(
 
     counter = int(current.get("checkpoint_counter", 0)) + 1
     created_at = now_iso()
-    checkpoint_id = f"{_stamp(created_at)}-{counter:06d}"
+    checkpoint_id = f"{to_stamp(created_at)}-{counter:06d}"
 
     checkpoint_payload = dict(payload)
     checkpoint_payload["schema_version"] = STATE_SCHEMA_VERSION
@@ -452,7 +426,7 @@ def write_checkpoint(
     checkpoint_payload["updated_at"] = created_at
 
     checkpoint_path = checkpoints_dir(project_root) / f"{checkpoint_id}.yaml"
-    _dump_yaml(checkpoint_path, checkpoint_payload)
+    dump_yaml(checkpoint_path, checkpoint_payload)
 
     latest_payload = {
         "schema_version": STATE_SCHEMA_VERSION,
@@ -461,7 +435,7 @@ def write_checkpoint(
         "checkpoint_path": str(checkpoint_path),
         "updated_at": created_at,
     }
-    _dump_yaml(latest_checkpoint_path(project_root), latest_payload)
+    dump_yaml(latest_checkpoint_path(project_root), latest_payload)
 
     updated_state = {
         **current,

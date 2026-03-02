@@ -52,6 +52,11 @@ class AgentSessionRunnerTimeoutTests(unittest.TestCase):
             kwargs = run_mock.call_args.kwargs
             self.assertEqual(kwargs.get("timeout"), 77)
 
+    def test_backend_registry_env_selection(self) -> None:
+        with patch.dict("os.environ", {"AGENTS_INC_BACKEND": "mock"}, clear=False):
+            runner = AgentSessionRunner()
+        self.assertEqual(runner.backend, "mock")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

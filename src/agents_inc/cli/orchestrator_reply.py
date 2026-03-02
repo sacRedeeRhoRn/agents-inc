@@ -3,8 +3,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 
+from agents_inc.cli.escalation_prompt import resolve_escalations
 from agents_inc.core.config_state import default_config_path, get_projects_root
 from agents_inc.core.fabric_lib import (
     FabricError,
@@ -127,6 +129,11 @@ def parse_args() -> argparse.Namespace:
         "--abort-file",
         default=None,
         help="if this file exists during runtime, cooperative loop stops with hard block",
+    )
+    parser.add_argument(
+        "--non-interactive-escalation",
+        action="store_true",
+        help="do not prompt for escalation values when blocked by escalation requests",
     )
     return parser.parse_args()
 
@@ -265,6 +272,31 @@ def _parse_blocked_error(text: str) -> dict | None:
     }
 
 
+def _load_json(path: str) -> dict:
+    p = Path(str(path or "").strip())
+    if not p.exists():
+        return {}
+    try:
+        payload = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    if isinstance(payload, dict):
+        return payload
+    return {}
+
+
+def _handle_blocked_escalations(
+    *,
+    blocked_payload_path: str,
+    interactive: bool,
+) -> dict:
+    payload = _load_json(blocked_payload_path)
+    escalations = payload.get("escalations", [])
+    if not isinstance(escalations, list) or not escalations:
+        return {"resolved_count": 0, "unresolved_count": 0, "resolved": [], "unresolved": []}
+    return resolve_escalations(escalations, interactive=interactive)
+
+
 def main() -> int:
     args = parse_args()
     try:
@@ -324,12 +356,37 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001
         blocked = _parse_blocked_error(str(exc))
         if blocked:
+            escalation_summary = {}
+            if blocked.get("status") == "BLOCKED_ESCALATION_REQUIRED":
+                interactive = bool(
+                    not args.non_interactive_escalation
+                    and not args.json
+                    and sys.stdin.isatty()
+                    and sys.stdout.isatty()
+                )
+                escalation_summary = _handle_blocked_escalations(
+                    blocked_payload_path=blocked.get("blocked_reasons", ""),
+                    interactive=interactive,
+                )
             if args.json:
-                print(json.dumps({"error": "blocked", **blocked}, indent=2, sort_keys=True))
+                print(
+                    json.dumps(
+                        {"error": "blocked", **blocked, "escalation_summary": escalation_summary},
+                        indent=2,
+                        sort_keys=True,
+                    )
+                )
             else:
                 print(f"blocked_status: {blocked['status']}")
                 print(f"blocked_report: {blocked['blocked_report']}")
                 print(f"blocked_reasons: {blocked['blocked_reasons']}")
+                if escalation_summary:
+                    print(
+                        "escalations_resolved: {0} unresolved: {1}".format(
+                            escalation_summary.get("resolved_count", 0),
+                            escalation_summary.get("unresolved_count", 0),
+                        )
+                    )
                 print(
                     f'rerun: agents-inc orchestrator-reply --project-id {slugify(str(args.project_id))} --message "{str(args.message).replace(chr(34), chr(39))}"'
                 )

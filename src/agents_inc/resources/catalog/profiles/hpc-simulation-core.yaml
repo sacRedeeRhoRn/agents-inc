@@ -1,6 +1,0 @@
-profile_id: "hpc-simulation-core"
-display_name: "HPC Simulation Core"
-groups:
-  - "atomistic-hpc-simulation"
-  - "developer"
-  - "quality-assurance"

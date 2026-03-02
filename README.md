@@ -4,12 +4,12 @@
 
 You define the objective. Group heads coordinate specialists. The session keeps continuity, so you can stop, reboot, and resume without losing project rhythm.
 
-## Quick Start (Codex Orchestrator, v3.1.2)
+## Quick Start (Codex Orchestrator, v4.0.0)
 
 Run this in Terminal:
 
 ```bash
-export AGI_VER="v3.1.2" && \
+export AGI_VER="v4.0.0" && \
 export AGI_BOOTSTRAP_URL="https://raw.githubusercontent.com/sacRedeeRhoRn/agents-inc/${AGI_VER}/docs/bootstrap/START_IN_CODEX.md" && \
 export AGI_BOOTSTRAP_HOME="$HOME/.agents-inc/bootstrap-codex-home" && \
 mkdir -p "$AGI_BOOTSTRAP_HOME/skills/local" && \
@@ -30,11 +30,11 @@ The first prompt should immediately ask:
 Use a release-pinned, checksum-verified install:
 
 ```bash
-export AGI_VER="v3.1.2" && \
-WHEEL="agents_inc-3.1.2-py3-none-any.whl" && \
+export AGI_VER="v4.0.0" && \
+WHEEL="agents_inc-4.0.0-py3-none-any.whl" && \
 curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/${WHEEL}" -o "/tmp/${WHEEL}" && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/agents_inc-3.1.2.sha256" -o /tmp/agents_inc-3.1.2.sha256 && \
-(cd /tmp && grep "  ${WHEEL}$" agents_inc-3.1.2.sha256 > wheel.sha256 && shasum -a 256 -c wheel.sha256) && \
+curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/agents_inc-4.0.0.sha256" -o /tmp/agents_inc-4.0.0.sha256 && \
+(cd /tmp && grep "  ${WHEEL}$" agents_inc-4.0.0.sha256 > wheel.sha256 && shasum -a 256 -c wheel.sha256) && \
 python3 -m pip install --upgrade pip setuptools wheel && \
 python3 -m pip install --upgrade "/tmp/${WHEEL}"
 ```

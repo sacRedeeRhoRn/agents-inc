@@ -3,10 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import yaml
-
 from agents_inc.core.fabric_lib import FabricError, load_yaml
-from agents_inc.core.session_state import now_iso, state_dir
+from agents_inc.core.session_state import state_dir
+from agents_inc.core.util.fs import dump_yaml, load_yaml_map
+from agents_inc.core.util.time import now_iso, to_stamp  # noqa: F401  (now_iso re-exported)
 
 COMPACT_SCHEMA_VERSION = "3.0"
 
@@ -27,21 +27,6 @@ def group_sessions_path(project_root: Path) -> Path:
     return state_dir(project_root) / "group-sessions.yaml"
 
 
-def _stamp(iso_value: str) -> str:
-    return iso_value.replace("-", "").replace(":", "").replace("+00:00", "Z").replace(".", "")
-
-
-def _load_yaml_map(path: Path, default: dict) -> dict:
-    if not path.exists():
-        return dict(default)
-    loaded = load_yaml(path)
-    if not isinstance(loaded, dict):
-        return dict(default)
-    merged = dict(default)
-    merged.update(loaded)
-    return merged
-
-
 def _require_schema(path: Path, payload: dict) -> None:
     found = str(payload.get("schema_version") or "")
     if found and found == COMPACT_SCHEMA_VERSION:
@@ -52,15 +37,9 @@ def _require_schema(path: Path, payload: dict) -> None:
     )
 
 
-def _dump_yaml(path: Path, value: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as handle:
-        yaml.safe_dump(value, handle, sort_keys=False)
-
-
 def load_group_sessions(project_root: Path) -> dict:
     path = group_sessions_path(project_root)
-    data = _load_yaml_map(
+    data = load_yaml_map(
         group_sessions_path(project_root),
         {
             "schema_version": COMPACT_SCHEMA_VERSION,
@@ -74,7 +53,7 @@ def load_group_sessions(project_root: Path) -> dict:
         found = str(data.get("schema_version") or "")
         if found != COMPACT_SCHEMA_VERSION:
             data["schema_version"] = COMPACT_SCHEMA_VERSION
-            _dump_yaml(path, data)
+            dump_yaml(path, data)
     return data
 
 
@@ -111,7 +90,7 @@ def upsert_group_sessions(project_root: Path, project_id: str, groups: List[str]
     data["group_counters"] = counters
     data["sessions"] = sessions
     data["updated_at"] = now
-    _dump_yaml(group_sessions_path(project_root), data)
+    dump_yaml(group_sessions_path(project_root), data)
     return out
 
 
@@ -122,7 +101,7 @@ def compact_session(
     selected_groups: Optional[List[str]] = None,
 ) -> dict:
     now = now_iso()
-    state = _load_yaml_map(
+    state = load_yaml_map(
         compacted_state_path(project_root),
         {
             "schema_version": COMPACT_SCHEMA_VERSION,
@@ -131,7 +110,7 @@ def compact_session(
         },
     )
     counter = int(state.get("counter", 0)) + 1
-    compact_id = f"{_stamp(now)}-{counter:06d}"
+    compact_id = f"{to_stamp(now)}-{counter:06d}"
 
     project_id = str(payload.get("project_id") or "")
     groups = selected_groups or payload.get("selected_groups") or []
@@ -152,7 +131,7 @@ def compact_session(
     compact_payload["updated_at"] = now
 
     compact_path = compacted_dir(project_root) / f"{compact_id}.yaml"
-    _dump_yaml(compact_path, compact_payload)
+    dump_yaml(compact_path, compact_payload)
 
     latest = {
         "schema_version": COMPACT_SCHEMA_VERSION,
@@ -162,12 +141,12 @@ def compact_session(
         "compact_path": str(compact_path),
         "updated_at": now,
     }
-    _dump_yaml(latest_compacted_path(project_root), latest)
+    dump_yaml(latest_compacted_path(project_root), latest)
 
     state["schema_version"] = COMPACT_SCHEMA_VERSION
     state["counter"] = counter
     state["updated_at"] = now
-    _dump_yaml(compacted_state_path(project_root), state)
+    dump_yaml(compacted_state_path(project_root), state)
 
     return {
         "compact_id": compact_id,
@@ -180,7 +159,7 @@ def compact_session(
 
 def load_compacted(project_root: Path, compact_id: str = "latest") -> dict:
     if compact_id == "latest":
-        latest = _load_yaml_map(latest_compacted_path(project_root), {})
+        latest = load_yaml_map(latest_compacted_path(project_root), {})
         path_raw = latest.get("compact_path")
         if not isinstance(path_raw, str) or not path_raw.strip():
             raise FabricError(f"latest compacted session does not exist: {project_root}")
@@ -195,7 +174,7 @@ def load_compacted(project_root: Path, compact_id: str = "latest") -> dict:
     found = str(loaded.get("schema_version") or "")
     if found != COMPACT_SCHEMA_VERSION:
         loaded["schema_version"] = COMPACT_SCHEMA_VERSION
-        _dump_yaml(compact_path, loaded)
+        dump_yaml(compact_path, loaded)
     return loaded
 
 

@@ -1,0 +1,7 @@
+profile_id: "delivery-core"
+display_name: "Delivery Core"
+groups:
+  - "developer"
+  - "integration-delivery"
+  - "quality-assurance"
+  - "data-curation"

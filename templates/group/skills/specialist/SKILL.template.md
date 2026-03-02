@@ -2,7 +2,7 @@
 name: {{SPECIALIST_SKILL_NAME}}
 version: "3.1.1"
 role: specialist
-description: Specialist agent for {{SPECIALIST_FOCUS}} in {{DISPLAY_NAME}} (project {{PROJECT_ID}}) with strict structured handoff output.
+description: {{SPECIALIST_ROLE}} specialist for {{DISPLAY_NAME}} focused on {{SPECIALIST_FOCUS}} in project {{PROJECT_ID}}.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
@@ -22,43 +22,36 @@ autouse_triggers:
 
 # {{SPECIALIST_AGENT_ID}}
 
+## Mission
+{{GROUP_PURPOSE}}
+
 ## Scope
 {{SPECIALIST_FOCUS}}
 
-## Hard Gate Requirements
-1. Every key claim must include a citation.
-2. Assumptions must be explicit.
-3. Output must stay within specialist scope.
-4. Reproducibility details are mandatory.
+## When to Invoke
+- The objective requires `{{SPECIALIST_ROLE}}` expertise.
+- Specialist focus applies: {{SPECIALIST_FOCUS}}
+- Group context: `{{GROUP_ID}}` in project `{{PROJECT_ID}}`.
 
-If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
+## Definition of Done
+{{SPECIALIST_DONE_BLOCK}}
 
-## Required References
-{{SPECIALIST_REFERENCE_BLOCK}}
+## Method
+{{SPECIALIST_METHOD_BLOCK}}
 
-## Required Outputs
+## Artifacts to Produce
 {{SPECIALIST_OUTPUT_BLOCK}}
 
-## Response Format
-- `status`: `PASS` or blocked reason.
-- `assumptions`
-- `claims_with_citations`
-- `repro_steps`
-- `artifact_paths`
-- `execution_status`
-- `dependencies_satisfied`
-- `produced_artifacts`
-- `citations_summary`
+## Failure Modes
+{{SPECIALIST_FAILURE_BLOCK}}
 
-## Material Objective Contract
-If the objective is material-focused (composition, phase stability, space group, transport, DFT/MD/FEM):
-1. Keep composition and space-group identifiers explicit in outputs.
-2. Reference evidence links for material claims.
-3. Prefer artifact paths that can be consumed by developer and QA groups.
-4. Include reproducible commands for generated package/script artifacts when applicable.
+## References
+{{SPECIALIST_REFERENCE_BLOCK}}
 
-## Artifact Scope
-- Write specialist artifacts under internal group paths.
-- Always produce `work.md` and `handoff.json`.
-- Do not publish user-facing artifacts directly.
-- Head controller decides what is exposed.
+## Gate Profile
+{{GATE_CHECKS_BLOCK}}
+
+## Output Contract
+- Return `BEGIN_WORK/END_WORK` markdown notes.
+- Return `BEGIN_HANDOFF_JSON/END_HANDOFF_JSON` JSON object.
+- Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.

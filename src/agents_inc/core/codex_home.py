@@ -5,10 +5,10 @@ import shutil
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import yaml
-
 from agents_inc.core.fabric_lib import FabricError, slugify
-from agents_inc.core.session_state import now_iso, state_dir
+from agents_inc.core.session_state import state_dir
+from agents_inc.core.util.fs import dump_yaml, load_yaml_map
+from agents_inc.core.util.time import now_iso
 
 CODEX_HOME_SCHEMA_VERSION = "3.0"
 SKILL_ACTIVATION_SCHEMA_VERSION = "3.0"
@@ -29,23 +29,6 @@ def codex_home_state_path(project_root: Path) -> Path:
 
 def skill_activation_state_path(project_root: Path) -> Path:
     return state_dir(project_root) / "skill-activation.yaml"
-
-
-def _dump_yaml(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as handle:
-        yaml.safe_dump(payload, handle, sort_keys=False)
-
-
-def _load_yaml(path: Path, default: dict) -> dict:
-    if not path.exists():
-        return dict(default)
-    loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
-    if not isinstance(loaded, dict):
-        return dict(default)
-    payload = dict(default)
-    payload.update(loaded)
-    return payload
 
 
 def _remove_path(path: Path) -> None:
@@ -81,7 +64,7 @@ def _default_codex_home_state(project_root: Path, project_id: str = "") -> dict:
 
 def load_codex_home_state(project_root: Path, project_id: str = "") -> dict:
     default = _default_codex_home_state(project_root, project_id=project_id)
-    payload = _load_yaml(codex_home_state_path(project_root), default)
+    payload = load_yaml_map(codex_home_state_path(project_root), default)
     payload["schema_version"] = CODEX_HOME_SCHEMA_VERSION
     return payload
 
@@ -94,7 +77,7 @@ def save_codex_home_state(project_root: Path, payload: dict) -> dict:
     state.update(payload)
     state["schema_version"] = CODEX_HOME_SCHEMA_VERSION
     state["updated_at"] = now_iso()
-    _dump_yaml(codex_home_state_path(project_root), state)
+    dump_yaml(codex_home_state_path(project_root), state)
     return state
 
 
@@ -143,7 +126,7 @@ def ensure_project_codex_home(
         "config_link_mode": config_mode,
         "updated_at": now_iso(),
     }
-    _dump_yaml(codex_home_state_path(project_root), payload)
+    dump_yaml(codex_home_state_path(project_root), payload)
     return payload
 
 
@@ -169,7 +152,7 @@ def _default_skill_activation() -> dict:
 
 
 def load_skill_activation_state(project_root: Path) -> dict:
-    payload = _load_yaml(skill_activation_state_path(project_root), _default_skill_activation())
+    payload = load_yaml_map(skill_activation_state_path(project_root), _default_skill_activation())
     payload["schema_version"] = SKILL_ACTIVATION_SCHEMA_VERSION
     payload["active_head_groups"] = _normalize_groups(payload.get("active_head_groups"))
     payload["active_specialist_groups"] = _normalize_groups(payload.get("active_specialist_groups"))
@@ -188,7 +171,7 @@ def save_skill_activation_state(
         "active_specialist_groups": _normalize_groups(active_specialist_groups),
         "updated_at": now_iso(),
     }
-    _dump_yaml(skill_activation_state_path(project_root), payload)
+    dump_yaml(skill_activation_state_path(project_root), payload)
     return payload
 
 

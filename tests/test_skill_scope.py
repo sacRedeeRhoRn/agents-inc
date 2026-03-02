@@ -95,7 +95,7 @@ def init_project(root_dir: Path, project_id: str, groups: str) -> dict:
 class SkillScopeTests(unittest.TestCase):
     def test_init_uses_project_scoped_codex_home_and_head_only_activation(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            ctx = init_project(Path(td), "proj-scope-init", "developer,material-scientist")
+            ctx = init_project(Path(td), "proj-scope-init", "developer,integration-delivery")
             project_root = Path(ctx["project_root"])
             home_dir = Path(ctx["home_dir"])
 
@@ -115,7 +115,7 @@ class SkillScopeTests(unittest.TestCase):
             self.assertEqual(activation["active_specialist_groups"], [])
             self.assertEqual(
                 activation["active_head_groups"],
-                ["developer", "material-scientist"],
+                ["developer", "integration-delivery"],
             )
 
             project_skill_dir = project_root / ".agents-inc" / "codex-home" / "skills" / "local"
@@ -128,7 +128,7 @@ class SkillScopeTests(unittest.TestCase):
 
     def test_skills_activate_specialists_for_selected_group_only(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            ctx = init_project(Path(td), "proj-scope-activate", "developer,material-scientist")
+            ctx = init_project(Path(td), "proj-scope-activate", "developer,integration-delivery")
             project_root = Path(ctx["project_root"])
             project_index = Path(ctx["project_index"])
             projects_root = Path(ctx["projects_root"])
@@ -156,7 +156,7 @@ class SkillScopeTests(unittest.TestCase):
             activation = yaml.safe_load(activation_path.read_text(encoding="utf-8"))
             self.assertEqual(
                 activation["active_head_groups"],
-                ["developer", "material-scientist"],
+                ["developer", "integration-delivery"],
             )
             self.assertEqual(activation["active_specialist_groups"], ["developer"])
 
@@ -166,14 +166,14 @@ class SkillScopeTests(unittest.TestCase):
             self.assertTrue(all(row.get("group_id") == "developer" for row in specialist_rows))
             self.assertFalse(
                 any(
-                    row.get("group_id") == "material-scientist" and row.get("role") == "specialist"
+                    row.get("group_id") == "integration-delivery" and row.get("role") == "specialist"
                     for row in rows
                 )
             )
 
     def test_skills_deactivate_removes_selected_group_managed_skills(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            ctx = init_project(Path(td), "proj-scope-deactivate", "developer,material-scientist")
+            ctx = init_project(Path(td), "proj-scope-deactivate", "developer,integration-delivery")
             project_root = Path(ctx["project_root"])
             project_index = Path(ctx["project_index"])
             projects_root = Path(ctx["projects_root"])
@@ -215,14 +215,14 @@ class SkillScopeTests(unittest.TestCase):
 
             activation_path = project_root / ".agents-inc" / "state" / "skill-activation.yaml"
             activation = yaml.safe_load(activation_path.read_text(encoding="utf-8"))
-            self.assertEqual(activation["active_head_groups"], ["material-scientist"])
+            self.assertEqual(activation["active_head_groups"], ["integration-delivery"])
             self.assertEqual(activation["active_specialist_groups"], [])
 
             rows = managed_rows(project_root / ".agents-inc" / "codex-home" / "skills" / "local")
             self.assertFalse(any(row.get("group_id") == "developer" for row in rows))
             self.assertTrue(
                 any(
-                    row.get("group_id") == "material-scientist" and row.get("role") == "head"
+                    row.get("group_id") == "integration-delivery" and row.get("role") == "head"
                     for row in rows
                 )
             )

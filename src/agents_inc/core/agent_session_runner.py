@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
 
+from agents_inc.core.backends.registry import resolve_backend
 from agents_inc.core.codex_home import codex_launch_env
 from agents_inc.core.fabric_lib import now_iso, write_text
 from agents_inc.core.transcript_capture import redact_text
@@ -26,6 +27,7 @@ class AgentRunConfig:
     prompt: str
     raw_log_path: Path
     redacted_log_path: Path
+    work_dir: Path | None = None
     codex_home: Path | None = None
     thread_id: str | None = None
     timeout_sec: int = 0
@@ -55,13 +57,17 @@ class AgentSessionRunner:
     """Run specialist/head sessions in isolated Codex executions."""
 
     def __init__(self, backend: str | None = None):
-        chosen = (backend or os.environ.get("AGENTS_INC_AGENT_RUNNER") or "codex").strip()
-        self.backend = chosen.lower()
+        chosen = (
+            backend
+            or os.environ.get("AGENTS_INC_BACKEND")
+            or os.environ.get("AGENTS_INC_AGENT_RUNNER")
+            or "codex"
+        ).strip()
+        self._backend_adapter = resolve_backend(chosen)
+        self.backend = self._backend_adapter.name
 
     def run(self, config: AgentRunConfig) -> AgentRunResult:
-        if self.backend == "mock":
-            return self._run_mock(config)
-        return self._run_codex(config)
+        return self._backend_adapter.run(self, config)
 
     def _run_codex(self, config: AgentRunConfig) -> AgentRunResult:
         started = now_iso()
@@ -192,6 +198,11 @@ class AgentSessionRunner:
         if not thread_id:
             safe = re.sub(r"[^a-z0-9-]+", "-", label.lower()).strip("-") or "agent"
             thread_id = f"mock-{safe}-{int(datetime_from_iso(started).timestamp())}"
+        role_match = re.search(r"^Role:\s*(.+)$", str(config.prompt), re.MULTILINE)
+        role = str(role_match.group(1)).strip().lower() if role_match else ""
+        citation = "https://example.org/mock-evidence"
+        if role in {"domain-core", "domain_core", "domain"}:
+            citation = "local:references/domain-core.md"
         handoff = {
             "schema_version": "3.0",
             "status": "COMPLETE",
@@ -199,7 +210,7 @@ class AgentSessionRunner:
             "claims_with_citations": [
                 {
                     "claim": f"{label} completed specialist task.",
-                    "citation": "https://example.org/mock-evidence",
+                    "citation": citation,
                 }
             ],
             "repro_steps": ["Run mocked specialist session"],
@@ -212,6 +223,26 @@ class AgentSessionRunner:
                 "has_web_url": True,
             },
         }
+        if role == "web-research":
+            handoff["source_quality_note"] = "Mock source quality note."
+            handoff["claims_with_citations"] = [
+                {"claim": f"{label} web claim 1", "citation": "https://example.org/a"},
+                {"claim": f"{label} web claim 2", "citation": "https://example.org/b"},
+                {"claim": f"{label} web claim 3", "citation": "https://example.org/c"},
+            ]
+            handoff["citations_summary"] = {
+                "count": 3,
+                "has_web_url": True,
+            }
+        elif role == "evidence-review":
+            handoff["contradictions"] = False
+            handoff["unsupported_claims"] = []
+        elif role == "repro-qa":
+            handoff["repro_commands"] = ["pytest -q"]
+            handoff["expected_outputs"] = ["all tests passed"]
+        elif role == "integration":
+            handoff["dependencies_consumed"] = []
+            handoff["integration_risks"] = []
         work = f"# Work\n\nMock execution for `{label}` at {started}.\n"
         raw_text = (
             "BEGIN_WORK\n"
@@ -305,7 +336,7 @@ class AgentSessionRunner:
             text=True,
             timeout=timeout_value,
             env=self._launch_env(config),
-            cwd=str(config.project_root),
+            cwd=str(config.work_dir or config.project_root),
         )
 
 

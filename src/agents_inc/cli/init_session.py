@@ -388,7 +388,7 @@ def _load_from_checkpoint(
     task = str(task_override or checkpoint.get("task") or "Continue orchestrator workflow")
     primary_group = str(
         checkpoint.get("primary_group")
-        or (selected_groups[0] if selected_groups else "material-scientist")
+        or (selected_groups[0] if selected_groups else "developer")
     )
     router_call = str(
         checkpoint.get("router_call")
@@ -418,7 +418,7 @@ def _load_from_compacted(
     task = str(task_override or compact.get("task") or "Continue orchestrator workflow")
     primary_group = str(
         compact.get("primary_group")
-        or (selected_groups[0] if selected_groups else "material-scientist")
+        or (selected_groups[0] if selected_groups else "developer")
     )
     router_call = str(
         compact.get("router_call")

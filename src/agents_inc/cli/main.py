@@ -9,6 +9,7 @@ from agents_inc.cli import (
     deactivate_project,
     delete_project,
     dispatch_dry_run,
+    eval as eval_cli,
     generate_docs,
     groups,
     init_session,
@@ -61,6 +62,7 @@ def _print_help() -> None:
     print("  orchestrate-report regenerate report from existing run directory")
     print("  migrate-v2   hard-cutover migration to schema v3")
     print("  long-run     run full-group isolation validation")
+    print("  eval         score specialist outputs for a completed turn")
     print("  validate     validate catalog/templates/schemas")
     print("  docs         generate full docs reference")
     print("")
@@ -90,12 +92,20 @@ def main() -> int:
         "orchestrate-report": orchestrate_report.main,
         "migrate-v2": migrate_v2.main,
         "long-run": long_run_test.main,
+        "eval": eval_cli.main,
         "validate": validate.main,
         "docs": generate_docs.main,
         "new-group": new_group.main,
         "new-project": new_project.main,
         "install-skills": install_skills.main,
         "sync-overlays": sync_overlays.main,
+    }
+    deprecated_aliases = {
+        "init-session": "init",
+        "list-sessions": "list",
+        "dispatch-dry-run": "dispatch",
+        "long-run-test": "long-run",
+        "generate-docs": "docs",
     }
 
     if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help", "help"}:
@@ -107,6 +117,14 @@ def main() -> int:
         return 0
 
     cmd = str(sys.argv[1]).strip().lower()
+    if cmd in deprecated_aliases:
+        replacement = deprecated_aliases[cmd]
+        print(
+            f"deprecated: 'agents-inc {cmd}' will be removed in a future release. "
+            f"Use 'agents-inc {replacement}' instead.",
+            file=sys.stderr,
+        )
+        cmd = replacement
     if cmd not in commands:
         print(f"error: unknown command '{cmd}'")
         _print_help()

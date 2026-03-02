@@ -126,6 +126,38 @@ class FabricUnitTests(unittest.TestCase):
         gate = gate_specialist_output(out, citation_required=True, web_available=True)
         self.assertEqual(gate["status"], "PASS")
 
+    def test_quality_gate_web_research_requires_three_web_citations(self) -> None:
+        out = {
+            "claims_with_citations": [
+                {"claim": "x", "citation": "https://example.org/a"},
+                {"claim": "y", "citation": "https://example.org/b"},
+            ],
+            "repro_steps": ["step1"],
+            "execution_status": "COMPLETE",
+            "dependencies_satisfied": True,
+            "produced_artifacts": [],
+            "citations_summary": {"count": 2, "has_web_url": True},
+            "source_quality_note": "sources reviewed",
+        }
+        gate = gate_specialist_output(
+            out, role="web-research", citation_required=True, web_available=True
+        )
+        self.assertEqual(gate["status"], "BLOCKED_UNCITED")
+
+    def test_quality_gate_repro_qa_requires_commands_and_expected_outputs(self) -> None:
+        out = {
+            "claims_with_citations": [{"claim": "x", "citation": "local:references/x.md"}],
+            "repro_steps": ["step1"],
+            "execution_status": "COMPLETE",
+            "dependencies_satisfied": True,
+            "produced_artifacts": [],
+            "citations_summary": {"count": 1, "has_web_url": False},
+            "repro_commands": ["python -m pytest tests/test_smoke.py"],
+            "expected_outputs": ["exit code 0"],
+        }
+        gate = gate_specialist_output(out, role="repro-qa", citation_required=True, web_available=True)
+        self.assertEqual(gate["status"], "PASS")
+
 
 class FabricIntegrationTests(unittest.TestCase):
     @classmethod
@@ -136,6 +168,7 @@ class FabricIntegrationTests(unittest.TestCase):
             "proj-test-sync",
             "proj-test-visibility",
             "proj-test-hpc",
+            "proj-test-template-gen",
         ]
         for pid in cls.project_ids:
             project_dir = ROOT / "generated" / "projects" / pid
@@ -168,7 +201,7 @@ class FabricIntegrationTests(unittest.TestCase):
                 "--project-id",
                 "proj-test-alpha",
                 "--groups",
-                "developer,material-scientist",
+                "developer,integration-delivery",
                 "--force",
             ]
         )
@@ -179,7 +212,7 @@ class FabricIntegrationTests(unittest.TestCase):
                 "--project-id",
                 "proj-test-beta",
                 "--groups",
-                "developer,material-scientist",
+                "developer,integration-delivery",
                 "--force",
             ]
         )
@@ -239,7 +272,7 @@ class FabricIntegrationTests(unittest.TestCase):
             first_dirs = {
                 p.name
                 for p in target.iterdir()
-                if p.is_dir() and p.name.startswith("proj-proj-test-sync")
+                if p.is_dir() and (p / ".fabric-managed.json").exists()
             }
             self.assertTrue(first_dirs)
 
@@ -268,7 +301,7 @@ class FabricIntegrationTests(unittest.TestCase):
             second_dirs = {
                 p.name
                 for p in target.iterdir()
-                if p.is_dir() and p.name.startswith("proj-proj-test-sync")
+                if p.is_dir() and (p / ".fabric-managed.json").exists()
             }
             self.assertTrue(second_dirs)
             self.assertNotEqual(first_dirs, second_dirs)
@@ -281,7 +314,7 @@ class FabricIntegrationTests(unittest.TestCase):
                 "--project-id",
                 "proj-test-alpha",
                 "--groups",
-                "material-scientist",
+                "integration-delivery",
                 "--force",
             ]
         )
@@ -293,7 +326,7 @@ class FabricIntegrationTests(unittest.TestCase):
                 "--project-id",
                 "proj-test-alpha",
                 "--group",
-                "material-scientist",
+                "integration-delivery",
                 "--objective",
                 "test objective",
             ]
@@ -305,12 +338,51 @@ class FabricIntegrationTests(unittest.TestCase):
                 "--project-id",
                 "proj-test-alpha",
                 "--group",
-                "material-scientist",
+                "integration-delivery",
                 "--objective",
                 "test objective",
             ]
         )
         self.assertEqual(first, second)
+
+    def test_project_generation_writes_specialist_agents_and_reference_starters(self) -> None:
+        run_cmd(
+            [
+                "python3",
+                str(SCRIPTS / "new_project_bundle.py"),
+                "--project-id",
+                "proj-test-template-gen",
+                "--groups",
+                "developer",
+                "--force",
+            ]
+        )
+
+        project_dir = ROOT / "generated" / "projects" / "proj-test-template-gen"
+        group_manifest = yaml.safe_load(
+            (project_dir / "agent-groups" / "developer" / "group.yaml").read_text(encoding="utf-8")
+        )
+        specialist = group_manifest["specialists"][0]
+        specialist_id = specialist["agent_id"]
+        specialist_skill = specialist["effective_skill_name"]
+
+        specialist_agents = (
+            project_dir
+            / "agent-groups"
+            / "developer"
+            / "internal"
+            / specialist_id
+            / "AGENTS.md"
+        )
+        self.assertTrue(specialist_agents.exists())
+        agents_text = specialist_agents.read_text(encoding="utf-8")
+        self.assertIn(f"${specialist_skill}", agents_text)
+
+        required_ref = specialist["required_references"][0]
+        ref_path = project_dir / "agent-groups" / "developer" / required_ref
+        self.assertTrue(ref_path.exists())
+        ref_text = ref_path.read_text(encoding="utf-8")
+        self.assertNotIn("Project-specific reference placeholder", ref_text)
 
     def test_manifest_has_group_only_visibility(self) -> None:
         run_cmd(
@@ -340,7 +412,7 @@ class FabricIntegrationTests(unittest.TestCase):
                 "--project-id",
                 "proj-test-hpc",
                 "--groups",
-                "atomistic-hpc-simulation",
+                "integration-delivery",
                 "--force",
             ]
         )
@@ -352,7 +424,7 @@ class FabricIntegrationTests(unittest.TestCase):
                     "--project-id",
                     "proj-test-hpc",
                     "--group",
-                    "atomistic-hpc-simulation",
+                    "integration-delivery",
                     "--objective",
                     "run hpc test",
                 ]
@@ -556,7 +628,7 @@ class FabricIntegrationTests(unittest.TestCase):
                     "--project-id",
                     project_id,
                     "--group",
-                    "material-scientist",
+                    "integration-delivery",
                     "--objective",
                     "resume objective checkpoint test",
                     "--project-index",

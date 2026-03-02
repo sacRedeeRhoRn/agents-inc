@@ -1,5 +1,37 @@
 # Changelog
 
+## v4.0.0
+
+- Breaking catalog reset for domain-agnostic orchestration baseline:
+  - removed domain-specific default groups from catalog:
+    - `material-scientist`
+    - `material-engineer`
+    - `polymorphism-researcher`
+    - `atomistic-hpc-simulation`
+    - `designer`
+    - `publication-packaging`
+  - added core groups:
+    - `integration-delivery`
+    - `design-communication`
+  - core profile set is now:
+    - `professional-services-core`
+    - `delivery-core`
+    - `rapid-debug`
+- Escalation lifecycle hardening:
+  - added request/response state resolution with strict `request_id` matching.
+  - resolved escalations are archived and no longer re-block subsequent retries.
+  - unresolved/invalid escalation responses now block with explicit reasons.
+- Runtime specialist gate enforcement:
+  - role-specific specialist gates are enforced during layered runtime acceptance.
+  - gate failures now retry/fail in runtime instead of only surfacing at eval time.
+- Eval harness determinism improvements:
+  - runtime writes turn-scoped specialist snapshots.
+  - `agents-inc eval` now defaults to `--source turn-snapshot` and supports `--source project-live`.
+- Repository cleanup for strict validation:
+  - removed stale generated debug projects from `generated/projects/`.
+  - reset `catalog/project-registry.yaml` to clean state.
+- Bumped package version to `4.0.0`.
+
 ## v3.1.2
 
 - Removed default per-agent runtime cap in `agents-inc orchestrator-reply`:

@@ -1,22 +1,69 @@
+"""agents_inc fabric library — domain-level logic and backward-compat shim.
+
+Pure utility functions (now_iso, slugify, load_yaml, build_dispatch_plan, …)
+have been moved to agents_inc.core.util.*  They are re-exported here so that
+existing ``from agents_inc.core.fabric_lib import X`` call-sites continue to
+work without change during the migration.
+
+What stays here (to be split in later phases):
+  - Skill frontmatter parsing and validation
+  - Group / project / tool-policy schema validation
+  - Catalog and project-registry I/O
+  - Fabric-root initialisation
+  - Skill record collection and managed-dir helpers
+  - Locked-section overlay merge
+"""
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import yaml
 
-SCHEMA_VERSION = "3.0"
-TEMPLATE_VERSION = "3.0.0"
-BUNDLE_VERSION = "3.0.0"
-ROUTER_SKILL_NAME = "research-router"
-DEFAULT_INSTALL_TARGET = str(Path.home() / ".codex" / "skills" / "local")
+# ── canonical utility imports (single source of truth) ────────────────────
+from agents_inc.core.util.constants import (  # noqa: F401  (re-exported)
+    BUNDLE_VERSION,
+    DEFAULT_INSTALL_TARGET,
+    ROUTER_SKILL_NAME,
+    SCHEMA_VERSION,
+    TEMPLATE_VERSION,
+)
+from agents_inc.core.util.dispatch import (  # noqa: F401  (re-exported)
+    build_dispatch_plan,
+    gate_specialist_output,
+    resolve_task_execution,
+    suggest_groups,
+)
+from agents_inc.core.util.errors import FabricError  # noqa: F401  (re-exported)
+from agents_inc.core.util.fs import (  # noqa: F401  (re-exported)
+    atomic_dump_yaml,
+    atomic_write,
+    copy_dir,
+    delete_dir,
+    dump_yaml,
+    load_yaml,
+    load_yaml_map,
+    read_text,
+    write_text,
+)
+from agents_inc.core.util.text import (  # noqa: F401  (re-exported)
+    ensure_json_serializable,
+    ensure_unique_names,
+    format_bullet,
+    render_template,
+    slugify,
+    stable_json,
+)
+from agents_inc.core.util.time import now_iso  # noqa: F401  (re-exported)
+
+# ── module-level constants that stay here for now ─────────────────────────
 LOCKED_SECTION_PATTERN = re.compile(
-    r"(^[ \t]*(?:#\s*)?BEGIN_LOCKED:(?P<name>[A-Za-z0-9_-]+)[ \t]*\n)(?P<body>.*?)(^[ \t]*(?:#\s*)?END_LOCKED:(?P=name)[ \t]*$)",
+    r"(^[ \t]*(?:#\s*)?BEGIN_LOCKED:(?P<name>[A-Za-z0-9_-]+)[ \t]*\n)"
+    r"(?P<body>.*?)"
+    r"(^[ \t]*(?:#\s*)?END_LOCKED:(?P=name)[ \t]*$)",
     re.MULTILINE | re.DOTALL,
 )
 SKILL_ALLOWED_FRONTMATTER_KEYS = {
@@ -32,7 +79,6 @@ SKILL_ALLOWED_FRONTMATTER_KEYS = {
     "allowed-tools",
     "metadata",
 }
-
 SKILL_REQUIRED_FRONTMATTER_KEYS = {
     "name",
     "version",
@@ -47,10 +93,6 @@ SKILL_REQUIRED_FRONTMATTER_KEYS = {
 REQUIRED_FABRIC_DIRS = ["catalog", "templates", "schemas", "generated/projects"]
 
 
-class FabricError(RuntimeError):
-    pass
-
-
 @dataclass
 class SkillRecord:
     skill_name: str
@@ -60,8 +102,7 @@ class SkillRecord:
     role: str  # head|specialist|router
 
 
-def now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+# ── Package path helpers ───────────────────────────────────────────────────
 
 
 def package_root() -> Path:
@@ -72,12 +113,7 @@ def package_resources_root() -> Path:
     return package_root() / "resources"
 
 
-def slugify(value: str) -> str:
-    slug = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip().lower())
-    slug = re.sub(r"-{2,}", "-", slug).strip("-")
-    if not slug:
-        raise FabricError(f"cannot derive slug from '{value}'")
-    return slug
+# ── Fabric-root resolution ─────────────────────────────────────────────────
 
 
 def default_fabric_root(cwd: Optional[Path] = None) -> Path:
@@ -101,82 +137,13 @@ def resolve_fabric_root(fabric_root: Optional[str]) -> Path:
     return default_fabric_root()
 
 
-def load_yaml(path: Path):
-    if not path.exists():
-        raise FabricError(f"missing file: {path}")
-    with path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def dump_yaml(path: Path, value) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(value, f, sort_keys=False)
-
-
-def read_text(path: Path) -> str:
-    if not path.exists():
-        raise FabricError(f"missing file: {path}")
-    return path.read_text(encoding="utf-8")
-
-
-def write_text(path: Path, value: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(value, encoding="utf-8")
-
-
-def render_template(template: str, context: Dict[str, str]) -> str:
-    out = template
-    for key, val in context.items():
-        out = out.replace("{{" + key + "}}", val)
-    return out
-
-
-def format_bullet(items: Iterable[str], prefix: str = "- ") -> str:
-    cleaned = [str(item).strip() for item in items if str(item).strip()]
-    if not cleaned:
-        return "- (none)"
-    return "\n".join(prefix + item for item in cleaned)
-
-
-def copy_dir(src: Path, dst: Path) -> None:
-    if not src.exists():
-        raise FabricError(f"missing source dir: {src}")
-    if dst.exists():
-        delete_dir(dst)
-    dst.mkdir(parents=True, exist_ok=True)
-    for path in sorted(src.rglob("*")):
-        rel = path.relative_to(src)
-        out = dst / rel
-        if path.is_dir():
-            out.mkdir(parents=True, exist_ok=True)
-        else:
-            out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_bytes(path.read_bytes())
-
-
-def delete_dir(path: Path) -> None:
-    if not path.exists():
-        return
-    for item in sorted(path.rglob("*"), reverse=True):
-        if item.is_file() or item.is_symlink():
-            item.unlink()
-        elif item.is_dir():
-            item.rmdir()
-    path.rmdir()
-
-
 def ensure_fabric_root_initialized(fabric_root: Path) -> None:
     fabric_root.mkdir(parents=True, exist_ok=True)
     resources_root = package_resources_root()
     if not resources_root.exists():
         raise FabricError(f"package resources missing: {resources_root}")
 
-    for rel in [
-        "catalog",
-        "templates",
-        "schemas",
-    ]:
+    for rel in ["catalog", "templates", "schemas"]:
         src = resources_root / rel
         dst = fabric_root / rel
         if not dst.exists():
@@ -189,32 +156,16 @@ def ensure_fabric_root_initialized(fabric_root: Path) -> None:
         dump_yaml(project_registry, {"router_skill_name": ROUTER_SKILL_NAME, "projects": {}})
 
 
+# ── Skill helpers ──────────────────────────────────────────────────────────
+
+
 def make_skill_name(project_id: str, group_id: str, agent_id: str) -> str:
-    base = "proj-{0}-{1}-{2}".format(slugify(project_id), slugify(group_id), slugify(agent_id))
+    base = "{0}-{1}--{2}".format(slugify(group_id), slugify(agent_id), slugify(project_id))
     if len(base) <= 64:
         return base
     digest = hashlib.sha1(base.encode("utf-8")).hexdigest()[:8]
     keep = 64 - len(digest) - 1
     return base[:keep].rstrip("-") + "-" + digest
-
-
-def ensure_unique_names(names: List[str]) -> List[str]:
-    used = set()
-    out: List[str] = []
-    for name in names:
-        candidate = name
-        suffix = 2
-        while candidate in used:
-            suffix_text = "-{0}".format(suffix)
-            if len(name) + len(suffix_text) <= 64:
-                candidate = name + suffix_text
-            else:
-                base = name[: 64 - len(suffix_text)].rstrip("-")
-                candidate = base + suffix_text
-            suffix += 1
-        used.add(candidate)
-        out.append(candidate)
-    return out
 
 
 def parse_skill_frontmatter(path: Path) -> Tuple[dict, str]:
@@ -247,7 +198,9 @@ def validate_skill_markdown(path: Path) -> List[str]:
 
     unexpected = sorted(set(frontmatter.keys()) - SKILL_ALLOWED_FRONTMATTER_KEYS)
     if unexpected:
-        errors.append("{0}: unexpected frontmatter key(s): {1}".format(path, ", ".join(unexpected)))
+        errors.append(
+            "{0}: unexpected frontmatter key(s): {1}".format(path, ", ".join(unexpected))
+        )
 
     name = frontmatter.get("name")
     version = frontmatter.get("version")
@@ -258,6 +211,7 @@ def validate_skill_markdown(path: Path) -> List[str]:
     outputs = frontmatter.get("outputs")
     failure_modes = frontmatter.get("failure_modes")
     autouse_triggers = frontmatter.get("autouse_triggers")
+
     if not isinstance(name, str) or not re.match(r"^[a-z0-9-]+$", name):
         errors.append(f"{path}: frontmatter.name must be hyphen-case")
     elif len(name) > 64:
@@ -277,14 +231,20 @@ def validate_skill_markdown(path: Path) -> List[str]:
 
     if not isinstance(inputs, list) or not inputs:
         errors.append(f"{path}: frontmatter.inputs must be non-empty list")
+
     if not isinstance(outputs, list) or not outputs:
         errors.append(f"{path}: frontmatter.outputs must be non-empty list")
+
     if not isinstance(failure_modes, list) or not failure_modes:
         errors.append(f"{path}: frontmatter.failure_modes must be non-empty list")
+
     if not isinstance(autouse_triggers, list) or not autouse_triggers:
         errors.append(f"{path}: frontmatter.autouse_triggers must be non-empty list")
 
     return errors
+
+
+# ── Group / project / tool-policy validation ──────────────────────────────
 
 
 def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
@@ -355,9 +315,9 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
         errors.append(f"{source}: specialists must be a list with at least 4 entries")
         return errors
 
-    specialist_ids = set()
-    all_agent_ids = set()
-    specialist_roles = set()
+    specialist_ids: set = set()
+    all_agent_ids: set = set()
+    specialist_roles: set = set()
 
     if isinstance(head, dict) and head.get("agent_id"):
         all_agent_ids.add(head["agent_id"])
@@ -440,7 +400,9 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
             continue
         for dep in deps:
             if not isinstance(dep, dict):
-                errors.append(f"{source}: specialists[{idx}].depends_on entries must be maps")
+                errors.append(
+                    f"{source}: specialists[{idx}].depends_on entries must be maps"
+                )
                 continue
             dep_agent = dep.get("agent_id")
             if dep_agent not in specialist_id_set:
@@ -450,19 +412,23 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
             required_artifacts = dep.get("required_artifacts")
             if not isinstance(required_artifacts, list) or not required_artifacts:
                 errors.append(
-                    f"{source}: specialists[{idx}].depends_on.required_artifacts must be non-empty list"
+                    f"{source}: specialists[{idx}].depends_on.required_artifacts "
+                    "must be non-empty list"
                 )
             validate_with = dep.get("validate_with")
             if not isinstance(validate_with, str) or not (
-                validate_with in {"exists", "json-parse"} or validate_with.startswith("schema:")
+                validate_with in {"exists", "json-parse"}
+                or validate_with.startswith("schema:")
             ):
                 errors.append(
-                    f"{source}: specialists[{idx}].depends_on.validate_with must be exists|json-parse|schema:<id>"
+                    f"{source}: specialists[{idx}].depends_on.validate_with must be "
+                    "exists|json-parse|schema:<id>"
                 )
             on_missing = dep.get("on_missing")
             if on_missing not in {"request-rerun", "regenerate", "block"}:
                 errors.append(
-                    f"{source}: specialists[{idx}].depends_on.on_missing must be request-rerun|regenerate|block"
+                    f"{source}: specialists[{idx}].depends_on.on_missing must be "
+                    "request-rerun|regenerate|block"
                 )
 
     for role in {"domain-core", "web-research", "integration", "evidence-review", "repro-qa"}:
@@ -633,6 +599,9 @@ def ensure_project_shape(project: dict, source: str = "<unknown>") -> List[str]:
     return errors
 
 
+# ── Catalog I/O ────────────────────────────────────────────────────────────
+
+
 def load_group_catalog(fabric_root: Path) -> Dict[str, dict]:
     catalog_dir = fabric_root / "catalog" / "groups"
     out: Dict[str, dict] = {}
@@ -683,7 +652,7 @@ def select_groups(
         selected.extend([str(item) for item in profile_groups])
 
     deduped: List[str] = []
-    seen = set()
+    seen: set = set()
     for gid in selected:
         if gid not in seen:
             deduped.append(gid)
@@ -713,8 +682,7 @@ def load_project_registry(fabric_root: Path) -> dict:
 
 
 def save_project_registry(fabric_root: Path, registry: dict) -> None:
-    path = fabric_root / "catalog" / "project-registry.yaml"
-    dump_yaml(path, registry)
+    dump_yaml(fabric_root / "catalog" / "project-registry.yaml", registry)
 
 
 def upsert_project_registry_entry(
@@ -750,6 +718,9 @@ def load_project_manifest(fabric_root: Path, project_id: str) -> Tuple[Path, dic
     return project_dir, manifest
 
 
+# ── Skill record collection ────────────────────────────────────────────────
+
+
 def collect_project_skill_records(
     project_dir: Path,
     manifest: dict,
@@ -765,14 +736,12 @@ def collect_project_skill_records(
     available_group_ids = [str(group_id) for group_id in manifest_groups.keys()]
     head_group_set = set(available_group_ids)
     if isinstance(groups, list) and groups:
-        head_group_set = {str(group_id).strip() for group_id in groups if str(group_id).strip()}
+        head_group_set = {str(g).strip() for g in groups if str(g).strip()}
 
-    specialist_group_set = set()
+    specialist_group_set: set = set()
     if include_specialists:
         if isinstance(specialist_groups, list) and specialist_groups:
-            specialist_group_set = {
-                str(group_id).strip() for group_id in specialist_groups if str(group_id).strip()
-            }
+            specialist_group_set = {str(g).strip() for g in specialist_groups if str(g).strip()}
         else:
             specialist_group_set = set(head_group_set)
 
@@ -791,7 +760,7 @@ def collect_project_skill_records(
             for rel in spec_dirs:
                 selected_dirs.append((rel, "specialist"))
 
-        # Backward compatibility: if old manifest only has skill_dirs.
+        # Backward compatibility: old manifests only have skill_dirs.
         if not selected_dirs:
             for rel in payload.get("skill_dirs", []):
                 role = "head" if rel.endswith("-head") else "specialist"
@@ -820,7 +789,9 @@ def collect_project_skill_records(
     return records
 
 
-def find_managed_skill_dirs(target: Path, marker_file: str = ".fabric-managed.json") -> List[Path]:
+def find_managed_skill_dirs(
+    target: Path, marker_file: str = ".fabric-managed.json"
+) -> List[Path]:
     if not target.exists():
         return []
     out: List[Path] = []
@@ -830,6 +801,9 @@ def find_managed_skill_dirs(target: Path, marker_file: str = ".fabric-managed.js
         if (entry / marker_file).exists():
             out.append(entry)
     return out
+
+
+# ── Locked-section overlay helpers ────────────────────────────────────────
 
 
 def extract_locked_sections(text: str) -> Dict[str, str]:
@@ -845,9 +819,8 @@ def merge_locked_sections(existing_text: str, canonical_text: str) -> str:
     merged = existing_text
     for name, replacement_block in canonical.items():
         pattern = re.compile(
-            r"^[ \t]*(?:#\s*)?BEGIN_LOCKED:{0}[ \t]*\n.*?^[ \t]*(?:#\s*)?END_LOCKED:{0}[ \t]*$".format(
-                re.escape(name)
-            ),
+            r"^[ \t]*(?:#\s*)?BEGIN_LOCKED:{0}[ \t]*\n.*?"
+            r"^[ \t]*(?:#\s*)?END_LOCKED:{0}[ \t]*$".format(re.escape(name)),
             re.MULTILINE | re.DOTALL,
         )
         if pattern.search(merged):
@@ -855,346 +828,3 @@ def merge_locked_sections(existing_text: str, canonical_text: str) -> str:
         else:
             merged = merged.rstrip() + "\n\n" + replacement_block + "\n"
     return merged
-
-
-def resolve_task_execution(group_manifest: dict, specialist: dict) -> dict:
-    defaults = group_manifest.get("execution_defaults", {})
-    task_exec = specialist.get("execution", {})
-    merged = {
-        "transport": "local",
-        "scheduler": "local",
-        "hardware": "cpu",
-        "requires_gpu": False,
-        "web_search_enabled": True,
-    }
-    if isinstance(defaults, dict):
-        if "web_search_enabled" in defaults:
-            merged["web_search_enabled"] = bool(defaults["web_search_enabled"])
-        if defaults.get("remote_transport") == "ssh":
-            merged["transport"] = "ssh"
-        schedulers = defaults.get("schedulers", [])
-        if isinstance(schedulers, list) and schedulers:
-            merged["scheduler"] = str(schedulers[0])
-        hardware = defaults.get("hardware", [])
-        if isinstance(hardware, list) and hardware:
-            merged["hardware"] = str(hardware[0])
-            merged["requires_gpu"] = any(
-                "gpu" in str(x).lower() or "cuda" in str(x).lower() for x in hardware
-            )
-
-    if isinstance(task_exec, dict):
-        if "web_search_enabled" in task_exec:
-            merged["web_search_enabled"] = bool(task_exec["web_search_enabled"])
-        if task_exec.get("remote_transport"):
-            merged["transport"] = str(task_exec["remote_transport"])
-        if task_exec.get("scheduler"):
-            merged["scheduler"] = str(task_exec["scheduler"])
-        if task_exec.get("hardware"):
-            merged["hardware"] = str(task_exec["hardware"])
-        if "requires_gpu" in task_exec:
-            merged["requires_gpu"] = bool(task_exec["requires_gpu"])
-
-    return merged
-
-
-def _normalize_dep_entries(depends_on: Any) -> List[dict]:
-    if not depends_on:
-        return []
-    out: List[dict] = []
-    if isinstance(depends_on, list):
-        for dep in depends_on:
-            if isinstance(dep, str) and dep.strip():
-                aid = dep.strip()
-                out.append(
-                    {
-                        "agent_id": aid,
-                        "required_artifacts": [f"internal/{aid}/handoff.json"],
-                        "validate_with": "json-parse",
-                        "on_missing": "request-rerun",
-                    }
-                )
-                continue
-            if not isinstance(dep, dict):
-                continue
-            aid = str(dep.get("agent_id") or "").strip()
-            if not aid:
-                continue
-            req = dep.get("required_artifacts")
-            required_artifacts = (
-                [str(item) for item in req if str(item).strip()]
-                if isinstance(req, list)
-                else [f"internal/{aid}/handoff.json"]
-            )
-            validate_with = str(dep.get("validate_with") or "exists")
-            on_missing = str(dep.get("on_missing") or "request-rerun")
-            out.append(
-                {
-                    "agent_id": aid,
-                    "required_artifacts": required_artifacts,
-                    "validate_with": validate_with,
-                    "on_missing": on_missing,
-                }
-            )
-    return out
-
-
-def build_dispatch_plan(
-    project_id: str, group_id: str, objective: str, group_manifest: dict
-) -> dict:
-    specialists = group_manifest.get("specialists", [])
-    if not specialists:
-        raise FabricError(f"group '{group_id}' has no specialists")
-
-    spec_map: Dict[str, dict] = {}
-    dep_entries_map: Dict[str, List[dict]] = {}
-    deps_map: Dict[str, set] = {}
-    for specialist in specialists:
-        aid = specialist["agent_id"]
-        spec_map[aid] = specialist
-        dep_entries = _normalize_dep_entries(specialist.get("depends_on", []))
-        dep_entries_map[aid] = dep_entries
-        deps_map[aid] = {entry["agent_id"] for entry in dep_entries}
-
-    remaining = set(spec_map.keys())
-    completed = set()
-    phases = []
-    phase_id = 1
-
-    while remaining:
-        ready = sorted([aid for aid in remaining if deps_map[aid].issubset(completed)])
-        if not ready:
-            blocked = sorted(remaining)
-            raise FabricError(
-                "cyclic or unsatisfied specialist dependencies in group '{0}': {1}".format(
-                    group_id, ", ".join(blocked)
-                )
-            )
-
-        mode = "parallel" if len(ready) > 1 else "sequential"
-        tasks = []
-        for aid in ready:
-            specialist = spec_map[aid]
-            exec_meta = resolve_task_execution(group_manifest, specialist)
-            dep_entries = dep_entries_map.get(aid, [])
-            tasks.append(
-                {
-                    "agent_id": aid,
-                    "role": specialist.get("role", "domain-core"),
-                    "focus": specialist.get("focus", ""),
-                    "skill_name": specialist.get(
-                        "effective_skill_name", specialist.get("skill_name", "")
-                    ),
-                    "depends_on": sorted(list(deps_map[aid])),
-                    "dependency_checks": dep_entries,
-                    "workdir": "generated/projects/{0}/work/{1}/{2}".format(
-                        project_id, group_id, aid
-                    ),
-                    "transport": exec_meta["transport"],
-                    "scheduler": exec_meta["scheduler"],
-                    "hardware": exec_meta["hardware"],
-                    "requires_gpu": exec_meta["requires_gpu"],
-                    "web_search_enabled": exec_meta["web_search_enabled"],
-                }
-            )
-        phases.append({"phase_id": phase_id, "mode": mode, "tasks": tasks})
-
-        phase_id += 1
-        completed.update(ready)
-        remaining.difference_update(ready)
-
-    interaction = group_manifest.get("interaction", {})
-    session_mode = (
-        "interactive-separated" if isinstance(interaction, dict) else "interactive-separated"
-    )
-    if isinstance(interaction, dict) and interaction.get("mode"):
-        session_mode = str(interaction["mode"])
-
-    return {
-        "project_id": project_id,
-        "group_id": group_id,
-        "objective": objective,
-        "dispatch_mode": "hybrid",
-        "session_mode": session_mode,
-        "schema_version": SCHEMA_VERSION,
-        "head_agent": group_manifest["head"]["agent_id"],
-        "head_skill": group_manifest["head"].get(
-            "effective_skill_name", group_manifest["head"]["skill_name"]
-        ),
-        "specialist_output_schema": str(
-            group_manifest.get("gate_profile", {}).get(
-                "specialist_output_schema", "specialist-handoff-v2"
-            )
-        ),
-        "group_web_search_default": bool(
-            group_manifest.get("execution_defaults", {}).get("web_search_enabled", True)
-        ),
-        "gate_profile": group_manifest.get("gate_profile", {}),
-        "phases": phases,
-        "quality_gates": group_manifest.get("quality_gates", {}),
-    }
-
-
-def gate_specialist_output(
-    output: dict, citation_required: bool = True, web_available: bool = True
-) -> dict:
-    if not isinstance(output, dict):
-        return {"status": "BLOCKED_INVALID", "reasons": ["output must be a map"]}
-
-    reasons: List[str] = []
-
-    if citation_required:
-        claims = output.get("claims_with_citations", [])
-        if not isinstance(claims, list) or not claims:
-            reasons.append("missing claims_with_citations")
-        else:
-            for idx, claim in enumerate(claims):
-                citation = None
-                if isinstance(claim, dict):
-                    citation = claim.get("citation")
-                elif isinstance(claim, str):
-                    citation = None
-                if not citation:
-                    reasons.append(f"claim[{idx}] missing citation")
-
-    if output.get("needs_web_evidence") and not web_available:
-        reasons.append("required web evidence unavailable")
-        return {"status": "BLOCKED_NEEDS_EVIDENCE", "reasons": reasons}
-
-    if output.get("contradictions"):
-        reasons.append("internal contradictions detected")
-
-    if output.get("scope_violation"):
-        reasons.append("scope violation")
-
-    repro_steps = output.get("repro_steps")
-    if not repro_steps:
-        reasons.append("missing reproducibility steps")
-
-    execution_status = str(output.get("execution_status") or "").strip().upper()
-    if execution_status not in {"COMPLETE", "PASS"}:
-        reasons.append("missing or invalid execution_status")
-
-    if output.get("dependencies_satisfied") is not True:
-        reasons.append("dependencies_satisfied must be true")
-
-    produced_artifacts = output.get("produced_artifacts")
-    if not isinstance(produced_artifacts, list):
-        reasons.append("produced_artifacts must be a list")
-
-    citations_summary = output.get("citations_summary")
-    if not isinstance(citations_summary, dict):
-        reasons.append("citations_summary must be a map")
-
-    if reasons:
-        blocked_status = (
-            "BLOCKED_UNCITED" if any("citation" in r for r in reasons) else "BLOCKED_REVIEW"
-        )
-        return {"status": blocked_status, "reasons": reasons}
-
-    return {"status": "PASS", "reasons": []}
-
-
-def stable_json(data) -> str:
-    return json.dumps(data, sort_keys=True, indent=2)
-
-
-def suggest_groups(
-    task: str, compute: str, remote_cluster: str, output_target: str
-) -> Tuple[List[str], List[str]]:
-    text = " ".join([task.lower(), output_target.lower()])
-    selected: List[str] = []
-    rationale: List[str] = []
-
-    if any(k in text for k in ["vasp", "lammps", "metadynamics", "neb", "md", "dft"]):
-        selected.append("atomistic-hpc-simulation")
-        rationale.append("Detected atomistic simulation keywords; add HPC simulation expert group.")
-
-    if any(
-        k in text for k in ["paper", "reproduce", "benchmark", "materials", "phase", "electronic"]
-    ):
-        selected.append("material-scientist")
-        rationale.append(
-            "Research objective suggests materials-science interpretation and validation."
-        )
-
-    if any(
-        k in text
-        for k in [
-            "polymorphism",
-            "cobalt silicide",
-            "topological semimetal",
-            "thin film",
-            "film",
-            "resistivity",
-        ]
-    ):
-        selected.append("polymorphism-researcher")
-        rationale.append(
-            "Detected polymorphism/thin-film/topological semimetal keywords; add polymorphism researcher group."
-        )
-
-    if any(k in text for k in ["experiment", "synthesis", "characterization", "process"]):
-        selected.append("material-engineer")
-        rationale.append("Experimental/process terms suggest material-engineer support.")
-
-    if any(k in text for k in ["python", "script", "automation", "ssh", "pipeline", "debug"]):
-        selected.append("developer")
-        rationale.append(
-            "Implementation/automation requirements suggest developer group involvement."
-        )
-
-    if any(
-        k in text for k in ["publish", "manuscript", "figure", "presentation", "audience", "slides"]
-    ):
-        selected.append("publication-packaging")
-        rationale.append("Publication-focused output requires packaging/presentation support.")
-
-    if any(k in text for k in ["quality", "verify", "audit", "consistency", "risk"]):
-        selected.append("quality-assurance")
-        rationale.append("Explicit verification intent suggests quality assurance group.")
-
-    if remote_cluster.strip().lower() in {"yes", "y", "true", "1"}:
-        if "developer" not in selected:
-            selected.append("developer")
-            rationale.append(
-                "Remote cluster workflow requires SSH/automation bridge via developer group."
-            )
-
-    if compute.strip().lower() in {"gpu", "cuda"} and "atomistic-hpc-simulation" not in selected:
-        selected.append("atomistic-hpc-simulation")
-        rationale.append("CUDA/GPU constraint suggests HPC simulation group.")
-
-    if not selected:
-        selected = ["material-scientist", "developer", "quality-assurance"]
-        rationale.append("No clear specialty keywords; using robust default trio.")
-
-    ordered = []
-    for gid in [
-        "polymorphism-researcher",
-        "material-scientist",
-        "material-engineer",
-        "atomistic-hpc-simulation",
-        "developer",
-        "quality-assurance",
-        "publication-packaging",
-        "designer",
-        "data-curation",
-        "literature-intelligence",
-    ]:
-        if gid in selected and gid not in ordered:
-            ordered.append(gid)
-    for gid in selected:
-        if gid not in ordered:
-            ordered.append(gid)
-
-    return ordered, rationale
-
-
-def ensure_json_serializable(value: Any) -> Any:
-    if isinstance(value, Path):
-        return str(value)
-    if isinstance(value, dict):
-        return {k: ensure_json_serializable(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [ensure_json_serializable(v) for v in value]
-    return value

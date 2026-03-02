@@ -17,16 +17,13 @@ from agents_inc.core.fabric_lib import (
 )
 from agents_inc.core.head_meeting import HeadMeetingConfig, run_head_meeting
 from agents_inc.core.layered_runtime import LayeredRuntimeConfig, run_layered_runtime
-from agents_inc.core.long_run import HANDOFF_EDGES
-from agents_inc.core.material_candidates import (
-    compile_candidates_from_artifacts,
-    write_compiled_candidates,
-    write_ranked_candidates_from_compiled,
-)
-from agents_inc.core.negotiation_monitor import (
-    NegotiationCycleRecord,
-    evaluate_negotiation,
-    write_negotiation_monitor,
+from agents_inc.core.negotiation_monitor import NegotiationCycleRecord
+from agents_inc.core.orchestration import report as orchestration_report
+from agents_inc.core.orchestration.cycle_engine import build_cycle_summary
+from agents_inc.core.orchestration.meeting import build_negotiation_monitor
+from agents_inc.core.orchestration.turn_router import (
+    resolve_primary_group as resolve_primary_group_router,
+    selected_groups_from_manifest,
 )
 from agents_inc.core.response_policy import (
     classify_request_mode,
@@ -37,7 +34,7 @@ from agents_inc.core.response_policy import (
     upsert_specialist_sessions,
 )
 from agents_inc.core.session_state import load_checkpoint, now_iso, resolve_state_project_root
-from agents_inc.core.task_intake_qa import gather_web_evidence
+from agents_inc.core.util.edges import resolve_handoff_edges
 
 
 @dataclass
@@ -263,13 +260,10 @@ def _build_delegation_ledger(
     }
 
 
-def _expected_negotiation_edges(groups: List[str]) -> List[Tuple[str, str]]:
-    active = []
-    group_set = set(groups)
-    for edge in HANDOFF_EDGES:
-        if edge[0] in group_set and edge[1] in group_set:
-            active.append(edge)
-    return active
+def _expected_negotiation_edges(
+    groups: List[str], handoff_edges: List[Tuple[str, str]]
+) -> List[Tuple[str, str]]:
+    return resolve_handoff_edges(groups, handoff_edges)
 
 
 def _render_negotiation_sequence(
@@ -661,63 +655,6 @@ def _render_anticipated_results_table(contributions: List[dict]) -> str:
     return "\n".join(lines)
 
 
-def _load_material_candidate_rows(project_root: Path, limit: int = 12) -> List[dict]:
-    import csv
-
-    candidate_paths = [
-        project_root / "outputs" / "material" / "compiled_ranked.csv",
-        project_root / "outputs" / "material" / "compiled_candidates.csv",
-        project_root / "outputs" / "material" / "chiral_silicide_ranked.csv",
-        project_root / "outputs" / "material" / "chiral_silicide_candidates.csv",
-    ]
-    for path in candidate_paths:
-        if not path.exists():
-            continue
-        try:
-            with path.open("r", encoding="utf-8") as handle:
-                rows = list(csv.DictReader(handle))
-        except Exception:
-            continue
-        out: List[dict] = []
-        for row in rows[: max(8, limit)]:
-            if not isinstance(row, dict):
-                continue
-            out.append(
-                {
-                    "composition": str(row.get("composition") or "").strip(),
-                    "space_group": str(row.get("space_group") or "").strip(),
-                    "resistivity": str(
-                        row.get("predicted_resistivity_trend_uohm_cm_300K") or ""
-                    ).strip(),
-                    "confidence": str(row.get("confidence") or "").strip(),
-                    "citation_url": str(row.get("citation_url") or "").strip(),
-                    "score": str(row.get("material_priority_score") or "").strip(),
-                }
-            )
-        if out:
-            return out
-    return []
-
-
-def _render_material_candidate_table(rows: List[dict]) -> str:
-    lines = [
-        "| Composition | Space Group | Resistivity Trend (uohm*cm @300K) | Confidence | Score | Citation |",
-        "|---|---|---:|---|---:|---|",
-    ]
-    for row in rows:
-        lines.append(
-            "| {0} | {1} | {2} | {3} | {4} | {5} |".format(
-                str(row.get("composition") or "-").replace("|", "/"),
-                str(row.get("space_group") or "-").replace("|", "/"),
-                str(row.get("resistivity") or "-").replace("|", "/"),
-                str(row.get("confidence") or "-").replace("|", "/"),
-                str(row.get("score") or "-").replace("|", "/"),
-                str(row.get("citation_url") or "-").replace("|", "/"),
-            )
-        )
-    return "\n".join(lines)
-
-
 def _render_evidence_table(web_rows: List[dict], artifact_citations: List[dict]) -> str:
     lines = [
         "| Source Type | Provider/Group | Year | Title/Ref | URL |",
@@ -797,10 +734,7 @@ def _render_group_mode_answer(
             "- constraints not explicitly set in latest checkpoint; using project defaults."
         ]
 
-    material_rows = _load_material_candidate_rows(project_root)
     candidate_block = "No optional domain-adapter artifacts were published for this turn."
-    if material_rows:
-        candidate_block = _render_material_candidate_table(material_rows)
 
     lines = [
         f"# Orchestrator Reply - {project_id}",
@@ -997,6 +931,7 @@ def _render_blocked_report(
     artifact_citation_count: int,
     turn_dir: Path,
     timed_out_specialists: List[dict] | None = None,
+    escalations: List[dict] | None = None,
 ) -> str:
     lines = [
         f"# BLOCKED Turn - {project_id}",
@@ -1060,6 +995,26 @@ def _render_blocked_report(
                     row.get("attempts", ""),
                     row.get("raw_log_path", ""),
                     row.get("redacted_log_path", ""),
+                )
+            )
+
+    if escalations:
+        lines.extend(
+            [
+                "",
+                "## Escalations",
+                "| Group | Specialist | Type | Reason | Request ID |",
+                "|---|---|---|---|---|",
+            ]
+        )
+        for row in escalations:
+            lines.append(
+                "| {0} | {1} | {2} | {3} | {4} |".format(
+                    row.get("group_id", ""),
+                    row.get("specialist_id", ""),
+                    row.get("type", ""),
+                    str(row.get("reason", "")).replace("|", "/"),
+                    row.get("request_id", ""),
                 )
             )
 
@@ -1148,22 +1103,6 @@ def _render_non_group_answer(
     )
 
 
-def _is_material_objective(message: str) -> bool:
-    lowered = (message or "").lower()
-    keywords = [
-        "silicide",
-        "space group",
-        "topological",
-        "polymorph",
-        "metastable",
-        "dft",
-        "md",
-        "fem",
-        "material",
-    ]
-    return any(keyword in lowered for keyword in keywords)
-
-
 def _refine_group_objectives(
     *,
     current_objectives: Dict[str, str],
@@ -1193,28 +1132,15 @@ def _render_key_points(
     *,
     project_id: str,
     selected_groups: List[str],
-    candidate_count: int,
-    top_candidates: List[dict],
     final_report_path: Path,
     turn_dir: Path,
 ) -> str:
     lines = [
         f"project_id: {project_id}",
         f"active_groups: {', '.join(selected_groups)}",
-        f"candidate_count: {candidate_count}",
         f"full_report_path: {final_report_path}",
         f"turn_dir: {turn_dir}",
     ]
-    if top_candidates:
-        lines.append("top_candidates:")
-        for row in top_candidates[:5]:
-            lines.append(
-                "- {0} {1} ({2} uohm*cm @300K)".format(
-                    str(row.get("composition") or "-"),
-                    str(row.get("space_group") or "-"),
-                    str(row.get("resistivity") or "tbd"),
-                )
-            )
     return "\n".join(lines).strip() + "\n"
 
 
@@ -1241,8 +1167,8 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     )
     project_root, project_dir, manifest = _load_project_bundle(config)
     policy = ensure_response_policy(project_root)
-    selected_groups = _selected_groups(manifest)
-    primary_group = _resolve_primary_group(selected_groups, config.group)
+    selected_groups = selected_groups_from_manifest(manifest)
+    primary_group = resolve_primary_group_router(selected_groups, config.group)
     upsert_specialist_sessions(
         project_root=project_root,
         project_fabric_root=config.fabric_root,
@@ -1306,9 +1232,12 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         message=config.message,
         group_manifests=group_manifests,
     )
-    expected_edges = _expected_negotiation_edges(selected_groups)
+    handoff_edges = manifest.get("handoff_edges") or []
+    if not isinstance(handoff_edges, list):
+        handoff_edges = []
+    active_handoff_edges = _expected_negotiation_edges(selected_groups, handoff_edges)
     negotiation_text, negotiation_stats = _render_negotiation_sequence(
-        selected_groups, primary_group, expected_edges
+        selected_groups, primary_group, active_handoff_edges
     )
     write_text(turn_dir / "negotiation-sequence.md", negotiation_text)
 
@@ -1326,6 +1255,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     cycle_records: List[NegotiationCycleRecord] = []
     runtime_result = {}
     timed_out_specialists: List[dict] = []
+    unresolved_escalations: List[dict] = []
     latest_artifacts: Dict[str, str] = {}
 
     while True:
@@ -1376,6 +1306,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 heartbeat_sec=config.heartbeat_sec,
                 abort_file=config.abort_file,
                 audit=config.audit,
+                handoff_edges=active_handoff_edges,
             )
         )
         latest_artifacts = _write_turn_latest_artifacts(turn_dir, runtime_result)
@@ -1386,17 +1317,25 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                     continue
                 if row not in timed_out_specialists:
                     timed_out_specialists.append(row)
+        cycle_escalations = runtime_result.get("escalations", [])
+        if not isinstance(cycle_escalations, list):
+            cycle_escalations = []
+        write_text(cycle_dir / "escalations.json", stable_json(cycle_escalations) + "\n")
+        for row in cycle_escalations:
+            if isinstance(row, dict) and row not in unresolved_escalations:
+                unresolved_escalations.append(row)
+        write_text(turn_dir / "escalations.json", stable_json(unresolved_escalations) + "\n")
         cycle_summaries.append(
-            {
-                "cycle_id": cycle,
-                "runtime_blocked": bool(runtime_result.get("blocked")),
-                "blocked_groups": runtime_result.get("blocked_groups", []),
-                "objectives_hash": _hash_payload(group_objectives),
-                "agent_timeout_sec": config.agent_timeout_sec,
-                "agent_timeout_mode": _timeout_mode(config.agent_timeout_sec),
-                "timed_out_specialists": cycle_timeouts,
-                "latest_artifacts": latest_artifacts,
-            }
+            build_cycle_summary(
+                cycle_id=cycle,
+                runtime_result=runtime_result,
+                objectives_hash=_hash_payload(group_objectives),
+                agent_timeout_sec=config.agent_timeout_sec,
+                agent_timeout_mode=_timeout_mode(config.agent_timeout_sec),
+                cycle_timeouts=cycle_timeouts,
+                cycle_escalations=cycle_escalations,
+                latest_artifacts=latest_artifacts,
+            )
         )
         if runtime_result.get("blocked"):
             write_text(
@@ -1425,6 +1364,11 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             )
         if runtime_result.get("blocked"):
             block_status = "BLOCKED_LAYERED_RUNTIME"
+            if unresolved_escalations:
+                block_status = "BLOCKED_ESCALATION_REQUIRED"
+                blocked_reasons.append(
+                    f"{len(unresolved_escalations)} unresolved specialist escalation request(s)"
+                )
             reasons = runtime_result.get("reasons", [])
             if isinstance(reasons, list):
                 blocked_reasons.extend(str(item) for item in reasons if str(item).strip())
@@ -1556,14 +1500,11 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     final_all_satisfied = (
         bool(meeting_outputs[-1].get("all_satisfied")) if meeting_outputs else False
     )
-    monitor = evaluate_negotiation(
+    monitor, meeting_monitor_paths = build_negotiation_monitor(
         selected_groups=selected_groups,
-        cycles=cycle_records,
+        cycle_records=cycle_records,
         require_negotiation=bool(config.require_negotiation),
         final_all_satisfied=final_all_satisfied,
-    )
-    meeting_monitor_paths = write_negotiation_monitor(
-        monitor=monitor,
         meeting_dir=turn_dir / "meeting",
     )
     if bool(config.require_negotiation) and not bool(monitor.get("passed")) and not block_status:
@@ -1572,8 +1513,9 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         if isinstance(reasons, list):
             blocked_reasons.extend(str(item) for item in reasons if str(item).strip())
 
-    evidence = gather_web_evidence(task=config.message)
-    evidence_rows = _extract_evidence_rows(evidence, min_urls=8)
+    write_text(turn_dir / "escalations.json", stable_json(unresolved_escalations) + "\n")
+
+    evidence_rows: List[dict] = []
     contributions = _collect_group_contributions(project_dir, selected_groups)
     artifact_citations = _collect_artifact_citations(contributions)
     delegation = _apply_contribution_status(delegation, contributions)
@@ -1592,31 +1534,6 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         "negotiation_monitor": monitor,
     }
     write_text(turn_dir / "group-evidence-index.json", stable_json(evidence_index) + "\n")
-
-    material_candidates = {
-        "candidate_count": 0,
-        "missing_required_groups": [],
-        "output_paths": {},
-    }
-    if _is_material_objective(config.message):
-        compiled = compile_candidates_from_artifacts(
-            project_dir=project_dir,
-            selected_groups=selected_groups,
-            objective=config.message,
-        )
-        material_candidates = {
-            "candidate_count": int(compiled.get("candidate_count", 0)),
-            "missing_required_groups": compiled.get("missing_required_groups", []),
-            "group_summary": compiled.get("group_summary", {}),
-            "required_groups": compiled.get("required_groups", []),
-        }
-        candidate_rows = compiled.get("candidates", [])
-        if isinstance(candidate_rows, list) and candidate_rows:
-            out_paths = write_compiled_candidates(project_root, candidate_rows)
-            out_paths.update(write_ranked_candidates_from_compiled(project_root))
-            material_candidates["output_paths"] = out_paths
-        else:
-            material_candidates["output_paths"] = {}
 
     if not delegation.get("all_active_groups_contributed") and not block_status:
         block_status = "BLOCKED_GROUP_CONTRIBUTIONS"
@@ -1671,12 +1588,13 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             "cycle_summaries": cycle_summaries,
             "negotiation_monitor": monitor,
             "meeting_monitor_paths": meeting_monitor_paths,
-            "material_candidates": material_candidates,
             "latest_artifacts": latest_artifacts,
+            "escalations": unresolved_escalations,
+            "escalations_path": str(turn_dir / "escalations.json"),
         }
         blocked_path = turn_dir / "blocked-reasons.json"
         write_text(blocked_path, stable_json(blocked_payload) + "\n")
-        blocked_report = _render_blocked_report(
+        blocked_report = orchestration_report.render_blocked_report(
             project_id=config.project_id,
             message=config.message,
             status=block_status,
@@ -1686,6 +1604,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             artifact_citation_count=len(artifact_citations),
             turn_dir=turn_dir,
             timed_out_specialists=timed_out_specialists,
+            escalations=unresolved_escalations,
         )
         blocked_report_path = turn_dir / "blocked-report.md"
         write_text(blocked_report_path, blocked_report)
@@ -1724,7 +1643,6 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     )
     quality["cycles_executed"] = cycle
     quality["meeting_cycles"] = len(meeting_outputs)
-    quality["material_candidate_count"] = int(material_candidates.get("candidate_count", 0))
     quality["agent_timeout_sec"] = config.agent_timeout_sec
     quality["agent_timeout_mode"] = _timeout_mode(config.agent_timeout_sec)
     quality["timed_out_specialist_count"] = len(timed_out_specialists)
@@ -1754,7 +1672,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         blocked_report_path = turn_dir / "blocked-report.md"
         write_text(
             blocked_report_path,
-            _render_blocked_report(
+            orchestration_report.render_blocked_report(
                 project_id=config.project_id,
                 message=config.message,
                 status="BLOCKED_QUALITY_GATE",
@@ -1764,6 +1682,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 artifact_citation_count=len(artifact_citations),
                 turn_dir=turn_dir,
                 timed_out_specialists=timed_out_specialists,
+                escalations=unresolved_escalations,
             ),
         )
         raise FabricError(
@@ -1792,12 +1711,12 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 "generated_at": now_iso(),
                 "cycles": cycle_summaries,
                 "meetings": meeting_outputs,
-                "material_candidates": material_candidates,
                 "quality": quality,
                 "negotiation_monitor": monitor,
                 "agent_timeout_sec": config.agent_timeout_sec,
                 "agent_timeout_mode": _timeout_mode(config.agent_timeout_sec),
                 "timed_out_specialists": timed_out_specialists,
+                "escalations": unresolved_escalations,
                 "latest_artifacts": latest_artifacts,
                 "paths": {
                     "final_markdown": str(full_report_path),
@@ -1808,18 +1727,16 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                     "cooperation_ledger_latest": str(turn_dir / "cooperation-ledger.latest.ndjson"),
                     "group_head_sessions_latest": str(turn_dir / "group-head-sessions.latest.json"),
                     "specialist_sessions_latest": str(turn_dir / "specialist-sessions.latest.json"),
+                    "escalations": str(turn_dir / "escalations.json"),
                 },
             }
         )
         + "\n",
     )
     write_text(turn_dir / "final-answer-quality.json", stable_json(quality) + "\n")
-    top_candidates = _load_material_candidate_rows(project_root, limit=5)
-    key_points = _render_key_points(
+    key_points = orchestration_report.render_key_points(
         project_id=config.project_id,
         selected_groups=selected_groups,
-        candidate_count=int(material_candidates.get("candidate_count", 0)),
-        top_candidates=top_candidates,
         final_report_path=full_report_path,
         turn_dir=turn_dir,
     )
@@ -1843,5 +1760,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         "evidence_path": str(turn_dir / "group-evidence-index.json"),
         "layered_runtime": runtime_result,
         "latest_artifacts": latest_artifacts,
+        "escalations": unresolved_escalations,
+        "escalations_path": str(turn_dir / "escalations.json"),
         "cycles": cycle_summaries,
     }

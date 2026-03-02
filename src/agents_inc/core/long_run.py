@@ -7,7 +7,7 @@ import random
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -24,55 +24,13 @@ from agents_inc.core.fabric_lib import (
     stable_json,
     write_text,
 )
+from agents_inc.core.util.edges import resolve_handoff_edges
 from agents_inc.core.session_compaction import compact_session
 from agents_inc.core.session_state import (
     default_project_index_path,
     resolve_state_project_root,
     write_checkpoint,
 )
-
-CANONICAL_TASK = "Film thickness dependent polymorphism stability of metastable phase"
-FULL_GROUPS: List[str] = [
-    "polymorphism-researcher",
-    "material-scientist",
-    "material-engineer",
-    "developer",
-    "designer",
-    "data-curation",
-    "literature-intelligence",
-    "quality-assurance",
-    "publication-packaging",
-    "atomistic-hpc-simulation",
-]
-HANDOFF_EDGES: List[Tuple[str, str]] = [
-    ("literature-intelligence", "data-curation"),
-    ("literature-intelligence", "polymorphism-researcher"),
-    ("literature-intelligence", "material-scientist"),
-    ("literature-intelligence", "material-engineer"),
-    ("data-curation", "polymorphism-researcher"),
-    ("data-curation", "material-scientist"),
-    ("data-curation", "developer"),
-    ("polymorphism-researcher", "material-scientist"),
-    ("material-scientist", "polymorphism-researcher"),
-    ("polymorphism-researcher", "developer"),
-    ("polymorphism-researcher", "quality-assurance"),
-    ("polymorphism-researcher", "designer"),
-    ("material-scientist", "atomistic-hpc-simulation"),
-    ("atomistic-hpc-simulation", "material-scientist"),
-    ("atomistic-hpc-simulation", "developer"),
-    ("developer", "atomistic-hpc-simulation"),
-    ("material-scientist", "material-engineer"),
-    ("material-engineer", "quality-assurance"),
-    ("material-scientist", "quality-assurance"),
-    ("atomistic-hpc-simulation", "quality-assurance"),
-    ("developer", "quality-assurance"),
-    ("material-scientist", "designer"),
-    ("material-engineer", "designer"),
-    ("quality-assurance", "designer"),
-    ("designer", "publication-packaging"),
-    ("quality-assurance", "publication-packaging"),
-    ("publication-packaging", "quality-assurance"),
-]
 
 EXIT_OK = 0
 EXIT_ISOLATION_VIOLATION = 2
@@ -108,6 +66,7 @@ class LongRunConfig:
     inject_isolation_violation: bool
     inject_lease_deadlock: bool
     inject_gate_expose_failure: bool
+    handoff_edges: List[Tuple[str, str]] = field(default_factory=list)
 
 
 class _AbortRun(RuntimeError):
@@ -318,11 +277,7 @@ class LongRunRunner:
         lease_backend = LeaseBackend(self.config.fabric_root, self.lease_events)
         self._register_leases(lease_backend, workdirs)
 
-        active_edges = [
-            edge
-            for edge in HANDOFF_EDGES
-            if edge[0] in self.config.groups and edge[1] in self.config.groups
-        ]
+        active_edges = resolve_handoff_edges(self.config.groups, self.config.handoff_edges)
         interaction_graph = {
             "task": self.config.task,
             "groups": self.config.groups,
@@ -393,11 +348,13 @@ class LongRunRunner:
                             synthetic = self._build_synthetic_output(
                                 group_id=group_id,
                                 specialist_id=specialist_actor.agent_id,
+                                role=str(task.get("role") or ""),
                                 cycle=cycle,
                                 phase_id=phase_id,
                             )
                             gate = gate_specialist_output(
                                 synthetic,
+                                role=str(task.get("role") or ""),
                                 citation_required=bool(
                                     group_manifest.get("quality_gates", {}).get(
                                         "citation_required", True
@@ -587,6 +544,13 @@ class LongRunRunner:
                     and self.failed_code == EXIT_OK
                 ):
                     self._injected_isolation = True
+                    if not active_edges:
+                        self._fail(
+                            EXIT_ISOLATION_VIOLATION,
+                            "cannot inject isolation violation: no active handoff edges",
+                            {"groups": self.config.groups},
+                        )
+                        break
                     producer, consumer = active_edges[0]
                     consumer_head = self.actor_by_group[consumer]["head"]
                     producer_specs = sorted(
@@ -596,6 +560,13 @@ class LongRunRunner:
                             if actor.role == "specialist"
                         ]
                     )
+                    if not producer_specs:
+                        self._fail(
+                            EXIT_ISOLATION_VIOLATION,
+                            "cannot inject isolation violation: producer group has no specialists",
+                            {"producer": producer},
+                        )
+                        break
                     bad_target = (
                         project_dir
                         / "agent-groups"
@@ -909,14 +880,31 @@ class LongRunRunner:
         return None
 
     def _build_synthetic_output(
-        self, group_id: str, specialist_id: str, cycle: int, phase_id: int
+        self, group_id: str, specialist_id: str, role: str, cycle: int, phase_id: int
     ) -> dict:
+        role_name = str(role or "").strip().lower()
         claims = [
             {
                 "claim": f"{group_id}/{specialist_id} synthesized claim for cycle {cycle} phase {phase_id}",
                 "citation": f"local:references/{specialist_id}-core.md",
             }
         ]
+        if role_name == "web-research":
+            claims = [
+                {
+                    "claim": f"{group_id}/{specialist_id} gathered evidence row 1",
+                    "citation": "https://example.org/evidence-1",
+                },
+                {
+                    "claim": f"{group_id}/{specialist_id} gathered evidence row 2",
+                    "citation": "https://example.org/evidence-2",
+                },
+                {
+                    "claim": f"{group_id}/{specialist_id} gathered evidence row 3",
+                    "citation": "https://example.org/evidence-3",
+                },
+            ]
+
         output = {
             "assumptions": [
                 "Synthetic simulation run",
@@ -937,12 +925,32 @@ class LongRunRunner:
             "execution_status": "COMPLETE",
             "dependencies_satisfied": True,
             "citations_summary": {
-                "count": 1,
-                "has_web_url": False,
+                "count": len(claims),
+                "has_web_url": any(
+                    str(item.get("citation") or "").startswith(("http://", "https://"))
+                    for item in claims
+                ),
             },
             "confidence": "medium",
             "unresolved_assumptions": [],
         }
+        if role_name == "web-research":
+            output["source_quality_note"] = "All web sources include publication metadata."
+        elif role_name == "evidence-review":
+            output["contradictions"] = False
+            output["unsupported_claims"] = []
+        elif role_name == "repro-qa":
+            output["repro_commands"] = [
+                "python -m pytest tests/test_smoke.py",
+            ]
+            output["expected_outputs"] = [
+                "All smoke tests pass",
+            ]
+        elif role_name == "integration":
+            output["dependencies_consumed"] = [
+                f"agent-groups/{group_id}/internal/{specialist_id}/cycle-{cycle:03d}-phase-{phase_id:02d}.json"
+            ]
+            output["integration_risks"] = []
 
         if self.config.inject_gate_expose_failure and not self._injected_gate_payload:
             self._injected_gate_payload = True
@@ -1466,7 +1474,7 @@ def evaluate_access(
         LongRunConfig(
             fabric_root=Path("/tmp"),
             project_id="dummy",
-            task=CANONICAL_TASK,
+            task="validate-access-check",
             groups=[actor_group],
             duration_min=1,
             strict_isolation="hard-fail",

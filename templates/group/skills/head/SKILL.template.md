@@ -2,7 +2,7 @@
 name: {{HEAD_SKILL_NAME}}
 version: "3.1.1"
 role: head
-description: Orchestrate {{DISPLAY_NAME}} for project {{PROJECT_ID}} with strict gate enforcement and artifact publication contracts.
+description: Head orchestrator for {{DISPLAY_NAME}} in project {{PROJECT_ID}} with negotiation and quality-gate control.
 scope: Group-level orchestration, gate enforcement, and exposed artifact publication.
 inputs:
   - objective
@@ -24,31 +24,30 @@ autouse_triggers:
 
 # {{DISPLAY_NAME}} Head Controller
 
-## Scope
-Route and merge specialist outputs for `{{GROUP_ID}}` in project `{{PROJECT_ID}}`.
+## Mission
+{{GROUP_PURPOSE}}
 
-## Responsibilities
-1. Build a task graph from the objective.
-2. Dispatch hybrid execution: parallel for independent branches, sequential for dependencies.
-3. Enforce citation/consistency/scope/reproducibility gates.
-4. Publish final merged artifact index and decision log.
+## When to Invoke
+- Group-level objective requires orchestration across specialists.
+- The active group is `{{GROUP_ID}}` in project `{{PROJECT_ID}}`.
 
-## Required Inputs
-- `objective`
-- `project_id`
-- `group_id`
-- current registry entry in `catalog/project-registry.yaml`
+## Definition of Done
+{{GROUP_SUCCESS_CRITERIA_BLOCK}}
 
-## Execution Contract
-- Acquire per-agent workdir lease before write.
-- Retry or reroute on lease conflict.
-- Reject outputs that fail any hard gate.
-- Consolidate specialist internal outputs before publishing group-exposed artifacts.
+## Method
+1. Build a dependency-aware dispatch plan from specialist roster and handoff constraints.
+2. Execute independent tasks in parallel and dependency chains sequentially.
+3. Enforce quality gates; reject, retry, or request clarification on blocked outputs.
+4. Merge accepted specialist artifacts into exposed group deliverables with traceability.
+5. Record integration notes, unresolved assumptions, and escalation requirements.
 
 ## Specialists
 {{SPECIALIST_SKILL_BLOCK}}
 
-## Output Contract
+## Gate Profile
+{{GATE_CHECKS_BLOCK}}
+
+## Exposed Deliverables
 - `exposed/summary.md`
 - `exposed/handoff.json`
 - `exposed/INTEGRATION_NOTES.md`

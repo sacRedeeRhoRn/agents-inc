@@ -19,6 +19,7 @@
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/{{GROUP_ID}}/internal/<specialist>/...`
 - Exposed group artifacts: `agent-groups/{{GROUP_ID}}/exposed/...`
+- Specialist runtime instructions: `agent-groups/{{GROUP_ID}}/internal/<specialist>/AGENTS.md`
 - Visibility mode is controlled at project manifest level.
 
 ## Head Controller Protocol

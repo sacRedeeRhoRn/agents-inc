@@ -21,11 +21,11 @@ git --version
 ### Recommended Install (Release-Pinned + Checksum)
 
 ```bash
-export AGI_VER="v3.1.2" && \
-WHEEL="agents_inc-3.1.2-py3-none-any.whl" && \
+export AGI_VER="v4.0.0" && \
+WHEEL="agents_inc-4.0.0-py3-none-any.whl" && \
 curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/${WHEEL}" -o "/tmp/${WHEEL}" && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/agents_inc-3.1.2.sha256" -o /tmp/agents_inc-3.1.2.sha256 && \
-(cd /tmp && grep "  ${WHEEL}$" agents_inc-3.1.2.sha256 > wheel.sha256 && shasum -a 256 -c wheel.sha256) && \
+curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/agents_inc-4.0.0.sha256" -o /tmp/agents_inc-4.0.0.sha256 && \
+(cd /tmp && grep "  ${WHEEL}$" agents_inc-4.0.0.sha256 > wheel.sha256 && shasum -a 256 -c wheel.sha256) && \
 python3 -m pip install --upgrade pip setuptools wheel && \
 python3 -m pip install --upgrade "/tmp/${WHEEL}"
 ```
@@ -37,14 +37,14 @@ agents-inc --version
 agents-inc --help
 ```
 
-Expected version for this guide: `3.1.2`.
+Expected version for this guide: `4.0.0`.
 
 ## 3. Start Your Codex Orchestrator Session
 
 Run this in Terminal to open a new Codex session with the onboarding markdown prompt:
 
 ```bash
-export AGI_VER="v3.1.2" && \
+export AGI_VER="v4.0.0" && \
 export AGI_BOOTSTRAP_URL="https://raw.githubusercontent.com/sacRedeeRhoRn/agents-inc/${AGI_VER}/docs/bootstrap/START_IN_CODEX.md" && \
 export AGI_BOOTSTRAP_HOME="$HOME/.agents-inc/bootstrap-codex-home" && \
 mkdir -p "$AGI_BOOTSTRAP_HOME/skills/local" && \
@@ -158,68 +158,54 @@ Turn artifacts:
 - `<project-root>/.agents-inc/turns/<turn-id>/blocked-report.md` (block path)
 - `<project-root>/.agents-inc/turns/<turn-id>/blocked-reasons.json` (block path)
 
-## 5. Example Task Run (Metastable Chiral Silicide Discovery)
+## 5. Example Task Run (Domain-Agnostic Service Delivery)
 
 Objective theme:
-- find a new metastable phase candidate in a silicide system within chiral space groups
-- build computational plan (DFT + MD + FEM)
-- generate developer-side Python scripts/package to operationalize the workflow
+- plan and deliver a cross-functional professional services objective
+- combine implementation, evidence collection, QA, data support, integration, and stakeholder communication
+- produce a publication-grade final response with explicit evidence and risks
 
-### 5.1 Security note for project credentials
-
-> Warning
-> Never place real API keys in prompts, markdown, commits, or logs.
->
-> Use environment variables only.
-
-```bash
-export MATERIALS_PROJECT_API_KEY="<your-key-here>"
-```
-
-### 5.2 Start a new project
+### 5.1 Start a new project
 
 ```bash
 agents-inc init --mode new
 ```
 
 Choose or confirm groups including at least:
-- `material-scientist`
-- `literature-intelligence`
-- `data-curation`
 - `developer`
 - `quality-assurance`
+- `literature-intelligence`
+- `data-curation`
+- `integration-delivery`
+- `design-communication`
 
-Optional for downstream packaging/presentation:
-- `designer`
-- `publication-packaging`
-
-### 5.3 Activate specialists for core technical groups
-
-```bash
-agents-inc skills activate --project-id <project-id> --groups developer,material-scientist --specialists
-```
-
-### 5.4 Run a publication-grade orchestrator turn
+### 5.2 Activate specialists for selected groups
 
 ```bash
-agents-inc orchestrator-reply --project-id <project-id> --message "Plan an end-to-end discovery campaign for a metastable chiral silicide phase. Include hypothesis generation, DFT ranking, MD stability screening, FEM process-window analysis, and a decision-gated experimental synthesis plan with expected resistivity outcomes and evidence-backed risks." --live-profile bounded --require-negotiation true
+agents-inc skills activate --project-id <project-id> --groups developer,integration-delivery --specialists
 ```
 
-### 5.5 Push concrete objectives into developer and materials groups
+### 5.3 Run a publication-grade orchestrator turn
 
 ```bash
-agents-inc dispatch --project-id <project-id> --group developer --objective "Create a Python package and runnable scripts for the silicide discovery pipeline: structure candidate ingestion, DFT job templating, MD batch submission plan, FEM parameter sweeps, and reproducible report assembly with CLI entrypoints."
-
-agents-inc dispatch --project-id <project-id> --group material-scientist --objective "Search and rank chiral-space-group metastable silicide candidates, define stability criteria and uncertainty bounds, and output prioritized synthesis targets with computationally anticipated transport behavior."
+agents-inc orchestrator-reply --project-id <project-id> --message "Plan an end-to-end service delivery workflow for a high-priority client objective. Include evidence collection, implementation sequencing, QA checkpoints, integration gates, stakeholder communication outputs, and explicit risk controls." --live-profile bounded --require-negotiation true
 ```
 
-### 5.6 Run a concise state query with strict non-group mode
+### 5.4 Push concrete objectives into developer and integration groups
+
+```bash
+agents-inc dispatch --project-id <project-id> --group developer --objective "Implement automation and reproducible tooling for the objective workflow, with clear commands, artifact outputs, and operational safeguards."
+
+agents-inc dispatch --project-id <project-id> --group integration-delivery --objective "Integrate cross-group outputs into a staged delivery plan with dependency checks, release gates, and rollback strategy."
+```
+
+### 5.5 Run a concise state query with strict non-group mode
 
 ```bash
 agents-inc orchestrator-reply --project-id <project-id> --message "[non-group] List specialist session IDs currently active for this project."
 ```
 
-### 5.7 Confirm session and resume readiness
+### 5.6 Confirm session and resume readiness
 
 ```bash
 agents-inc list

@@ -24,9 +24,9 @@ class BootstrapFlowTests(unittest.TestCase):
 
     def test_readme_quick_start_points_to_v3_1_2_bootstrap(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn('export AGI_VER="v3.1.2"', readme)
+        self.assertIn('export AGI_VER="v4.0.0"', readme)
         self.assertIn("docs/bootstrap/START_IN_CODEX.md", readme)
-        self.assertIn("## Quick Start (Codex Orchestrator, v3.1.2)", readme)
+        self.assertIn("## Quick Start (Codex Orchestrator, v4.0.0)", readme)
         self.assertIn("[OVERVIEW.md](./OVERVIEW.md)", readme)
 
 

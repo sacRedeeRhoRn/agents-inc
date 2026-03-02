@@ -22,7 +22,6 @@ from agents_inc.core.fabric_lib import (  # noqa: E402
     build_dispatch_plan,
     ensure_fabric_root_initialized,
 )
-from agents_inc.core.material_candidates import compile_candidates_from_artifacts  # noqa: E402
 from agents_inc.core.orchestrator_reply import (  # noqa: E402
     OrchestratorReplyConfig,
     run_orchestrator_reply,
@@ -34,42 +33,6 @@ from agents_inc.core.response_policy import (  # noqa: E402
 
 
 class OrchestratorReplyTests(unittest.TestCase):
-    def test_material_candidates_required_groups_are_active_scope_only(self) -> None:
-        with tempfile.TemporaryDirectory() as td:
-            project_dir = Path(td) / "generated" / "projects" / "proj-mat"
-            handoff = (
-                project_dir
-                / "agent-groups"
-                / "literature-intelligence"
-                / "exposed"
-                / "handoff.json"
-            )
-            handoff.parent.mkdir(parents=True, exist_ok=True)
-            handoff.write_text(
-                json.dumps(
-                    {
-                        "status": "COMPLETE",
-                        "claims_with_citations": [
-                            {
-                                "claim": "CoSi in P213 shows exploratory topological semimetal behavior.",
-                                "citation": "https://example.org/cosi",
-                            }
-                        ],
-                    },
-                    indent=2,
-                    sort_keys=True,
-                )
-                + "\n",
-                encoding="utf-8",
-            )
-            compiled = compile_candidates_from_artifacts(
-                project_dir=project_dir,
-                selected_groups=["literature-intelligence"],
-                objective="find exploratory silicide candidates",
-            )
-            self.assertEqual(compiled.get("required_groups"), ["literature-intelligence"])
-            self.assertEqual(compiled.get("missing_required_groups"), [])
-
     def test_router_template_uses_cli_not_hardcoded_script_path(self) -> None:
         template = (
             ROOT
@@ -95,14 +58,14 @@ class OrchestratorReplyTests(unittest.TestCase):
 
     def test_dispatch_includes_web_search_metadata(self) -> None:
         group_manifest = yaml.safe_load(
-            (ROOT / "catalog" / "groups" / "polymorphism-researcher.yaml").read_text(
+            (ROOT / "catalog" / "groups" / "literature-intelligence.yaml").read_text(
                 encoding="utf-8"
             )
         )
         self.assertIsInstance(group_manifest, dict)
         dispatch = build_dispatch_plan(
             "proj-dispatch-meta",
-            "polymorphism-researcher",
+            "literature-intelligence",
             "test objective",
             group_manifest,
         )
@@ -127,7 +90,7 @@ class OrchestratorReplyTests(unittest.TestCase):
                     "--project-id",
                     project_id,
                     "--groups",
-                    "polymorphism-researcher,developer,quality-assurance",
+                    "literature-intelligence,developer,quality-assurance",
                     "--force",
                 ],
             ):
@@ -154,7 +117,7 @@ class OrchestratorReplyTests(unittest.TestCase):
             self.assertFalse((blocked_turn_dir / "final-exposed-answer.md").exists())
 
             project_dir = fabric_root / "generated" / "projects" / project_id
-            for group_id in ["polymorphism-researcher", "developer", "quality-assurance"]:
+            for group_id in ["literature-intelligence", "developer", "quality-assurance"]:
                 exposed = project_dir / "agent-groups" / group_id / "exposed"
                 (exposed / "summary.md").write_text(
                     f"# Summary\n\n{group_id} published validated handoff outputs.\n",
@@ -281,7 +244,7 @@ class OrchestratorReplyTests(unittest.TestCase):
                     "--project-id",
                     project_id,
                     "--groups",
-                    "polymorphism-researcher,developer,quality-assurance",
+                    "literature-intelligence,developer,quality-assurance",
                     "--force",
                 ],
             ):
@@ -357,7 +320,7 @@ class OrchestratorReplyTests(unittest.TestCase):
                     "--project-id",
                     project_id,
                     "--groups",
-                    "polymorphism-researcher,literature-intelligence,data-curation",
+                    "literature-intelligence,literature-intelligence,data-curation",
                     "--force",
                 ],
             ):
@@ -383,11 +346,11 @@ class OrchestratorReplyTests(unittest.TestCase):
                 specialist_sessions.write_text("{}\n", encoding="utf-8")
                 return {
                     "blocked": True,
-                    "blocked_groups": ["polymorphism-researcher"],
+                    "blocked_groups": ["literature-intelligence"],
                     "reasons": ["simulated timeout block"],
                     "timed_out_specialists": [
                         {
-                            "group_id": "polymorphism-researcher",
+                            "group_id": "literature-intelligence",
                             "specialist_id": "phase-stability-specialist",
                             "attempts": 2,
                             "raw_log_path": str(runtime_config.turn_dir / "raw.log"),
@@ -422,6 +385,97 @@ class OrchestratorReplyTests(unittest.TestCase):
             self.assertIsInstance(timed_out, list)
             self.assertEqual(len(timed_out), 1)
             self.assertEqual(timed_out[0].get("specialist_id"), "phase-stability-specialist")
+
+    def test_blocked_payload_includes_escalations(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fabric_root = Path(td) / "agent_group_fabric"
+            ensure_fabric_root_initialized(fabric_root)
+            project_id = "proj-escalation-block"
+            with patch.object(
+                sys,
+                "argv",
+                [
+                    "agents-inc new-project",
+                    "--fabric-root",
+                    str(fabric_root),
+                    "--project-id",
+                    project_id,
+                    "--groups",
+                    "developer,quality-assurance",
+                    "--force",
+                ],
+            ):
+                code = new_project_cli.main()
+            self.assertEqual(code, 0)
+
+            def _fake_runtime(runtime_config):  # type: ignore[no-untyped-def]
+                wait_state = runtime_config.turn_dir / "wait-state.json"
+                ledger = runtime_config.turn_dir / "cooperation-ledger.ndjson"
+                head_sessions = runtime_config.turn_dir / "layer3" / "group-head-sessions.json"
+                specialist_sessions = (
+                    runtime_config.turn_dir / "layer4" / "specialist-sessions.json"
+                )
+                wait_state.parent.mkdir(parents=True, exist_ok=True)
+                head_sessions.parent.mkdir(parents=True, exist_ok=True)
+                specialist_sessions.parent.mkdir(parents=True, exist_ok=True)
+                wait_state.write_text(
+                    json.dumps({"all_groups_complete": False}, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                ledger.write_text("", encoding="utf-8")
+                head_sessions.write_text("{}\n", encoding="utf-8")
+                specialist_sessions.write_text("{}\n", encoding="utf-8")
+                return {
+                    "blocked": True,
+                    "blocked_groups": ["developer"],
+                    "reasons": ["escalation requested"],
+                    "timed_out_specialists": [],
+                    "escalations": [
+                        {
+                            "request_id": "req-escalate-1",
+                            "type": "ssh_connection",
+                            "reason": "Need SSH credentials",
+                            "fields_needed": ["host", "user"],
+                            "group_id": "developer",
+                            "specialist_id": "ssh-remote-ops-expert",
+                            "response_path": str(
+                                runtime_config.project_dir
+                                / "agent-groups"
+                                / "developer"
+                                / "internal"
+                                / "ssh-remote-ops-expert"
+                                / "ESCALATION_RESPONSE.json"
+                            ),
+                        }
+                    ],
+                    "wait_state_path": str(wait_state),
+                    "cooperation_ledger_path": str(ledger),
+                    "group_head_sessions_path": str(head_sessions),
+                    "specialist_sessions_path": str(specialist_sessions),
+                }
+
+            blocked_turn = Path(td) / "blocked-escalation-turn"
+            with patch("agents_inc.core.orchestrator_reply.run_layered_runtime", _fake_runtime):
+                with self.assertRaises(FabricError):
+                    run_orchestrator_reply(
+                        OrchestratorReplyConfig(
+                            fabric_root=fabric_root,
+                            project_id=project_id,
+                            message="run remote validation on secured host",
+                            group="auto",
+                            output_dir=blocked_turn,
+                            agent_timeout_sec=15,
+                        )
+                    )
+
+            payload = json.loads(
+                (blocked_turn / "blocked-reasons.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(payload.get("status"), "BLOCKED_ESCALATION_REQUIRED")
+            escalations = payload.get("escalations", [])
+            self.assertIsInstance(escalations, list)
+            self.assertEqual(len(escalations), 1)
+            self.assertTrue((blocked_turn / "escalations.json").exists())
 
 
 if __name__ == "__main__":

@@ -53,7 +53,7 @@ class ProjectGroupsTests(unittest.TestCase):
                     "--project-id",
                     project_id,
                     "--groups",
-                    "material-scientist",
+                    "integration-delivery",
                     "--activate-heads",
                     "--json",
                 ],
@@ -64,7 +64,7 @@ class ProjectGroupsTests(unittest.TestCase):
             manifest = load_yaml(manifest_path)
             self.assertIsInstance(manifest, dict)
             selected = manifest.get("selected_groups", [])
-            self.assertIn("material-scientist", selected)
+            self.assertIn("integration-delivery", selected)
 
             with patch.object(
                 sys,
@@ -77,7 +77,7 @@ class ProjectGroupsTests(unittest.TestCase):
                     "--project-id",
                     project_id,
                     "--groups",
-                    "material-scientist",
+                    "integration-delivery",
                     "--json",
                 ],
             ):
@@ -86,7 +86,7 @@ class ProjectGroupsTests(unittest.TestCase):
             manifest = load_yaml(manifest_path)
             self.assertIsInstance(manifest, dict)
             selected = manifest.get("selected_groups", [])
-            self.assertNotIn("material-scientist", selected)
+            self.assertNotIn("integration-delivery", selected)
 
     def test_create_group_adds_catalog_and_project_selection(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -121,7 +121,7 @@ class ProjectGroupsTests(unittest.TestCase):
                     "--project-id",
                     project_id,
                     "--group-id",
-                    "polymorphism-researcher-lite",
+                    "literature-intelligence-lite",
                     "--display-name",
                     "Polymorphism Researcher Lite",
                     "--domain",
@@ -132,7 +132,7 @@ class ProjectGroupsTests(unittest.TestCase):
                 self.assertEqual(project_groups_cli.main(), 0)
 
             catalog_manifest = (
-                fabric_root / "catalog" / "groups" / "polymorphism-researcher-lite.yaml"
+                fabric_root / "catalog" / "groups" / "literature-intelligence-lite.yaml"
             )
             self.assertTrue(catalog_manifest.exists())
 
@@ -140,7 +140,7 @@ class ProjectGroupsTests(unittest.TestCase):
             manifest = load_yaml(manifest_path)
             self.assertIsInstance(manifest, dict)
             selected = manifest.get("selected_groups", [])
-            self.assertIn("polymorphism-researcher-lite", selected)
+            self.assertIn("literature-intelligence-lite", selected)
 
     def test_list_command_reports_selected_groups(self) -> None:
         with tempfile.TemporaryDirectory() as td:

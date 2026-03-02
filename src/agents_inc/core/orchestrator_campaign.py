@@ -22,31 +22,12 @@ from agents_inc.core.fabric_lib import (
     write_text,
 )
 from agents_inc.core.orchestrator_reply import OrchestratorReplyConfig, run_orchestrator_reply
-from agents_inc.core.task_intake_qa import (
-    answer_questions,
-    build_question_bank,
-    gather_web_evidence,
-    render_complete_film_plan,
-    render_qa_transcript,
-    write_qa_bundle,
-)
 from agents_inc.core.transcript_capture import (
     capture_with_script,
     extract_final_plan_block,
     redact_log,
     write_command_log,
 )
-
-RECOMMENDED_GROUPS = [
-    "polymorphism-researcher",
-    "literature-intelligence",
-    "data-curation",
-    "material-scientist",
-    "developer",
-    "quality-assurance",
-    "designer",
-]
-
 
 @dataclass
 class OrchestratorConfig:
@@ -97,262 +78,6 @@ def _dep(agent_id: str) -> dict:
         "validate_with": "json-parse",
         "on_missing": "request-rerun",
     }
-
-
-def _polymorphism_manifest() -> dict:
-    specialists = [
-        {
-            "agent_id": "phase-stability-specialist",
-            "skill_name": "grp-polymorphism-researcher-phase-stability",
-            "role": "domain-core",
-            "focus": "Film-thickness-dependent polymorph stability and phase competition analysis.",
-            "required_references": ["references/phase-stability-core.md"],
-            "required_outputs": ["work.md", "handoff.json"],
-            "contract": {
-                "inputs": ["objective.md", "group-context.json"],
-                "outputs": ["work.md", "handoff.json"],
-                "output_schema": "specialist-handoff-v2",
-            },
-            "depends_on": [],
-            "execution": {
-                "remote_transport": "local",
-                "scheduler": "local",
-                "hardware": "cpu",
-                "requires_gpu": False,
-            },
-        },
-        {
-            "agent_id": "dft-electronic-structure-specialist",
-            "skill_name": "grp-polymorphism-researcher-dft-electronic-structure",
-            "role": "domain-core",
-            "focus": "DFT electronic structure and SOC-enabled topological indicator workflow.",
-            "required_references": ["references/dft-electronic-structure-core.md"],
-            "required_outputs": ["work.md", "handoff.json"],
-            "contract": {
-                "inputs": ["objective.md", "group-context.json"],
-                "outputs": ["work.md", "handoff.json"],
-                "output_schema": "specialist-handoff-v2",
-            },
-            "depends_on": [_dep("phase-stability-specialist")],
-            "execution": {
-                "remote_transport": "ssh",
-                "scheduler": "slurm",
-                "hardware": "cuda",
-                "requires_gpu": True,
-            },
-        },
-        {
-            "agent_id": "md-kinetics-specialist",
-            "skill_name": "grp-polymorphism-researcher-md-kinetics",
-            "role": "domain-core",
-            "focus": "MD-based kinetic stability, interface evolution, and thermal trajectory analysis.",
-            "required_references": ["references/md-kinetics-core.md"],
-            "required_outputs": ["work.md", "handoff.json"],
-            "contract": {
-                "inputs": ["objective.md", "group-context.json"],
-                "outputs": ["work.md", "handoff.json"],
-                "output_schema": "specialist-handoff-v2",
-            },
-            "depends_on": [_dep("phase-stability-specialist")],
-            "execution": {
-                "remote_transport": "ssh",
-                "scheduler": "slurm",
-                "hardware": "cuda",
-                "requires_gpu": True,
-            },
-        },
-        {
-            "agent_id": "fem-process-specialist",
-            "skill_name": "grp-polymorphism-researcher-fem-process",
-            "role": "domain-core",
-            "focus": "FEM process-window, stress-thermal coupling, and diffusion sensitivity modeling.",
-            "required_references": ["references/fem-process-core.md"],
-            "required_outputs": ["work.md", "handoff.json"],
-            "contract": {
-                "inputs": ["objective.md", "group-context.json"],
-                "outputs": ["work.md", "handoff.json"],
-                "output_schema": "specialist-handoff-v2",
-            },
-            "depends_on": [_dep("phase-stability-specialist")],
-            "execution": {
-                "remote_transport": "local",
-                "scheduler": "local",
-                "hardware": "cpu",
-                "requires_gpu": False,
-            },
-        },
-        {
-            "agent_id": "web-experimental-data-specialist",
-            "skill_name": "grp-polymorphism-researcher-web-experimental-data",
-            "role": "web-research",
-            "focus": "Gather web-published experimental cobalt-silicide film data with citation-quality summaries.",
-            "required_references": ["references/web-experimental-data-core.md"],
-            "required_outputs": ["work.md", "handoff.json"],
-            "contract": {
-                "inputs": ["objective.md", "group-context.json"],
-                "outputs": ["work.md", "handoff.json"],
-                "output_schema": "specialist-handoff-v2",
-            },
-            "depends_on": [],
-            "execution": {
-                "remote_transport": "local",
-                "scheduler": "local",
-                "hardware": "cpu",
-                "requires_gpu": False,
-            },
-        },
-        {
-            "agent_id": "integration-specialist",
-            "skill_name": "grp-polymorphism-researcher-integration",
-            "role": "integration",
-            "focus": "Cross-specialist handoff integration and consumability verification.",
-            "required_references": ["references/integration-core.md"],
-            "required_outputs": ["work.md", "handoff.json"],
-            "contract": {
-                "inputs": ["objective.md", "group-context.json"],
-                "outputs": ["work.md", "handoff.json"],
-                "output_schema": "specialist-handoff-v2",
-            },
-            "depends_on": [
-                _dep("phase-stability-specialist"),
-                _dep("dft-electronic-structure-specialist"),
-                _dep("md-kinetics-specialist"),
-                _dep("fem-process-specialist"),
-                _dep("web-experimental-data-specialist"),
-            ],
-            "execution": {
-                "remote_transport": "local",
-                "scheduler": "local",
-                "hardware": "cpu",
-                "requires_gpu": False,
-            },
-        },
-        {
-            "agent_id": "evidence-review-specialist",
-            "skill_name": "grp-polymorphism-researcher-evidence-review",
-            "role": "evidence-review",
-            "focus": "Claim-level evidence adequacy review for synthesis and simulation recommendations.",
-            "required_references": ["references/evidence-review-core.md"],
-            "required_outputs": ["work.md", "handoff.json"],
-            "contract": {
-                "inputs": ["objective.md", "group-context.json"],
-                "outputs": ["work.md", "handoff.json"],
-                "output_schema": "specialist-handoff-v2",
-            },
-            "depends_on": [
-                _dep("web-experimental-data-specialist"),
-                _dep("integration-specialist"),
-            ],
-            "execution": {
-                "remote_transport": "local",
-                "scheduler": "local",
-                "hardware": "cpu",
-                "requires_gpu": False,
-            },
-        },
-        {
-            "agent_id": "repro-qa-specialist",
-            "skill_name": "grp-polymorphism-researcher-repro-qa",
-            "role": "repro-qa",
-            "focus": "Reproducibility checklist and cross-run QA for procedure and package outputs.",
-            "required_references": ["references/repro-qa-core.md"],
-            "required_outputs": ["work.md", "handoff.json"],
-            "contract": {
-                "inputs": ["objective.md", "group-context.json"],
-                "outputs": ["work.md", "handoff.json"],
-                "output_schema": "specialist-handoff-v2",
-            },
-            "depends_on": [
-                _dep("integration-specialist"),
-                _dep("evidence-review-specialist"),
-            ],
-            "execution": {
-                "remote_transport": "local",
-                "scheduler": "local",
-                "hardware": "cpu",
-                "requires_gpu": False,
-            },
-        },
-    ]
-    return {
-        "schema_version": "3.0",
-        "group_id": "polymorphism-researcher",
-        "display_name": "Polymorphism Researcher Group",
-        "template_version": "3.0.0",
-        "domain": "metastable-thin-film-polymorphism",
-        "purpose": "Design and validate thin-film polymorphism synthesis procedures with DFT/MD/FEM support.",
-        "success_criteria": [
-            "Synthesis path with measurable low-resistivity targets",
-            "Cross-validated DFT/MD/FEM computational plan",
-            "Evidence-backed and reproducible exposed deliverables",
-        ],
-        "head": {
-            "agent_id": "polymorphism-researcher-head",
-            "skill_name": "grp-polymorphism-researcher-head",
-            "mission": "Route and quality-gate polymorphism synthesis and compute specialists.",
-            "publish_contract": {
-                "exposed_required": ["summary.md", "handoff.json", "INTEGRATION_NOTES.md"],
-                "visibility": "group-only",
-            },
-        },
-        "specialists": specialists,
-        "required_artifacts": {
-            "objective_types": {
-                "default": {
-                    "specialist_internal": [
-                        "internal/<agent-id>/work.md",
-                        "internal/<agent-id>/handoff.json",
-                    ],
-                    "head_exposed": [
-                        "exposed/summary.md",
-                        "exposed/handoff.json",
-                        "exposed/INTEGRATION_NOTES.md",
-                    ],
-                }
-            }
-        },
-        "gate_profile": {
-            "profile_id": "polymorphism-evidence-v2",
-            "specialist_output_schema": "specialist-handoff-v2",
-            "checks": {
-                "web_citations_required": True,
-                "repro_command_required": True,
-                "consistency_required": True,
-                "scope_enforced": True,
-            },
-        },
-        "tool_profile": "science-default",
-        "default_workdirs": ["inputs", "analysis", "outputs"],
-        "quality_gates": {
-            "citation_required": True,
-            "unresolved_claims_block": True,
-            "peer_check_required": True,
-            "consistency_required": True,
-            "scope_required": True,
-            "reproducibility_required": True,
-        },
-        "interaction": {"mode": "interactive-separated", "linked_groups": ["developer"]},
-        "execution_defaults": {
-            "web_search_enabled": True,
-            "remote_transport": "ssh",
-            "schedulers": ["pbs", "slurm", "local"],
-            "hardware": ["cpu", "cuda"],
-        },
-    }
-
-
-def _create_or_update_polymorphism_group(fabric_root: Path) -> list[str]:
-    manifest = _polymorphism_manifest()
-    changed: list[str] = []
-    for path in _catalog_paths(fabric_root, "polymorphism-researcher"):
-        path.parent.mkdir(parents=True, exist_ok=True)
-        existing = None
-        if path.exists():
-            existing = load_yaml(path)
-        if existing != manifest:
-            dump_yaml(path, manifest)
-            changed.append(str(path))
-    return changed
 
 
 def _default_web_specialist(group_id: str) -> dict:
@@ -461,20 +186,8 @@ def _parse_json_file(path: Path) -> dict:
 
 
 def _recommended_groups(task: str, output_target: str) -> list[str]:
-    lowered = task.lower()
-    if "polymorphism" in lowered or "cobalt silicide" in lowered:
-        return list(RECOMMENDED_GROUPS)
     guessed, _ = suggest_groups(task, "cuda", "yes", output_target)
-    ordered: list[str] = []
-    for group_id in RECOMMENDED_GROUPS:
-        if group_id in guessed and group_id not in ordered:
-            ordered.append(group_id)
-    for group_id in guessed:
-        if group_id not in ordered:
-            ordered.append(group_id)
-    if "polymorphism-researcher" not in ordered:
-        ordered.insert(0, "polymorphism-researcher")
-    return ordered
+    return guessed
 
 
 def _validate_group_contracts(fabric_root: Path) -> None:
@@ -491,19 +204,10 @@ def _validate_group_contracts(fabric_root: Path) -> None:
 def _evaluate_pass_criteria(
     *,
     selected_groups: list[str],
-    answers: list[dict],
-    questions_min: int,
     report: dict,
     orchestrator_turn: Optional[dict],
 ) -> tuple[bool, list[str]]:
     reasons: list[str] = []
-    if len(answers) < questions_min:
-        reasons.append(f"question_count {len(answers)} < required {questions_min}")
-    for answer in answers:
-        refs = answer.get("evidence_refs", [])
-        uncertainty = bool(answer.get("uncertainty", False))
-        if (not isinstance(refs, list) or not refs) and not uncertainty:
-            reasons.append(f"{answer.get('question_id', '<unknown>')} missing evidence refs")
 
     exit_code = int(report.get("exit_code", 1))
     if exit_code != 0:
@@ -594,7 +298,6 @@ def _write_report(
     run_dir: Path,
     config: OrchestratorConfig,
     selected_groups: list[str],
-    answers: list[dict],
     command_rows: list[dict],
     refinement_rows: list[dict],
     long_report: dict,
@@ -605,13 +308,11 @@ def _write_report(
 ) -> dict:
     report_json_path = run_dir / "REPORT.json"
     report_md_path = run_dir / "REPORT.md"
-    qa_transcript = render_qa_transcript(task=config.task, answers=answers)
 
     final = {
         "project_id": config.project_id,
         "task": config.task,
         "selected_groups": selected_groups,
-        "question_count": len(answers),
         "long_run_exit_code": int(long_report.get("exit_code", 1)),
         "coverage_percent": float(long_report.get("interaction", {}).get("coverage_percent", 0.0)),
         "isolation_violations": int(long_report.get("isolation", {}).get("violation_count", 0)),
@@ -665,9 +366,6 @@ def _write_report(
             f"- final_answer_path: `{(orchestrator_turn or {}).get('final_answer_path', '')}`",
             f"- quality_passed: `{bool(((orchestrator_turn or {}).get('quality') or {}).get('passed', False))}`",
             "",
-            "## Router Intake Questions and Answers",
-            qa_transcript,
-            "",
             "## Refinement History",
         ]
     )
@@ -717,11 +415,8 @@ def _write_report(
 
 def run_orchestrator_campaign(config: OrchestratorConfig) -> dict:
     project_id = slugify(config.project_id)
-    run_dir = (
-        config.report_root / f"{_timestamp_slug()}-{project_id}-polymorphism-live-orchestrator"
-    )
+    run_dir = config.report_root / f"{_timestamp_slug()}-{project_id}-orchestrator"
     run_dir.mkdir(parents=True, exist_ok=True)
-    qa_dir = run_dir / "qa"
     dispatch_dir = run_dir / "dispatch-plans"
     plan_dir = run_dir / "plan"
     dispatch_dir.mkdir(parents=True, exist_ok=True)
@@ -751,10 +446,6 @@ def run_orchestrator_campaign(config: OrchestratorConfig) -> dict:
     }
     dump_yaml(run_dir / "run-config.yaml", run_config)
 
-    if config.create_group == "polymorphism-researcher":
-        changed = _create_or_update_polymorphism_group(config.fabric_root)
-        events.append({"event": "create_group", "changed": changed, "at": now_iso()})
-
     changed = enforce_web_research_specialists(config.fabric_root)
     if changed:
         events.append({"event": "web_role_injection", "changed": changed, "at": now_iso()})
@@ -783,7 +474,6 @@ def run_orchestrator_campaign(config: OrchestratorConfig) -> dict:
     live_redacted_log: Optional[Path] = None
     complete_plan_path: Optional[Path] = None
     codex_web_plan_path: Optional[Path] = None
-    answers: list[dict] = []
     live_codex_enabled = bool(config.live_codex)
     live_codex_failure_reason: Optional[str] = None
     iteration = 0
@@ -828,37 +518,17 @@ def run_orchestrator_campaign(config: OrchestratorConfig) -> dict:
             raise FabricError(f"init failed: {init_row['stderr']}")
 
         project_fabric_root = project_root / "agent_group_fabric"
-        kickoff_path = project_root / "kickoff.md"
-        router_call_path = project_root / "router-call.txt"
-        manifest_path = project_root / "project-manifest.yaml"
-
-        questions = build_question_bank(config.questions_min)
-        web_evidence = gather_web_evidence(task=config.task)
-        answers = answer_questions(
-            questions=questions,
-            task=config.task,
-            artifact_paths=[kickoff_path, router_call_path, manifest_path],
-            web_evidence=web_evidence,
-            asked_by=config.self_qa,
-        )
-        write_qa_bundle(
-            output_dir=qa_dir,
-            task=config.task,
-            questions=questions,
-            answers=answers,
-            web_evidence=web_evidence,
-        )
 
         if live_codex_enabled:
             codex_bin = shutil.which("codex")
             if not codex_bin:
                 raise FabricError("codex binary not found while --live-codex is enabled")
             prompt = (
-                "You are the research-router head. Use web search only; do not inspect local files. "
-                "Produce one response that includes: 12 intake Q/A, synthesis DOE, DFT/MD/FEM workflow, "
-                "anticipated resistivity-vs-thickness outcomes, and a web evidence table with at least "
-                "6 source URLs and at least 3 experimental data points. If a data point is unavailable, "
-                "mark it UNCERTAIN. Output only inside markers:\nBEGIN_FINAL_PLAN\n...\nEND_FINAL_PLAN"
+                f"You are the research-router head for project '{project_id}'. "
+                f"Task: {config.task}\n"
+                "Use web search to gather evidence. Produce a structured analysis including: "
+                "key findings, methodology, supporting evidence with source URLs, "
+                "and a clear action plan. Output only inside markers:\nBEGIN_FINAL_PLAN\n...\nEND_FINAL_PLAN"
             )
             write_text(run_dir / "session.prompt.md", prompt + "\n")
             live_raw_log = run_dir / "session.raw.log"
@@ -952,20 +622,6 @@ def run_orchestrator_campaign(config: OrchestratorConfig) -> dict:
                 else:
                     break
 
-        complete_plan_text = render_complete_film_plan(
-            task=config.task,
-            selected_groups=selected_groups,
-            answers=answers,
-            web_evidence=web_evidence,
-            codex_web_plan=(
-                codex_web_plan_path.read_text(encoding="utf-8", errors="replace")
-                if codex_web_plan_path and codex_web_plan_path.exists()
-                else ""
-            ),
-        )
-        complete_plan_path = plan_dir / "complete-film-synthesis-plan.md"
-        write_text(complete_plan_path, complete_plan_text)
-
         turn_output_dir = run_dir / "turns" / f"iteration-{iteration:02d}"
         orchestrator_turn_report = run_orchestrator_reply(
             OrchestratorReplyConfig(
@@ -1046,8 +702,6 @@ def run_orchestrator_campaign(config: OrchestratorConfig) -> dict:
 
         passed, reasons = _evaluate_pass_criteria(
             selected_groups=selected_groups,
-            answers=answers,
-            questions_min=config.questions_min,
             report=long_report,
             orchestrator_turn=orchestrator_turn_report,
         )
@@ -1067,11 +721,6 @@ def run_orchestrator_campaign(config: OrchestratorConfig) -> dict:
         if not config.until_pass:
             break
 
-    dump_yaml(run_dir / "qa" / "questions.yaml", _parse_yaml_or_empty(qa_dir / "questions.yaml"))
-    dump_yaml(run_dir / "qa" / "answers.yaml", _parse_yaml_or_empty(qa_dir / "answers.yaml"))
-    write_text(
-        run_dir / "qa" / "qa-transcript.md", render_qa_transcript(task=config.task, answers=answers)
-    )
     write_command_log(run_dir / "commands.md", command_rows)
     _write_events(run_dir / "events.ndjson", events)
     _write_refinement_history(run_dir / "refinement-history.md", refinement_rows)
@@ -1080,7 +729,6 @@ def run_orchestrator_campaign(config: OrchestratorConfig) -> dict:
         run_dir=run_dir,
         config=config,
         selected_groups=selected_groups,
-        answers=answers,
         command_rows=command_rows,
         refinement_rows=refinement_rows,
         long_report=long_report,

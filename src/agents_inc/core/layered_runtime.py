@@ -4,7 +4,7 @@ import json
 import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -15,8 +15,14 @@ from agents_inc.core.agent_threads import (
     set_head_thread,
     set_specialist_thread,
 )
+from agents_inc.core.escalation import (
+    ESCALATION_REQUEST_FILE,
+    ESCALATION_RESPONSE_FILE,
+    resolve_escalation_state,
+)
 from agents_inc.core.fabric_lib import build_dispatch_plan, now_iso, stable_json, write_text
-from agents_inc.core.long_run import HANDOFF_EDGES
+from agents_inc.core.util.dispatch import gate_specialist_output
+from agents_inc.core.util.edges import resolve_handoff_edges
 
 
 @dataclass
@@ -36,6 +42,7 @@ class LayeredRuntimeConfig:
     heartbeat_sec: int = 30
     abort_file: Optional[Path] = None
     audit: bool = False
+    handoff_edges: List[Tuple[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -54,6 +61,7 @@ class SpecialistResult:
     mount_status: Dict[str, object]
     timed_out: bool
     error: str
+    escalation_request: Optional[Dict[str, object]] = None
 
 
 @dataclass
@@ -136,6 +144,9 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
                 "codex_home": "",
                 "visible_skills": [],
                 "mount_status": {},
+                "snapshot_work_path": "",
+                "snapshot_handoff_path": "",
+                "snapshot_meta_path": "",
             }
 
     write_text(layer3_dir / "group-head-sessions.json", stable_json(group_head_sessions) + "\n")
@@ -143,6 +154,8 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
 
     group_results: Dict[str, dict] = {}
     blocked_reasons: List[str] = []
+    active_edges = resolve_handoff_edges(config.selected_groups, config.handoff_edges)
+    escalations: List[dict] = []
 
     if _abort_requested(config):
         blocked_reasons.append("abort file detected before cycle execution")
@@ -169,6 +182,7 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
             "specialist_sessions_path": str(layer4_dir / "specialist-sessions.json"),
             "cooperation_ledger_path": str(config.turn_dir / "cooperation-ledger.ndjson"),
             "wait_state_path": str(config.turn_dir / "wait-state.json"),
+            "escalations": escalations,
         }
 
     max_group_workers = (
@@ -202,6 +216,11 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
                 for row in timed_out_rows:
                     if isinstance(row, dict):
                         timed_out_specialists.append(row)
+            escalation_rows = result.get("escalations", [])
+            if isinstance(escalation_rows, list):
+                for row in escalation_rows:
+                    if isinstance(row, dict):
+                        escalations.append(row)
             if result["status"] != "COMPLETE":
                 blocked_reasons.append(
                     f"group '{group_id}' {result['status'].lower()}: {result.get('error', 'no detail')}"
@@ -209,7 +228,7 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
 
     # Same-layer cooperation: head-to-head consume from exposed only.
     active = set(config.selected_groups)
-    for producer, consumer in HANDOFF_EDGES:
+    for producer, consumer in active_edges:
         if producer not in active or consumer not in active:
             continue
         if group_results.get(producer, {}).get("status") != "COMPLETE":
@@ -272,6 +291,7 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
         "specialist_sessions_path": str(layer4_dir / "specialist-sessions.json"),
         "cooperation_ledger_path": str(cooperation_path),
         "wait_state_path": str(config.turn_dir / "wait-state.json"),
+        "escalations": escalations,
     }
 
 
@@ -293,6 +313,7 @@ def _run_group(
     phase_outputs: Dict[str, SpecialistResult] = {}
     group_error = ""
     timed_out_specialists: List[dict] = []
+    group_escalations: List[dict] = []
 
     for phase in dispatch.get("phases", []):
         if _abort_requested(config):
@@ -341,8 +362,15 @@ def _run_group(
                             "redacted_log_path": result.redacted_log_path,
                         }
                     )
+                if isinstance(result.escalation_request, dict):
+                    group_escalations.append(result.escalation_request)
                 if not result.success and not group_error:
-                    if result.timed_out:
+                    if isinstance(result.escalation_request, dict):
+                        group_error = (
+                            f"specialist '{result.specialist_id}' requested escalation "
+                            f"({result.escalation_request.get('type', 'custom')})"
+                        )
+                    elif result.timed_out:
                         group_error = (
                             f"specialist '{result.specialist_id}' timed out after "
                             f"{result.attempt} attempt(s)"
@@ -385,6 +413,7 @@ def _run_group(
             "finished_at": now_iso(),
             "error": group_error,
             "timed_out_specialists": timed_out_specialists,
+            "escalations": group_escalations,
         }
 
     head_result = _run_head_with_retries(
@@ -423,6 +452,7 @@ def _run_group(
             "finished_at": now_iso(),
             "error": head_result.error,
             "timed_out_specialists": timed_out_specialists,
+            "escalations": group_escalations,
         }
 
     exposed = config.project_dir / "agent-groups" / group_id / "exposed"
@@ -538,6 +568,7 @@ def _run_group(
         "error": "",
         "specialist_count": len(phase_outputs),
         "timed_out_specialists": timed_out_specialists,
+        "escalations": group_escalations,
     }
 
 
@@ -557,12 +588,10 @@ def _run_specialist_with_retries(
     web_search_enabled = bool(task.get("web_search_enabled", True))
     attempts_total = max(1, int(config.retry_attempts) + 1)
 
-    work_path = (
-        config.project_dir / "agent-groups" / group_id / "internal" / specialist_id / "work.md"
-    )
-    handoff_path = (
-        config.project_dir / "agent-groups" / group_id / "internal" / specialist_id / "handoff.json"
-    )
+    specialist_root = config.project_dir / "agent-groups" / group_id / "internal" / specialist_id
+    specialist_root.mkdir(parents=True, exist_ok=True)
+    work_path = specialist_root / "work.md"
+    handoff_path = specialist_root / "handoff.json"
 
     group_layer4 = layer4_dir / group_id / specialist_id
     raw_log_path = group_layer4 / "raw.log"
@@ -604,6 +633,7 @@ def _run_specialist_with_retries(
             mount_status=mount_status,
             timed_out=False,
             error=message,
+            escalation_request=None,
         )
 
     timed_out = False
@@ -618,7 +648,10 @@ def _run_specialist_with_retries(
             specialist_id=specialist_id,
             role=role,
             focus=focus,
+            skill_name=skill_name,
             dependencies=task.get("depends_on", []),
+            required_outputs=task.get("required_outputs", []),
+            required_references=task.get("required_references", []),
             artifact_scope={
                 "work_path": str(work_path),
                 "handoff_path": str(handoff_path),
@@ -628,6 +661,7 @@ def _run_specialist_with_retries(
         result = runner.run(
             AgentRunConfig(
                 project_root=config.project_root,
+                work_dir=specialist_root,
                 prompt=prompt,
                 raw_log_path=raw_log_path,
                 redacted_log_path=redacted_log_path,
@@ -638,6 +672,79 @@ def _run_specialist_with_retries(
                 session_label=f"{group_id}/{specialist_id}",
             )
         )
+
+        escalation_state = resolve_escalation_state(
+            work_dir=specialist_root,
+            group_id=group_id,
+            specialist_id=specialist_id,
+        )
+        escalation_kind = str(escalation_state.get("state") or "").upper()
+        escalation_request = escalation_state.get("request")
+        escalation_response = escalation_state.get("response")
+        escalation_reasons = escalation_state.get("reasons")
+        if not isinstance(escalation_reasons, list):
+            escalation_reasons = []
+        if escalation_kind in {"REQUESTED", "UNRESOLVED", "INVALID"}:
+            request_payload: Dict[str, object] = {}
+            if isinstance(escalation_request, dict):
+                request_payload.update(escalation_request)
+            request_payload["state"] = escalation_kind
+            if escalation_reasons:
+                request_payload["state_reasons"] = escalation_reasons
+            if isinstance(escalation_response, dict):
+                request_payload["response"] = escalation_response
+            specialist_sessions[group_id][specialist_id]["status"] = "ESCALATION_REQUIRED"
+            specialist_sessions[group_id][specialist_id]["finished_at"] = now_iso()
+            message = str(request_payload.get("reason") or "").strip()
+            if not message:
+                message = "; ".join(str(item) for item in escalation_reasons) or "escalation required"
+            specialist_sessions[group_id][specialist_id]["error"] = message
+            ledger_rows.append(
+                {
+                    "ts": now_iso(),
+                    "event": "specialist_escalation_required",
+                    "group_id": group_id,
+                    "specialist_id": specialist_id,
+                    "attempt": attempt,
+                    "escalation": request_payload,
+                    "raw_log": str(raw_log_path),
+                    "redacted_log": str(redacted_log_path),
+                    "codex_home": str(codex_home),
+                    "visible_skills": visible_skills,
+                }
+            )
+            return SpecialistResult(
+                success=False,
+                group_id=group_id,
+                specialist_id=specialist_id,
+                role=role,
+                attempt=attempt,
+                work_path=str(work_path),
+                handoff_path=str(handoff_path),
+                raw_log_path=str(raw_log_path),
+                redacted_log_path=str(redacted_log_path),
+                codex_home=str(codex_home),
+                visible_skills=visible_skills,
+                mount_status=mount_status,
+                timed_out=False,
+                error="escalation required",
+                escalation_request=request_payload,
+            )
+        if escalation_kind == "RESOLVED":
+            archived_paths = _archive_escalation_files(
+                work_dir=specialist_root,
+                archive_dir=group_layer4 / "escalations",
+            )
+            ledger_rows.append(
+                {
+                    "ts": now_iso(),
+                    "event": "specialist_escalation_resolved",
+                    "group_id": group_id,
+                    "specialist_id": specialist_id,
+                    "attempt": attempt,
+                    "archived": archived_paths,
+                }
+            )
 
         handoff_payload = dict(result.parsed_handoff or {})
         if result.success:
@@ -656,9 +763,82 @@ def _run_specialist_with_retries(
             handoff_payload.setdefault("claims_with_citations", [])
             handoff_payload.setdefault("repro_steps", ["specialist execution complete"])
             handoff_payload.setdefault("artifact_paths", [])
+            gate = gate_specialist_output(
+                handoff_payload,
+                role=role,
+                citation_required=True,
+                web_available=web_search_enabled,
+            )
+            gate_status = str(gate.get("status") or "BLOCKED_REVIEW")
+            gate_reasons = gate.get("reasons")
+            if not isinstance(gate_reasons, list):
+                gate_reasons = []
+            if gate_status != "PASS":
+                specialist_sessions[group_id][specialist_id]["status"] = "FAILED"
+                specialist_sessions[group_id][specialist_id]["finished_at"] = now_iso()
+                specialist_sessions[group_id][specialist_id]["error"] = (
+                    f"specialist gate failed: {gate_status} ({'; '.join(str(x) for x in gate_reasons)})"
+                )
+                snapshot_paths = _write_specialist_snapshot(
+                    snapshot_root=layer4_dir / "specialists" / group_id / specialist_id,
+                    work_text=result.parsed_work,
+                    handoff_payload=handoff_payload,
+                    meta_payload={
+                        "schema_version": "1.0",
+                        "generated_at": now_iso(),
+                        "project_id": config.project_id,
+                        "group_id": group_id,
+                        "specialist_id": specialist_id,
+                        "role": role,
+                        "attempt": attempt,
+                        "success": False,
+                        "error": specialist_sessions[group_id][specialist_id]["error"],
+                        "gate": gate,
+                        "raw_log_path": str(raw_log_path),
+                        "redacted_log_path": str(redacted_log_path),
+                    },
+                )
+                specialist_sessions[group_id][specialist_id].update(snapshot_paths)
+                ledger_rows.append(
+                    {
+                        "ts": now_iso(),
+                        "event": (
+                            "specialist_gate_retry"
+                            if attempt < attempts_total
+                            else "specialist_gate_failed"
+                        ),
+                        "group_id": group_id,
+                        "specialist_id": specialist_id,
+                        "attempt": attempt,
+                        "gate_status": gate_status,
+                        "gate_reasons": gate_reasons,
+                    }
+                )
+                if attempt < attempts_total and int(config.retry_backoff_sec) > 0:
+                    time.sleep(int(config.retry_backoff_sec))
+                continue
 
             write_text(work_path, result.parsed_work.rstrip() + "\n")
             write_text(handoff_path, json.dumps(handoff_payload, indent=2, sort_keys=True) + "\n")
+            snapshot_paths = _write_specialist_snapshot(
+                snapshot_root=layer4_dir / "specialists" / group_id / specialist_id,
+                work_text=result.parsed_work,
+                handoff_payload=handoff_payload,
+                meta_payload={
+                    "schema_version": "1.0",
+                    "generated_at": now_iso(),
+                    "project_id": config.project_id,
+                    "group_id": group_id,
+                    "specialist_id": specialist_id,
+                    "role": role,
+                    "attempt": attempt,
+                    "success": True,
+                    "error": "",
+                    "raw_log_path": str(raw_log_path),
+                    "redacted_log_path": str(redacted_log_path),
+                },
+            )
+            specialist_sessions[group_id][specialist_id].update(snapshot_paths)
 
             specialist_sessions[group_id][specialist_id]["status"] = "COMPLETE"
             specialist_sessions[group_id][specialist_id]["finished_at"] = now_iso()
@@ -702,6 +882,7 @@ def _run_specialist_with_retries(
                 mount_status=mount_status,
                 timed_out=False,
                 error="",
+                escalation_request=None,
             )
 
         specialist_sessions[group_id][specialist_id]["status"] = "FAILED"
@@ -754,6 +935,7 @@ def _run_specialist_with_retries(
         mount_status=mount_status,
         timed_out=timed_out,
         error=specialist_sessions[group_id][specialist_id]["error"],
+        escalation_request=None,
     )
 
 
@@ -817,9 +999,12 @@ def _run_head_with_retries(
     )
 
     for attempt in range(1, attempts_total + 1):
+        group_work_dir = config.project_dir / "agent-groups" / group_id
+        group_work_dir.mkdir(parents=True, exist_ok=True)
         result = runner.run(
             AgentRunConfig(
                 project_root=config.project_root,
+                work_dir=group_work_dir,
                 prompt=prompt,
                 raw_log_path=raw_log_path,
                 redacted_log_path=redacted_log_path,
@@ -915,10 +1100,20 @@ def _build_specialist_prompt(
     specialist_id: str,
     role: str,
     focus: str,
+    skill_name: str,
     dependencies: object,
+    required_outputs: object,
+    required_references: object,
     artifact_scope: dict,
 ) -> str:
+    activation = (
+        f"Activate and follow the `${skill_name}` skill if available, then proceed.\n"
+        if str(skill_name or "").strip()
+        else ""
+    )
     return (
+        activation
+        + (
         "You are a specialist agent in a layered multi-agent research runtime. "
         "Work only in your scope and produce structured output.\n"
         f"Objective: {objective}\n"
@@ -927,10 +1122,13 @@ def _build_specialist_prompt(
         f"Role: {role}\n"
         f"Focus: {focus}\n"
         f"Dependencies: {json.dumps(dependencies, ensure_ascii=True)}\n"
+        f"Required outputs: {json.dumps(required_outputs, ensure_ascii=True)}\n"
+        f"Required references: {json.dumps(required_references, ensure_ascii=True)}\n"
         "Requirements:\n"
         "1. Include claim-level citations for all key technical claims.\n"
         "2. Include reproducibility steps and artifact paths.\n"
         "3. If evidence is missing, set status to BLOCKED_NEEDS_EVIDENCE with reasons.\n"
+        "4. If privileged access or unknown external credentials are required, write ESCALATION_REQUEST.json in your working directory.\n"
         "Return ONLY with these exact blocks:\n"
         "BEGIN_WORK\n"
         "<markdown work notes>\n"
@@ -947,6 +1145,8 @@ def _build_specialist_prompt(
         "}\n"
         "END_HANDOFF_JSON\n"
         f"Artifact scope target work_path={artifact_scope['work_path']} handoff_path={artifact_scope['handoff_path']}\n"
+        "If ESCALATION_RESPONSE.json exists in your working directory, consume it before finalizing output.\n"
+        )
     )
 
 
@@ -979,7 +1179,15 @@ def _build_head_prompt(
             }
         )
 
+    head_skill = str(dispatch.get("head_skill") or "").strip()
+    activation = (
+        f"Activate and follow the `${head_skill}` skill if available, then proceed.\n"
+        if head_skill
+        else ""
+    )
     return (
+        activation
+        + (
         "You are the group head agent in a layered multi-agent runtime. "
         "Merge specialist outputs into one group-level exposed handoff.\n"
         f"Objective: {objective}\n"
@@ -1004,6 +1212,7 @@ def _build_head_prompt(
         '  "integration_notes": "# Integration Notes\\n\\n- ..."\n'
         "}\n"
         "END_HANDOFF_JSON\n"
+        )
     )
 
 
@@ -1102,6 +1311,48 @@ def _symlink_or_copy(src: Path, dst: Path) -> None:
             shutil.copy2(src, dst)
         else:
             shutil.copytree(src, dst)
+
+
+def _archive_escalation_files(*, work_dir: Path, archive_dir: Path) -> Dict[str, str]:
+    request_path = work_dir / ESCALATION_REQUEST_FILE
+    response_path = work_dir / ESCALATION_RESPONSE_FILE
+    archived: Dict[str, str] = {}
+    if not request_path.exists() and not response_path.exists():
+        return archived
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    stamp = now_iso().replace(":", "").replace("-", "").replace(".", "")
+    if request_path.exists():
+        dst = archive_dir / f"request-{stamp}.json"
+        dst.write_bytes(request_path.read_bytes())
+        request_path.unlink()
+        archived["request_path"] = str(dst)
+    if response_path.exists():
+        dst = archive_dir / f"response-{stamp}.json"
+        dst.write_bytes(response_path.read_bytes())
+        response_path.unlink()
+        archived["response_path"] = str(dst)
+    return archived
+
+
+def _write_specialist_snapshot(
+    *,
+    snapshot_root: Path,
+    work_text: str,
+    handoff_payload: Dict[str, object],
+    meta_payload: Dict[str, object],
+) -> Dict[str, str]:
+    snapshot_root.mkdir(parents=True, exist_ok=True)
+    work_path = snapshot_root / "work.md"
+    handoff_path = snapshot_root / "handoff.json"
+    meta_path = snapshot_root / "meta.json"
+    write_text(work_path, work_text.rstrip() + "\n")
+    write_text(handoff_path, json.dumps(handoff_payload, indent=2, sort_keys=True) + "\n")
+    write_text(meta_path, json.dumps(meta_payload, indent=2, sort_keys=True) + "\n")
+    return {
+        "snapshot_work_path": str(work_path),
+        "snapshot_handoff_path": str(handoff_path),
+        "snapshot_meta_path": str(meta_path),
+    }
 
 
 def _collect_specialist_payloads(phase_outputs: Dict[str, SpecialistResult]) -> List[dict]:

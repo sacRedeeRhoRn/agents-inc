@@ -16,10 +16,6 @@ if str(SRC) not in sys.path:
 
 from agents_inc.cli import orchestrate as orchestrate_cli  # noqa: E402
 from agents_inc.core.fabric_lib import ensure_group_shape  # noqa: E402
-from agents_inc.core.task_intake_qa import (  # noqa: E402
-    answer_questions,
-    build_question_bank,
-)
 from agents_inc.core.transcript_capture import (  # noqa: E402
     extract_final_plan_block,
     redact_text,
@@ -27,24 +23,6 @@ from agents_inc.core.transcript_capture import (  # noqa: E402
 
 
 class OrchestrateUnitTests(unittest.TestCase):
-    def test_question_bank_enforces_minimum_12(self) -> None:
-        questions = build_question_bank(12)
-        self.assertGreaterEqual(len(questions), 12)
-
-    def test_answers_require_evidence_or_uncertainty(self) -> None:
-        questions = build_question_bank(12)
-        answers = answer_questions(
-            questions=questions,
-            task="cobalt silicide polymorphism workflow",
-            artifact_paths=[],
-            web_evidence=[{"source_url": "https://example.org/ref"}],
-        )
-        self.assertEqual(len(answers), len(questions))
-        for answer in answers:
-            refs = answer.get("evidence_refs", [])
-            uncertainty = bool(answer.get("uncertainty", False))
-            self.assertTrue((isinstance(refs, list) and bool(refs)) or uncertainty)
-
     def test_redaction_masks_tokens(self) -> None:
         redacted = redact_text("Authorization: Bearer abcdefghijklmnop\napi_key=SUPERSECRET123")
         self.assertNotIn("abcdefghijklmnop", redacted)
@@ -55,7 +33,7 @@ class OrchestrateUnitTests(unittest.TestCase):
         self.assertEqual(extract_final_plan_block(text), "")
 
     def test_group_contract_requires_web_research_role(self) -> None:
-        manifest_path = ROOT / "catalog" / "groups" / "material-scientist.yaml"
+        manifest_path = ROOT / "catalog" / "groups" / "integration-delivery.yaml"
         manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
         self.assertIsInstance(manifest, dict)
         specialists = manifest.get("specialists", [])
@@ -70,7 +48,7 @@ class OrchestrateUnitTests(unittest.TestCase):
         self.assertTrue(any("web-research" in error for error in errors))
 
     def test_group_contract_requires_web_search_default_flag(self) -> None:
-        manifest_path = ROOT / "catalog" / "groups" / "material-scientist.yaml"
+        manifest_path = ROOT / "catalog" / "groups" / "integration-delivery.yaml"
         manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
         self.assertIsInstance(manifest, dict)
         execution_defaults = manifest.get("execution_defaults")

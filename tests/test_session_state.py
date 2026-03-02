@@ -62,7 +62,7 @@ class SessionStateTests(unittest.TestCase):
                 "project_root": str(project_root),
                 "fabric_root": str(project_root / "agent_group_fabric"),
                 "task": "test-task",
-                "selected_groups": ["developer", "material-scientist"],
+                "selected_groups": ["developer", "integration-delivery"],
                 "router_call": "Use $research-router for project proj-a group developer: test-task.",
                 "pending_actions": ["act"],
                 "latest_artifacts": {},
@@ -83,8 +83,8 @@ class SessionStateTests(unittest.TestCase):
             self.assertEqual(latest["compact_id"], second["compact_id"])
             self.assertEqual(latest["group_session_map"]["developer"], "proj-a::developer::000001")
             self.assertEqual(
-                latest["group_session_map"]["material-scientist"],
-                "proj-a::material-scientist::000001",
+                latest["group_session_map"]["integration-delivery"],
+                "proj-a::integration-delivery::000001",
             )
 
             sessions = load_group_sessions(project_root)
@@ -144,10 +144,10 @@ class SessionStateTests(unittest.TestCase):
                 "fabric_root": str(project_root / "agent_group_fabric"),
                 "task": "test-task",
                 "constraints": {"timeline": "2 weeks"},
-                "selected_groups": ["material-scientist"],
-                "primary_group": "material-scientist",
-                "group_order_recommendation": ["material-scientist"],
-                "router_call": "Use $research-router for project proj-a group material-scientist: test-task.",
+                "selected_groups": ["integration-delivery"],
+                "primary_group": "integration-delivery",
+                "group_order_recommendation": ["integration-delivery"],
+                "router_call": "Use $research-router for project proj-a group integration-delivery: test-task.",
                 "latest_artifacts": {},
                 "pending_actions": ["act"],
             }

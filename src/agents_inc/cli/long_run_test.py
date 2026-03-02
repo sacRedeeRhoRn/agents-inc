@@ -10,7 +10,7 @@ from agents_inc.core.fabric_lib import (
     resolve_fabric_root,
     slugify,
 )
-from agents_inc.core.long_run import CANONICAL_TASK, FULL_GROUPS, LongRunConfig, run_long_validation
+from agents_inc.core.long_run import LongRunConfig, run_long_validation
 
 
 def parse_args() -> argparse.Namespace:
@@ -19,7 +19,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--fabric-root", default=None, help="path to fabric root")
     parser.add_argument("--project-id", required=True)
-    parser.add_argument("--task", default=CANONICAL_TASK)
+    parser.add_argument("--task", default="")
     parser.add_argument("--groups", default="all", help="'all' or comma-separated group ids")
     parser.add_argument("--duration-min", type=int, default=75)
     parser.add_argument("--strict-isolation", default="hard-fail", choices=["hard-fail"])
@@ -45,7 +45,8 @@ def parse_args() -> argparse.Namespace:
 
 def _select_groups(groups_arg: str, fabric_root: Path) -> list[str]:
     if groups_arg.strip().lower() == "all":
-        return list(FULL_GROUPS)
+        catalog = load_group_catalog(fabric_root)
+        return list(catalog.keys())
     groups = [slugify(x) for x in groups_arg.split(",") if x.strip()]
     if not groups:
         raise FabricError("--groups must be 'all' or comma-separated group ids")

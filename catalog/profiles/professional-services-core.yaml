@@ -1,0 +1,9 @@
+profile_id: "professional-services-core"
+display_name: "Professional Services Core"
+groups:
+  - "developer"
+  - "quality-assurance"
+  - "literature-intelligence"
+  - "data-curation"
+  - "integration-delivery"
+  - "design-communication"

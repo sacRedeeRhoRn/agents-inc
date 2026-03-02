@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agents-inc"
-version = "3.1.2"
+version = "4.0.0"
 description = "Publication-ready multi-agent group fabric and router orchestration toolkit for Codex sessions"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -43,16 +43,7 @@ agents-inc-migrate-v2 = "agents_inc.cli.migrate_v2:main"
 agents-inc-orchestrate = "agents_inc.cli.orchestrate:main"
 agents-inc-orchestrate-report = "agents_inc.cli.orchestrate_report:main"
 agents-inc-orchestrator-reply = "agents_inc.cli.orchestrator_reply:main"
-agents-inc-new-group = "agents_inc.cli.deprecated_aliases:new_group_alias"
-agents-inc-new-project = "agents_inc.cli.deprecated_aliases:new_project_alias"
-agents-inc-install-skills = "agents_inc.cli.deprecated_aliases:install_skills_alias"
-agents-inc-sync-overlays = "agents_inc.cli.deprecated_aliases:sync_overlays_alias"
-agents-inc-validate = "agents_inc.cli.deprecated_aliases:validate_alias"
-agents-inc-dispatch-dry-run = "agents_inc.cli.deprecated_aliases:dispatch_dry_run_alias"
-agents-inc-init-session = "agents_inc.cli.deprecated_aliases:init_session_alias"
-agents-inc-list-sessions = "agents_inc.cli.deprecated_aliases:list_sessions_alias"
-agents-inc-generate-docs = "agents_inc.cli.deprecated_aliases:generate_docs_alias"
-agents-inc-long-run-test = "agents_inc.cli.deprecated_aliases:long_run_test_alias"
+agents-inc-eval = "agents_inc.cli.eval:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

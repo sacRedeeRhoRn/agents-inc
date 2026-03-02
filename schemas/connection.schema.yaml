@@ -1,0 +1,30 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: "Connection Profile"
+type: object
+required:
+  - schema_version
+  - profile_name
+  - type
+properties:
+  schema_version:
+    type: string
+  profile_name:
+    type: string
+  type:
+    type: string
+    enum: [ssh_connection, file_path, api_token, permission, custom]
+  host:
+    type: string
+  port:
+    type: integer
+  user:
+    type: string
+  auth_method:
+    type: string
+  key_path:
+    type: string
+  keychain_key:
+    type: string
+  updated_at:
+    type: string
+additionalProperties: true
