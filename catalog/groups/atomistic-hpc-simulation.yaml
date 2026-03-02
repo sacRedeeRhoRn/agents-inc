@@ -1,6 +1,6 @@
 group_id: atomistic-hpc-simulation
 display_name: Atomistic HPC Simulation Group
-template_version: 2.0.0
+template_version: 3.0.0
 domain: hpc-atomistic-simulation
 head:
   agent_id: atomistic-hpc-simulation-head
@@ -336,7 +336,7 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
-schema_version: '2.0'
+schema_version: '3.0'
 purpose: Coordinate expert specialists for Atomistic HPC Simulation Group objectives.
 success_criteria:
 - All required artifacts produced

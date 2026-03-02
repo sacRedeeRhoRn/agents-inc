@@ -1,23 +1,25 @@
 ---
 name: proj-proj-battery-001-developer-web-research-specialist
-version: "2.0.0"
+version: 2.0.0
 role: specialist
-description: Specialist agent for Gather web-published references and extract citation-ready evidence. in Developer Group (project proj-battery-001) with strict structured handoff output.
+description: Specialist agent for Gather web-published references and extract citation-ready
+  evidence. in Developer Group (project proj-battery-001) with strict structured handoff
+  output.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
-  - objective
-  - group-context.json
-  - dependency artifacts
+- objective
+- group-context.json
+- dependency artifacts
 outputs:
-  - internal/web-research-specialist/work.md
-  - internal/web-research-specialist/handoff.json
+- internal/web-research-specialist/work.md
+- internal/web-research-specialist/handoff.json
 failure_modes:
-  - blocked_needs_evidence
-  - blocked_uncited
-  - scope_violation
+- blocked_needs_evidence
+- blocked_uncited
+- scope_violation
 autouse_triggers:
-  - specialist dispatch task
-  - dependency artifact ready
+- specialist dispatch task
+- dependency artifact ready
 ---
 
 # web-research-specialist

@@ -1,5 +1,134 @@
 # Changelog
 
+## v3.1.2
+
+- Removed default per-agent runtime cap in `agents-inc orchestrator-reply`:
+  - omitted `--agent-timeout-sec` now means unlimited
+  - `--agent-timeout-sec 0` also means unlimited
+  - explicit positive timeout values remain supported
+- Updated live profile defaults so `bounded`/`custom` no longer force finite agent timeout.
+- Added explicit timeout metadata in runtime artifacts:
+  - `agent_timeout_sec`
+  - `agent_timeout_mode` (`unlimited|bounded`)
+- Fixed isolated skill reference resolution:
+  - layered runtime now mounts `agent-groups/<group-id>/references` into each visible runtime skill directory.
+  - session metadata now records reference mount status.
+- Added deterministic turn-root latest pointers for polling:
+  - `wait-state.latest.json`
+  - `cooperation-ledger.latest.ndjson`
+  - `group-head-sessions.latest.json`
+  - `specialist-sessions.latest.json`
+- Improved blocked diagnostics with specialist timeout breakdown:
+  - blocked payload now includes timed-out specialists with attempts and log paths.
+  - blocked report includes timed-out specialist table when present.
+- Made material candidate compiler contributor requirements active-project aware:
+  - required-group checks now use intersection with selected groups.
+  - inactive groups are no longer reported as missing.
+- Bumped package version to `3.1.2`.
+
+## v3.1.1
+
+- Added domain-agnostic cooperative loop hardening for `agents-inc orchestrator-reply`:
+  - non-zero cycle defaults (`max_cycles` now profile-driven, default bounded profile uses 4)
+  - mandatory meeting loop in group mode
+  - objective cards written per cycle:
+    - `cycles/cycle-XXXX/layer2/group-objectives.json`
+    - `cycles/cycle-XXXX/layer2/refined-group-objectives.json`
+- Added negotiation monitor with hard block support:
+  - new artifacts:
+    - `meeting/negotiation-monitor.json`
+    - `meeting/negotiation-monitor.md`
+  - new block status:
+    - `BLOCKED_NEGOTIATION_NOT_OBSERVED`
+- Added new CLI controls:
+  - `--live-profile bounded|custom` (default `bounded`)
+  - `--require-negotiation true|false`
+- Added robust project/fabric resolution fallback for `orchestrator-reply` when explicit `--fabric-root` is stale.
+- Improved blocked-path UX:
+  - CLI now prints compact blocked status plus exact `blocked-report` and `blocked-reasons` paths.
+- Added optional `--fabric-root` support to:
+  - `agents-inc skills list`
+  - `agents-inc skills activate`
+  - `agents-inc skills deactivate`
+- Removed runtime core domain-coupled artifact injections from `layered_runtime` (no forced material/developer content path in core loop).
+- Updated template/frontmatter skill versions to `3.1.1`.
+- Bumped package version to `3.1.1`.
+
+## v3.0.0
+
+- Hard-cutover layered runtime is now the default for group-routed turns:
+  - Layer2 orchestrator executes all active groups.
+  - Layer3 group heads run as real managed sessions.
+  - Layer4 specialists run as independent managed sessions.
+  - final output is emitted only after wait-all completion across active groups.
+- `agents-inc orchestrator-reply` upgraded from aggregator to live runtime executor.
+- Added runtime controls:
+  - `--max-parallel`
+  - `--retry-attempts`
+  - `--retry-backoff-sec`
+  - `--agent-timeout-sec`
+  - `--audit`
+- Added per-turn layered artifacts:
+  - `layer2/orchestrator-plan.json`
+  - `layer3/group-head-sessions.json`
+  - `layer4/specialist-sessions.json`
+  - specialist/head raw+redacted logs
+  - `cooperation-ledger.ndjson`
+  - `wait-state.json`
+- Added strict agent session skill scoping:
+  - each specialist/head runtime uses a scoped per-agent `CODEX_HOME`
+  - visible skills are restricted to group/specialist-specific installed skills
+  - missing required specialist/head skills now hard-block with explicit activation command guidance
+- Enforced artifact-grounded behavior under live runtime:
+  - no freehand synthesis in group mode
+  - hard block when required contributors or evidence are missing
+- Added material-informative developer outputs for material objectives:
+  - generated package under `outputs/python/material_pipeline/`
+  - material-aware ranking logic using composition/space-group/topology/resistivity features
+  - generated report and ranked candidate artifact outputs under `outputs/reports` and `outputs/material`
+- Added exploratory chiral silicide candidate artifact generation for material objectives:
+  - `outputs/material/chiral_silicide_candidates.csv`
+  - `outputs/material/chiral_silicide_candidates.md`
+- Upgraded schema/version defaults to v3:
+  - package version `3.0.0`
+  - group/project schema constants and default template/bundle versions set to `3.0`
+  - migration command remains `agents-inc migrate-v2` but now migrates to strict v3 schema.
+
+## v2.3.0
+
+- Enforced strict artifact-grounded orchestration for group mode:
+  - all active project groups must publish valid `exposed/handoff.json` contributions
+  - no freehand fallback synthesis when contributions are missing
+  - blocked turns now emit:
+    - `.agents-inc/turns/<turn-id>/blocked-report.md`
+    - `.agents-inc/turns/<turn-id>/blocked-reasons.json`
+- Updated group-mode evidence contract:
+  - web evidence is best-effort
+  - turn may pass with artifact citation refs even when web URL count is zero
+  - turn blocks when both web URLs and artifact citations are absent
+- Hardened router skill template to CLI-driven runtime:
+  - router now uses `agents-inc orchestrator-reply`
+  - removed hardcoded `python .../scripts/dispatch_dry_run.py` path assumptions
+- Added resume-time runtime refresh metadata:
+  - resume now reports refreshed router version/template source in summary payload
+  - resume rejects non-v2 project manifests with migration guidance
+- Added project-level active group lifecycle command family:
+  - `agents-inc project-groups list --project-id <id>`
+  - `agents-inc project-groups add --project-id <id> --groups g1,g2`
+  - `agents-inc project-groups create --project-id <id> --group-id <id> --display-name \"<name>\" --domain \"<domain>\"`
+  - `agents-inc project-groups remove --project-id <id> --groups g1,g2`
+- `project-groups` updates:
+  - project manifest selected groups + group entries
+  - skill activation state and project-scoped installed skills
+  - specialist session map pruning/upsert
+  - checkpoint + compact state for resume continuity
+- CLI router now exposes `project-groups` command.
+- Added/updated tests for:
+  - strict orchestrator block/pass behavior
+  - CLI routing for `project-groups`
+  - project group lifecycle operations.
+- Bumped package version to `2.3.0`.
+
 ## v2.2.2
 
 - Synced publication tag to include post-`v2.2.1` fixes already on `main`.

@@ -17,6 +17,7 @@ from agents_inc.core.fabric_lib import (
     FabricError,
     find_managed_skill_dirs,
     load_project_manifest,
+    resolve_fabric_root,
     slugify,
 )
 from agents_inc.core.session_state import default_project_index_path, find_resume_project
@@ -37,6 +38,7 @@ def parse_args() -> argparse.Namespace:
 
     list_parser = sub.add_parser("list", help="list installed skills for one project")
     list_parser.add_argument("--project-id", required=True)
+    list_parser.add_argument("--fabric-root", default=None)
     list_parser.add_argument("--project-index", default=None)
     list_parser.add_argument("--scan-root", default=None)
     list_parser.add_argument("--config-path", default=None)
@@ -46,6 +48,7 @@ def parse_args() -> argparse.Namespace:
     activate.add_argument("--project-id", required=True)
     activate.add_argument("--groups", required=True, help="comma-separated group ids")
     activate.add_argument("--specialists", action="store_true", help="include specialists")
+    activate.add_argument("--fabric-root", default=None)
     activate.add_argument("--project-index", default=None)
     activate.add_argument("--scan-root", default=None)
     activate.add_argument("--config-path", default=None)
@@ -55,6 +58,7 @@ def parse_args() -> argparse.Namespace:
     deactivate = sub.add_parser("deactivate", help="deactivate group skills for one project")
     deactivate.add_argument("--project-id", required=True)
     deactivate.add_argument("--groups", required=True, help="comma-separated group ids")
+    deactivate.add_argument("--fabric-root", default=None)
     deactivate.add_argument("--project-index", default=None)
     deactivate.add_argument("--scan-root", default=None)
     deactivate.add_argument("--config-path", default=None)
@@ -72,6 +76,10 @@ def parse_args() -> argparse.Namespace:
 
 def _resolve_project(args: argparse.Namespace) -> tuple[str, Path, Path]:
     project_id = slugify(args.project_id)
+    explicit_fabric = None
+    if args.fabric_root:
+        explicit_fabric = resolve_fabric_root(args.fabric_root)
+
     index_path = default_project_index_path(getattr(args, "project_index", None))
     scan_root = (
         Path(args.scan_root).expanduser().resolve()
@@ -86,11 +94,19 @@ def _resolve_project(args: argparse.Namespace) -> tuple[str, Path, Path]:
     if not found:
         raise FabricError(f"could not locate project '{project_id}'")
     project_root = Path(str(found["project_root"])).expanduser().resolve()
-    fabric_root = (
+    fallback_fabric = (
         Path(str(found.get("fabric_root") or (project_root / "agent_group_fabric")))
         .expanduser()
         .resolve()
     )
+    if explicit_fabric is not None:
+        try:
+            load_project_manifest(explicit_fabric, project_id)
+            fabric_root = explicit_fabric
+        except Exception:
+            fabric_root = fallback_fabric
+    else:
+        fabric_root = fallback_fabric
     return project_id, project_root, fabric_root
 
 

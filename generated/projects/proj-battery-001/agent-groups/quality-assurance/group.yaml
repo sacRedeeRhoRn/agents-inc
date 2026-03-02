@@ -1,6 +1,6 @@
 group_id: quality-assurance
 display_name: Quality Assurance Group
-template_version: 2.0.0
+template_version: 3.0.0
 domain: verification-and-risk
 head:
   agent_id: quality-assurance-head
@@ -199,7 +199,7 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
-schema_version: '2.0'
+schema_version: '3.0'
 purpose: Coordinate expert specialists for Quality Assurance Group objectives.
 success_criteria:
 - All required artifacts produced

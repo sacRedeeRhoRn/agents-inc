@@ -1,5 +1,5 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
-title: "Group Manifest v2"
+title: "Group Manifest v3"
 type: object
 required:
   - schema_version
@@ -19,7 +19,7 @@ required:
 properties:
   schema_version:
     type: string
-    const: "2.0"
+    const: "3.0"
   group_id:
     type: string
     pattern: "^[a-z0-9-]+$"

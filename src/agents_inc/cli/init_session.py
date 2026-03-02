@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -167,6 +168,7 @@ def _resume_summary(
     resume_source: str,
     session_code: str,
     group_session_map: dict,
+    skill_refresh: dict,
 ) -> dict:
     return {
         "mode": "resume",
@@ -182,10 +184,11 @@ def _resume_summary(
         "group_session_map": group_session_map,
         "project_index": project_index,
         "artifacts": artifacts,
+        "skill_refresh": skill_refresh,
         "visibility": visibility,
         "next_actions": [
             "Paste router-call.txt into the Codex session.",
-            "Use agents-inc orchestrator-reply for detailed-by-default turn execution.",
+            "Use agents-inc orchestrator-reply for strict artifact-grounded turn execution.",
             "Run long-run-command.sh to validate all-group interaction and isolation.",
             "Use agents-inc dispatch to continue a specific group objective.",
         ],
@@ -228,7 +231,7 @@ def _build_resume_kickoff(
                 project_id
             ),
             "- requests starting with `[non-group]` run concise direct reasoning without delegation",
-            "- all other requests run group-routed publication-grade detailed orchestration",
+            "- all other requests run group-routed strict artifact-grounded orchestration",
             "",
             "## Router Call",
             f"`{router_call}`",
@@ -289,7 +292,7 @@ def _build_new_kickoff(
                 project_id
             ),
             "- requests starting with `[non-group]` run concise direct reasoning without delegation",
-            "- all other requests run group-routed publication-grade detailed orchestration",
+            "- all other requests run group-routed strict artifact-grounded orchestration",
             "",
             "## Router Call",
             f"`{router_call}`",
@@ -345,7 +348,7 @@ def _build_checkpoint_payload(
     isolation_summary: Optional[dict] = None,
 ) -> dict:
     payload = {
-        "schema_version": "2.0",
+        "schema_version": "3.0",
         "project_id": project_id,
         "project_root": str(project_root),
         "fabric_root": str(project_fabric_root),
@@ -467,6 +470,13 @@ def run_resume_flow(
         .resolve()
     )
     ensure_fabric_root_initialized(project_fabric_root)
+    _, loaded_manifest = load_project_manifest(project_fabric_root, project_id)
+    schema_version = str(loaded_manifest.get("schema_version") or "")
+    if not schema_version.startswith("3."):
+        raise FabricError(
+            "project manifest schema_version '{0}' is not resume-compatible. "
+            "Run 'agents-inc migrate-v2 --apply' and retry.".format(schema_version or "<missing>")
+        )
     ensure_response_policy(project_root)
 
     checkpoint_ref = str(args.resume_checkpoint or "latest")
@@ -553,7 +563,7 @@ def run_resume_flow(
         active_head_groups=active_head_groups,
         active_specialist_groups=active_specialist_groups,
     )
-    install_project_skills(
+    install_result = install_project_skills(
         fabric_root=project_fabric_root,
         project_id=project_id,
         target=Path(str(codex_home_state["skills_dir"])),
@@ -604,6 +614,9 @@ def run_resume_flow(
         ),
         "codex_home_state": str(project_root / ".agents-inc" / "state" / "codex-home.yaml"),
         "skill_activation": str(skill_activation_state_path(project_root)),
+        "router_skill": str(
+            Path(str(codex_home_state["skills_dir"])) / "research-router" / "SKILL.md"
+        ),
     }
 
     payload = _build_checkpoint_payload(
@@ -617,7 +630,7 @@ def run_resume_flow(
         latest_artifacts=latest_artifacts,
         pending_actions=[
             "Paste router-call.txt into the Codex session.",
-            "Use agents-inc orchestrator-reply for detailed-by-default group responses.",
+            "Use agents-inc orchestrator-reply for strict artifact-grounded group responses.",
             "Run long-run-command.sh to validate all-group interaction and isolation.",
             "Use agents-inc skills activate --project-id <id> --groups <group-id> --specialists for group-selective specialist skills.",
             "Continue with agents-inc dispatch for focused group objectives.",
@@ -649,6 +662,9 @@ def run_resume_flow(
             / "specialist-sessions.yaml",
             "codex_home_state": project_root / ".agents-inc" / "state" / "codex-home.yaml",
             "skill_activation": skill_activation_state_path(project_root),
+            "router_skill": Path(str(codex_home_state["skills_dir"]))
+            / "research-router"
+            / "SKILL.md",
             "checkpoint": records["checkpoint"]["checkpoint_path"],
             "compact": records["compact"]["compact_path"],
             "project_index": records["checkpoint"]["project_index_path"],
@@ -658,6 +674,12 @@ def run_resume_flow(
         resume_source=resume_source,
         session_code=str(records["compact"]["session_code"]),
         group_session_map=records["compact"].get("group_session_map", {}),
+        skill_refresh={
+            "target": install_result.get("target", ""),
+            "router_version": install_result.get("router_version", ""),
+            "router_template_source": install_result.get("router_template_source", ""),
+            "installed_skill_count": len(install_result.get("installed", [])),
+        },
     )
 
     if emit_output:
@@ -803,6 +825,11 @@ def main() -> int:
                 return 0
             args.overwrite_existing = True
 
+        if args.overwrite_existing and project_fabric_root.exists():
+            # Hard refresh project-local fabric when destructive recreate is requested.
+            shutil.rmtree(project_fabric_root)
+            ensure_fabric_root_initialized(project_fabric_root)
+
         cmd_env = os.environ.copy()
         src_root = str(package_root().parents[1])
         current_path = cmd_env.get("PYTHONPATH", "")
@@ -888,7 +915,7 @@ def main() -> int:
             latest_artifacts=latest_artifacts,
             pending_actions=[
                 "Paste router-call.txt into the Codex session.",
-                "Use agents-inc orchestrator-reply for detailed-by-default group responses.",
+                "Use agents-inc orchestrator-reply for strict artifact-grounded group responses.",
                 "Run long-run-command.sh to validate all-group interaction and isolation.",
                 "Use agents-inc skills activate --project-id <id> --groups <group-id> --specialists for group-selective specialist skills.",
             ],
@@ -955,7 +982,7 @@ def main() -> int:
             "visibility": manifest.get("visibility", {}),
             "next_actions": [
                 "Paste router-call.txt into the Codex session.",
-                "Use agents-inc orchestrator-reply for detailed-by-default group responses.",
+                "Use agents-inc orchestrator-reply for strict artifact-grounded group responses.",
                 "Run long-run-command.sh to validate all-group interaction and isolation.",
                 "Use agents-inc skills activate --project-id <id> --groups <group-id> --specialists for group-selective specialist skills.",
             ],

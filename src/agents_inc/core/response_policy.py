@@ -8,8 +8,8 @@ import yaml
 from agents_inc.core.fabric_lib import FabricError, load_project_manifest, load_yaml, slugify
 from agents_inc.core.session_state import now_iso, state_dir
 
-RESPONSE_POLICY_SCHEMA_VERSION = "2.1"
-SPECIALIST_SESSIONS_SCHEMA_VERSION = "2.1"
+RESPONSE_POLICY_SCHEMA_VERSION = "3.0"
+SPECIALIST_SESSIONS_SCHEMA_VERSION = "3.0"
 
 DEFAULT_RESPONSE_POLICY = {
     "schema_version": RESPONSE_POLICY_SCHEMA_VERSION,
@@ -103,13 +103,10 @@ def load_specialist_sessions(project_root: Path, project_id: str = "") -> dict:
         raise FabricError(f"invalid specialist session map: {path}")
     out = _default_specialist_sessions(project_id or str(payload.get("project_id") or ""))
     out.update(payload)
-    if out.get("schema_version") not in {
-        SPECIALIST_SESSIONS_SCHEMA_VERSION,
-        RESPONSE_POLICY_SCHEMA_VERSION,
-    }:
-        raise FabricError(
-            f"unsupported specialist session schema_version '{out.get('schema_version')}' in {path}"
-        )
+    found = str(out.get("schema_version") or "")
+    if found != SPECIALIST_SESSIONS_SCHEMA_VERSION:
+        # Auto-upgrade old specialist-session state payloads in-place.
+        out["schema_version"] = SPECIALIST_SESSIONS_SCHEMA_VERSION
     out["schema_version"] = SPECIALIST_SESSIONS_SCHEMA_VERSION
     return out
 
@@ -197,6 +194,35 @@ def upsert_specialist_sessions(
     state["updated_at"] = now
     _dump_yaml(specialist_sessions_path(project_root), state)
     return out
+
+
+def prune_specialist_sessions(project_root: Path, keep_groups: List[str]) -> dict:
+    keep = {str(group_id) for group_id in keep_groups if str(group_id).strip()}
+    state = load_specialist_sessions(project_root, project_id="")
+    sessions = state.get("sessions")
+    if not isinstance(sessions, dict):
+        sessions = {}
+    counters = state.get("specialist_counters")
+    if not isinstance(counters, dict):
+        counters = {}
+
+    filtered_sessions = {
+        str(group_id): payload
+        for group_id, payload in sessions.items()
+        if str(group_id) in keep and isinstance(payload, dict)
+    }
+    filtered_counters = {}
+    for key, value in counters.items():
+        text = str(key)
+        group_id = text.split("::", 1)[0]
+        if group_id in keep:
+            filtered_counters[text] = value
+
+    state["sessions"] = filtered_sessions
+    state["specialist_counters"] = filtered_counters
+    state["updated_at"] = now_iso()
+    _dump_yaml(specialist_sessions_path(project_root), state)
+    return state
 
 
 def flatten_specialist_sessions(project_root: Path, project_id: str = "") -> List[dict]:

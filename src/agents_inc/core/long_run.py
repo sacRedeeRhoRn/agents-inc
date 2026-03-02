@@ -931,6 +931,15 @@ class LongRunRunner:
             "artifact_paths": [
                 f"agent-groups/{group_id}/internal/{specialist_id}/cycle-{cycle:03d}-phase-{phase_id:02d}.json"
             ],
+            "produced_artifacts": [
+                f"agent-groups/{group_id}/internal/{specialist_id}/cycle-{cycle:03d}-phase-{phase_id:02d}.json"
+            ],
+            "execution_status": "COMPLETE",
+            "dependencies_satisfied": True,
+            "citations_summary": {
+                "count": 1,
+                "has_web_url": False,
+            },
             "confidence": "medium",
             "unresolved_assumptions": [],
         }

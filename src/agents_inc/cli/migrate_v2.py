@@ -14,7 +14,7 @@ from agents_inc.core.session_state import default_project_index_path
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Migrate agents-inc artifacts to strict v2 schema")
+    parser = argparse.ArgumentParser(description="Migrate agents-inc artifacts to strict v3 schema")
     parser.add_argument("--fabric-root", default=None, help="path to fabric root")
     parser.add_argument("--project-index", default=None, help="project index path")
     parser.add_argument(
@@ -39,7 +39,7 @@ def main() -> int:
         backup_dir = (
             Path(args.backup_dir).expanduser().resolve()
             if args.backup_dir
-            else (fabric_root / ".migrations" / "v2-backups")
+            else (fabric_root / ".migrations" / "v3-backups")
         )
 
         report = run_migration(

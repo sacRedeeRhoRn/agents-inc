@@ -275,10 +275,10 @@ def _polymorphism_manifest() -> dict:
         },
     ]
     return {
-        "schema_version": "2.0",
+        "schema_version": "3.0",
         "group_id": "polymorphism-researcher",
         "display_name": "Polymorphism Researcher Group",
-        "template_version": "2.0.0",
+        "template_version": "3.0.0",
         "domain": "metastable-thin-film-polymorphism",
         "purpose": "Design and validate thin-film polymorphism synthesis procedures with DFT/MD/FEM support.",
         "success_criteria": [
@@ -419,7 +419,7 @@ def enforce_web_research_specialists(fabric_root: Path) -> list[str]:
                 group_id = str(data.get("group_id") or path.stem)
                 specialists.append(_default_web_specialist(group_id))
                 data["specialists"] = specialists
-            data["template_version"] = "2.0.0"
+            data["template_version"] = "3.0.0"
             dump_yaml(path, data)
             changed.append(str(path))
     return changed

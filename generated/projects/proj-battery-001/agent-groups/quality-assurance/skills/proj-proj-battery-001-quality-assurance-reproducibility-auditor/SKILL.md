@@ -1,23 +1,25 @@
 ---
 name: proj-proj-battery-001-quality-assurance-reproducibility-auditor
-version: "2.0.0"
+version: 2.0.0
 role: specialist
-description: Specialist agent for Reproducibility checks, parameter traceability, and artifact completeness in Quality Assurance Group (project proj-battery-001) with strict structured handoff output.
+description: Specialist agent for Reproducibility checks, parameter traceability,
+  and artifact completeness in Quality Assurance Group (project proj-battery-001)
+  with strict structured handoff output.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
-  - objective
-  - group-context.json
-  - dependency artifacts
+- objective
+- group-context.json
+- dependency artifacts
 outputs:
-  - internal/reproducibility-auditor/work.md
-  - internal/reproducibility-auditor/handoff.json
+- internal/reproducibility-auditor/work.md
+- internal/reproducibility-auditor/handoff.json
 failure_modes:
-  - blocked_needs_evidence
-  - blocked_uncited
-  - scope_violation
+- blocked_needs_evidence
+- blocked_uncited
+- scope_violation
 autouse_triggers:
-  - specialist dispatch task
-  - dependency artifact ready
+- specialist dispatch task
+- dependency artifact ready
 ---
 
 # reproducibility-auditor

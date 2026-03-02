@@ -10,8 +10,8 @@ import yaml
 from agents_inc.core.fabric_lib import FabricError, slugify
 from agents_inc.core.session_state import now_iso, state_dir
 
-CODEX_HOME_SCHEMA_VERSION = "2.2"
-SKILL_ACTIVATION_SCHEMA_VERSION = "2.2"
+CODEX_HOME_SCHEMA_VERSION = "3.0"
+SKILL_ACTIVATION_SCHEMA_VERSION = "3.0"
 DEFAULT_GLOBAL_CODEX_HOME = Path.home() / ".codex"
 
 

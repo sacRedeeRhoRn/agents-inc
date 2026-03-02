@@ -118,6 +118,10 @@ class FabricUnitTests(unittest.TestCase):
         out = {
             "claims_with_citations": [{"claim": "x", "citation": "doi:10.1000/x"}],
             "repro_steps": ["step1", "step2"],
+            "execution_status": "COMPLETE",
+            "dependencies_satisfied": True,
+            "produced_artifacts": ["outputs/example.txt"],
+            "citations_summary": {"count": 1, "has_web_url": True},
         }
         gate = gate_specialist_output(out, citation_required=True, web_available=True)
         self.assertEqual(gate["status"], "PASS")

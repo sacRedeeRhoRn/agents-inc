@@ -87,10 +87,28 @@ def save_state(path: Path, state: dict) -> None:
     path.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
 
 
-def install_router_skill(fabric_root: Path, target: Path) -> None:
-    template = (
+def _router_template_path(fabric_root: Path) -> Path:
+    package_template = (
+        Path(__file__).resolve().parents[1]
+        / "resources"
+        / "templates"
+        / "router"
+        / "research-router"
+        / "SKILL.template.md"
+    )
+    if package_template.exists():
+        return package_template
+    project_template = (
         fabric_root / "templates" / "router" / "research-router" / "SKILL.template.md"
-    ).read_text(encoding="utf-8")
+    )
+    if project_template.exists():
+        return project_template
+    raise FabricError("router skill template not found in package resources or fabric templates")
+
+
+def install_router_skill(fabric_root: Path, target: Path) -> dict:
+    template_path = _router_template_path(fabric_root)
+    template = template_path.read_text(encoding="utf-8")
     rendered = render_template(template, {"FABRIC_ROOT": str(fabric_root)})
     router_dir = target / "research-router"
     router_dir.mkdir(parents=True, exist_ok=True)
@@ -99,6 +117,12 @@ def install_router_skill(fabric_root: Path, target: Path) -> None:
         router_dir / "references.md",
         "# Router References\n\nThis router resolves project/group skills generated under `generated/projects`.\n",
     )
+    frontmatter, _ = parse_skill_frontmatter(router_dir / "SKILL.md")
+    return {
+        "path": str(router_dir),
+        "version": str(frontmatter.get("version") or ""),
+        "template_source": str(template_path),
+    }
 
 
 def _resolve_group_selection(
@@ -167,6 +191,7 @@ def install_project_skills(
         raise FabricError("no skill records found for selected groups")
 
     installed: List[str] = []
+    skill_versions: Dict[str, str] = {}
     for record in records:
         destination = target_dir / record.skill_name
         copy_dir(record.source_dir, destination)
@@ -181,9 +206,10 @@ def install_project_skills(
             json.dumps(marker, indent=2, sort_keys=True), encoding="utf-8"
         )
         installed.append(record.skill_name)
-        parse_skill_frontmatter(destination / "SKILL.md")
+        frontmatter, _ = parse_skill_frontmatter(destination / "SKILL.md")
+        skill_versions[record.skill_name] = str(frontmatter.get("version") or "")
 
-    install_router_skill(fabric_root, target_dir)
+    router_info = install_router_skill(fabric_root, target_dir)
 
     state_path = target_dir / STATE_FILE
     state = load_state(state_path)
@@ -207,10 +233,13 @@ def install_project_skills(
         "project_id": project_key,
         "target": str(target_dir),
         "installed": sorted(installed),
+        "skill_versions": skill_versions,
         "head_groups": selected_head_groups,
         "specialist_groups": selected_specialist_groups,
         "include_specialists": effective_include_specialists,
         "router": str(target_dir / "research-router"),
+        "router_version": str(router_info.get("version") or ""),
+        "router_template_source": str(router_info.get("template_source") or ""),
     }
 
 
@@ -275,6 +304,7 @@ def main() -> int:
         print(f"specialist_groups: {','.join(result['specialist_groups'])}")
         print(f"include_specialists: {result['include_specialists']}")
         print(f"router installed: {result['router']}")
+        print(f"router_version: {result['router_version']}")
         print(f"target: {result['target']}")
         return 0
     except Exception as exc:  # noqa: BLE001

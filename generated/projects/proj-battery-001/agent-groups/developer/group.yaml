@@ -1,6 +1,6 @@
 group_id: developer
 display_name: Developer Group
-template_version: 2.0.0
+template_version: 3.0.0
 domain: software-and-infra
 head:
   agent_id: developer-head
@@ -193,7 +193,7 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
-schema_version: '2.0'
+schema_version: '3.0'
 purpose: Coordinate expert specialists for Developer Group objectives.
 success_criteria:
 - All required artifacts produced

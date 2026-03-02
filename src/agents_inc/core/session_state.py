@@ -8,8 +8,8 @@ import yaml
 
 from agents_inc.core.fabric_lib import FabricError, load_yaml
 
-STATE_SCHEMA_VERSION = "2.0"
-INDEX_SCHEMA_VERSION = "2.0"
+STATE_SCHEMA_VERSION = "3.0"
+INDEX_SCHEMA_VERSION = "3.0"
 STATE_REL_DIR = Path(".agents-inc") / "state"
 DEFAULT_INDEX_PATH = Path.home() / ".agents-inc" / "projects-index.yaml"
 
@@ -83,7 +83,10 @@ def load_session_state(project_root: Path) -> dict:
     path = session_state_path(project_root)
     loaded = _load_yaml_map(path, default)
     if path.exists():
-        _require_schema(path, loaded, STATE_SCHEMA_VERSION, "session state")
+        found = str(loaded.get("schema_version") or "")
+        if found != STATE_SCHEMA_VERSION:
+            loaded["schema_version"] = STATE_SCHEMA_VERSION
+            _dump_yaml(path, loaded)
     return loaded
 
 
@@ -101,7 +104,12 @@ def load_project_index(path: Path) -> dict:
     }
     data = _load_yaml_map(path, default)
     if path.exists():
-        _require_schema(path, data, INDEX_SCHEMA_VERSION, "project index")
+        found = str(data.get("schema_version") or "")
+        if found != INDEX_SCHEMA_VERSION:
+            # Auto-upgrade old index schema to avoid breaking checkpoint writes on
+            # otherwise valid project metadata.
+            data["schema_version"] = INDEX_SCHEMA_VERSION
+            save_project_index(path, data)
     projects = data.get("projects")
     if not isinstance(projects, dict):
         data["projects"] = {}
@@ -399,7 +407,10 @@ def load_checkpoint(project_root: Path, checkpoint_id: str = "latest") -> dict:
     data = load_yaml(cp_path)
     if not isinstance(data, dict):
         raise FabricError(f"invalid checkpoint: {cp_path}")
-    _require_schema(cp_path, data, STATE_SCHEMA_VERSION, "checkpoint")
+    found = str(data.get("schema_version") or "")
+    if found != STATE_SCHEMA_VERSION:
+        data["schema_version"] = STATE_SCHEMA_VERSION
+        _dump_yaml(cp_path, data)
     return data
 
 

@@ -10,9 +10,9 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import yaml
 
-SCHEMA_VERSION = "2.0"
-TEMPLATE_VERSION = "2.0.0"
-BUNDLE_VERSION = "2.0.0"
+SCHEMA_VERSION = "3.0"
+TEMPLATE_VERSION = "3.0.0"
+BUNDLE_VERSION = "3.0.0"
 ROUTER_SKILL_NAME = "research-router"
 DEFAULT_INSTALL_TARGET = str(Path.home() / ".codex" / "skills" / "local")
 LOCKED_SECTION_PATTERN = re.compile(
@@ -1069,6 +1069,21 @@ def gate_specialist_output(
     repro_steps = output.get("repro_steps")
     if not repro_steps:
         reasons.append("missing reproducibility steps")
+
+    execution_status = str(output.get("execution_status") or "").strip().upper()
+    if execution_status not in {"COMPLETE", "PASS"}:
+        reasons.append("missing or invalid execution_status")
+
+    if output.get("dependencies_satisfied") is not True:
+        reasons.append("dependencies_satisfied must be true")
+
+    produced_artifacts = output.get("produced_artifacts")
+    if not isinstance(produced_artifacts, list):
+        reasons.append("produced_artifacts must be a list")
+
+    citations_summary = output.get("citations_summary")
+    if not isinstance(citations_summary, dict):
+        reasons.append("citations_summary must be a map")
 
     if reasons:
         blocked_status = (

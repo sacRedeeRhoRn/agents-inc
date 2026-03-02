@@ -204,7 +204,7 @@ def main() -> int:
 
         project_root = resolve_state_project_root(fabric_root, manifest["project_id"])
         payload = {
-            "schema_version": "2.0",
+            "schema_version": "3.0",
             "project_id": manifest["project_id"],
             "project_root": str(project_root),
             "fabric_root": str(fabric_root),

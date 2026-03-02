@@ -1,25 +1,26 @@
 ---
 name: proj-proj-battery-001-developer-developer-head
-version: "2.0.0"
+version: 2.0.0
 role: head
-description: Orchestrate Developer Group for project proj-battery-001 with strict gate enforcement and artifact publication contracts.
+description: Orchestrate Developer Group for project proj-battery-001 with strict
+  gate enforcement and artifact publication contracts.
 scope: Group-level orchestration, gate enforcement, and exposed artifact publication.
 inputs:
-  - objective
-  - project_id
-  - group_id
-  - dispatch_plan
+- objective
+- project_id
+- group_id
+- dispatch_plan
 outputs:
-  - exposed/summary.md
-  - exposed/handoff.json
-  - exposed/INTEGRATION_NOTES.md
+- exposed/summary.md
+- exposed/handoff.json
+- exposed/INTEGRATION_NOTES.md
 failure_modes:
-  - blocked_uncited_claims
-  - unresolved_cross_domain_decision
-  - missing_required_artifact
+- blocked_uncited_claims
+- unresolved_cross_domain_decision
+- missing_required_artifact
 autouse_triggers:
-  - group objective dispatch
-  - specialist handoff aggregation
+- group objective dispatch
+- specialist handoff aggregation
 ---
 
 # Developer Group Head Controller

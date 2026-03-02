@@ -98,13 +98,13 @@ def _ssl_context() -> ssl.SSLContext:
     return ssl.create_default_context()
 
 
-def _urlopen_json(url: str, *, timeout_sec: int = 12, user_agent: str = "agents-inc/2.0") -> dict:
+def _urlopen_json(url: str, *, timeout_sec: int = 12, user_agent: str = "agents-inc/3.0") -> dict:
     req = request.Request(url, headers={"User-Agent": user_agent})
     with request.urlopen(req, timeout=timeout_sec, context=_ssl_context()) as resp:  # noqa: S310
         return json.loads(resp.read().decode("utf-8"))
 
 
-def _urlopen_text(url: str, *, timeout_sec: int = 12, user_agent: str = "agents-inc/2.0") -> str:
+def _urlopen_text(url: str, *, timeout_sec: int = 12, user_agent: str = "agents-inc/3.0") -> str:
     req = request.Request(url, headers={"User-Agent": user_agent})
     with request.urlopen(req, timeout=timeout_sec, context=_ssl_context()) as resp:  # noqa: S310
         return resp.read().decode("utf-8", errors="replace")
@@ -126,7 +126,7 @@ def _measurement_hints(text: str) -> list[str]:
 def _fetch_wiki_summary(topic: str, timeout_sec: int = 12) -> dict:
     encoded = parse.quote(topic.replace(" ", "_"))
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded}"
-    payload = _urlopen_json(url, timeout_sec=timeout_sec, user_agent="agents-inc/2.0 orchestrator")
+    payload = _urlopen_json(url, timeout_sec=timeout_sec, user_agent="agents-inc/3.0 orchestrator")
     extract = str(payload.get("extract", "")).strip()
     return {
         "provider": "wikipedia",
@@ -142,7 +142,7 @@ def _fetch_wiki_summary(topic: str, timeout_sec: int = 12) -> dict:
 def _fetch_crossref(query: str, timeout_sec: int = 12, rows: int = 5) -> list[dict]:
     encoded = parse.quote(query)
     url = f"https://api.crossref.org/works?rows={rows}&query={encoded}"
-    payload = _urlopen_json(url, timeout_sec=timeout_sec, user_agent="agents-inc/2.0 crossref")
+    payload = _urlopen_json(url, timeout_sec=timeout_sec, user_agent="agents-inc/3.0 crossref")
     items = payload.get("message", {}).get("items", [])
     out: list[dict] = []
     for item in items:
@@ -191,7 +191,7 @@ def _fetch_arxiv(query: str, timeout_sec: int = 12, rows: int = 5) -> list[dict]
         "https://export.arxiv.org/api/query?"
         f"search_query=all:{encoded}&start=0&max_results={rows}&sortBy=relevance&sortOrder=descending"
     )
-    xml_text = _urlopen_text(url, timeout_sec=timeout_sec, user_agent="agents-inc/2.0 arxiv")
+    xml_text = _urlopen_text(url, timeout_sec=timeout_sec, user_agent="agents-inc/3.0 arxiv")
     root = ET.fromstring(xml_text)
     ns = {"atom": "http://www.w3.org/2005/Atom"}
     out: list[dict] = []

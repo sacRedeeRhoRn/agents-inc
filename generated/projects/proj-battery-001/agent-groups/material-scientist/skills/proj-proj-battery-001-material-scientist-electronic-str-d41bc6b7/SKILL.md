@@ -1,23 +1,25 @@
 ---
 name: proj-proj-battery-001-material-scientist-electronic-str-d41bc6b7
-version: "2.0.0"
+version: 2.0.0
 role: specialist
-description: Specialist agent for DFT setup, band structure interpretation, density-of-states analysis in Material Scientist Group (project proj-battery-001) with strict structured handoff output.
+description: Specialist agent for DFT setup, band structure interpretation, density-of-states
+  analysis in Material Scientist Group (project proj-battery-001) with strict structured
+  handoff output.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
-  - objective
-  - group-context.json
-  - dependency artifacts
+- objective
+- group-context.json
+- dependency artifacts
 outputs:
-  - internal/electronic-structure-specialist/work.md
-  - internal/electronic-structure-specialist/handoff.json
+- internal/electronic-structure-specialist/work.md
+- internal/electronic-structure-specialist/handoff.json
 failure_modes:
-  - blocked_needs_evidence
-  - blocked_uncited
-  - scope_violation
+- blocked_needs_evidence
+- blocked_uncited
+- scope_violation
 autouse_triggers:
-  - specialist dispatch task
-  - dependency artifact ready
+- specialist dispatch task
+- dependency artifact ready
 ---
 
 # electronic-structure-specialist

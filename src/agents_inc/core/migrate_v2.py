@@ -15,7 +15,7 @@ from agents_inc.core.group_wizard import (
     propose_specialists,
 )
 
-SCHEMA_V2 = "2.0"
+SCHEMA_V3 = "3.0"
 
 
 def _load_yaml(path: Path) -> dict:
@@ -208,10 +208,10 @@ def migrate_group_manifest(data: dict) -> dict:
     specialists = _repair_specialist_dependencies(specialists)
 
     out = dict(data)
-    out["schema_version"] = SCHEMA_V2
+    out["schema_version"] = SCHEMA_V3
     out["group_id"] = group_id
     out["display_name"] = display_name
-    out["template_version"] = "2.0.0"
+    out["template_version"] = "3.0.0"
     out["domain"] = domain
     out["purpose"] = str(
         data.get("purpose") or f"Coordinate expert specialists for {display_name} objectives."
@@ -285,7 +285,7 @@ def migrate_group_manifest(data: dict) -> dict:
 
 def migrate_project_manifest(data: dict) -> dict:
     out = dict(data)
-    out["schema_version"] = SCHEMA_V2
+    out["schema_version"] = SCHEMA_V3
     out.setdefault("visibility", {"mode": "group-only", "audit_override": True})
     out.setdefault("overlays", {})
     out["overlays"].setdefault("allow_project_overrides", True)
@@ -324,7 +324,7 @@ def migrate_skill_markdown(text: str, path: Path) -> str:
     body = text[end + 4 :].lstrip("\n")
 
     role = _infer_skill_role(path, frontmatter)
-    frontmatter["version"] = str(frontmatter.get("version") or SCHEMA_V2)
+    frontmatter["version"] = str(frontmatter.get("version") or SCHEMA_V3)
     frontmatter["role"] = role
     frontmatter["scope"] = str(frontmatter.get("scope") or "project-scoped")
     frontmatter["inputs"] = frontmatter.get("inputs") or ["objective", "project_id", "group_id"]
@@ -429,7 +429,7 @@ def run_migration(
                 after = migrate_group_manifest(before)
                 changed = json.dumps(before, sort_keys=True) != json.dumps(after, sort_keys=True)
                 if not changed:
-                    report["skipped"].append({"path": str(path), "reason": "already_v2"})
+                    report["skipped"].append({"path": str(path), "reason": "already_v3"})
                     continue
                 if apply:
                     bpath = _backup_path(backup_dir, path)
@@ -444,7 +444,7 @@ def run_migration(
                 after = migrate_project_manifest(before)
                 changed = json.dumps(before, sort_keys=True) != json.dumps(after, sort_keys=True)
                 if not changed:
-                    report["skipped"].append({"path": str(path), "reason": "already_v2"})
+                    report["skipped"].append({"path": str(path), "reason": "already_v3"})
                     continue
                 if apply:
                     bpath = _backup_path(backup_dir, path)
@@ -459,7 +459,7 @@ def run_migration(
                 after = migrate_skill_markdown(before, path)
                 if before == after:
                     report["skipped"].append(
-                        {"path": str(path), "reason": "already_v2_or_non_frontmatter"}
+                        {"path": str(path), "reason": "already_v3_or_non_frontmatter"}
                     )
                     continue
                 if apply:
@@ -475,10 +475,10 @@ def run_migration(
                     report["skipped"].append({"path": str(path), "reason": "missing"})
                     continue
                 data = _load_yaml(path)
-                if str(data.get("schema_version") or "") == SCHEMA_V2:
-                    report["skipped"].append({"path": str(path), "reason": "already_v2"})
+                if str(data.get("schema_version") or "") == SCHEMA_V3:
+                    report["skipped"].append({"path": str(path), "reason": "already_v3"})
                     continue
-                data["schema_version"] = SCHEMA_V2
+                data["schema_version"] = SCHEMA_V3
                 if apply:
                     bpath = _backup_path(backup_dir, path)
                     bpath.parent.mkdir(parents=True, exist_ok=True)

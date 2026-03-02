@@ -8,7 +8,7 @@ import yaml
 from agents_inc.core.fabric_lib import FabricError, load_yaml
 from agents_inc.core.session_state import now_iso, state_dir
 
-COMPACT_SCHEMA_VERSION = "2.0"
+COMPACT_SCHEMA_VERSION = "3.0"
 
 
 def compacted_dir(project_root: Path) -> Path:
@@ -71,7 +71,10 @@ def load_group_sessions(project_root: Path) -> dict:
         },
     )
     if path.exists():
-        _require_schema(path, data)
+        found = str(data.get("schema_version") or "")
+        if found != COMPACT_SCHEMA_VERSION:
+            data["schema_version"] = COMPACT_SCHEMA_VERSION
+            _dump_yaml(path, data)
     return data
 
 
@@ -189,7 +192,10 @@ def load_compacted(project_root: Path, compact_id: str = "latest") -> dict:
     loaded = load_yaml(compact_path)
     if not isinstance(loaded, dict):
         raise FabricError(f"invalid compacted session: {compact_path}")
-    _require_schema(compact_path, loaded)
+    found = str(loaded.get("schema_version") or "")
+    if found != COMPACT_SCHEMA_VERSION:
+        loaded["schema_version"] = COMPACT_SCHEMA_VERSION
+        _dump_yaml(compact_path, loaded)
     return loaded
 
 

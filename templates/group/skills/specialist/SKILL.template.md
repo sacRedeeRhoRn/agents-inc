@@ -1,6 +1,6 @@
 ---
 name: {{SPECIALIST_SKILL_NAME}}
-version: "2.0.0"
+version: "3.1.1"
 role: specialist
 description: Specialist agent for {{SPECIALIST_FOCUS}} in {{DISPLAY_NAME}} (project {{PROJECT_ID}}) with strict structured handoff output.
 scope: Narrow specialist execution only; no cross-domain final decisions.
@@ -45,6 +45,17 @@ If web evidence is unavailable and needed, return `BLOCKED_NEEDS_EVIDENCE`.
 - `claims_with_citations`
 - `repro_steps`
 - `artifact_paths`
+- `execution_status`
+- `dependencies_satisfied`
+- `produced_artifacts`
+- `citations_summary`
+
+## Material Objective Contract
+If the objective is material-focused (composition, phase stability, space group, transport, DFT/MD/FEM):
+1. Keep composition and space-group identifiers explicit in outputs.
+2. Reference evidence links for material claims.
+3. Prefer artifact paths that can be consumed by developer and QA groups.
+4. Include reproducible commands for generated package/script artifacts when applicable.
 
 ## Artifact Scope
 - Write specialist artifacts under internal group paths.

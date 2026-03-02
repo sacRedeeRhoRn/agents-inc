@@ -65,7 +65,7 @@ class GroupsCLITests(unittest.TestCase):
             manifest_path = fabric_root / "catalog" / "groups" / "test-catalog-group.yaml"
             self.assertTrue(manifest_path.exists())
             manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
-            self.assertEqual(manifest["schema_version"], "2.0")
+            self.assertEqual(manifest["schema_version"], "3.0")
             self.assertGreaterEqual(len(manifest.get("specialists", [])), 5)
 
 
@@ -144,10 +144,10 @@ class MigrationTests(unittest.TestCase):
             )
 
             migrated = yaml.safe_load(legacy_path.read_text(encoding="utf-8"))
-            self.assertEqual(migrated["schema_version"], "2.0")
+            self.assertEqual(migrated["schema_version"], "3.0")
             self.assertGreaterEqual(len(migrated.get("specialists", [])), 4)
             index = yaml.safe_load(index_path.read_text(encoding="utf-8"))
-            self.assertEqual(index["schema_version"], "2.0")
+            self.assertEqual(index["schema_version"], "3.0")
 
 
 if __name__ == "__main__":

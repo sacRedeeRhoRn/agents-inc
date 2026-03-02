@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 from agents_inc.core.config_state import default_config_path, get_projects_root
 from agents_inc.core.fabric_lib import (
+    FabricError,
     ensure_fabric_root_initialized,
     resolve_fabric_root,
     slugify,
@@ -43,12 +45,105 @@ def parse_args() -> argparse.Namespace:
         help="config file path (default ~/.agents-inc/config.yaml)",
     )
     parser.add_argument("--json", action="store_true", help="emit JSON result")
+    parser.add_argument(
+        "--max-parallel",
+        type=int,
+        default=None,
+        help="max concurrent sessions (0 = uncapped)",
+    )
+    parser.add_argument(
+        "--retry-attempts",
+        type=int,
+        default=None,
+        help="retry attempts per specialist session",
+    )
+    parser.add_argument(
+        "--retry-backoff-sec",
+        type=int,
+        default=None,
+        help="retry backoff seconds between attempts",
+    )
+    parser.add_argument(
+        "--agent-timeout-sec",
+        type=int,
+        default=None,
+        help="timeout in seconds for each specialist/head session (omit or 0 = unlimited)",
+    )
+    parser.add_argument(
+        "--live-profile",
+        default="bounded",
+        choices=["bounded", "custom"],
+        help="runtime profile for cooperative loop",
+    )
+    parser.add_argument(
+        "--audit",
+        action="store_true",
+        help="include specialist-level details in exposed response when available",
+    )
+    parser.add_argument(
+        "--loop-mode",
+        default="cooperative",
+        choices=["cooperative"],
+        help="group runtime loop mode",
+    )
+    parser.add_argument(
+        "--meeting-enabled",
+        dest="meeting_enabled",
+        action="store_true",
+        default=True,
+        help="enable inter-group head meeting phase between cycles",
+    )
+    parser.add_argument(
+        "--no-meeting",
+        dest="meeting_enabled",
+        action="store_false",
+        help="disable inter-group head meeting phase",
+    )
+    parser.add_argument(
+        "--stop-rule",
+        default="unanimous-head-satisfied",
+        choices=["unanimous-head-satisfied"],
+        help="loop stop rule",
+    )
+    parser.add_argument(
+        "--max-cycles",
+        type=int,
+        default=None,
+        help="max cycles before hard block",
+    )
+    parser.add_argument(
+        "--heartbeat-sec",
+        type=int,
+        default=None,
+        help="heartbeat interval seconds for cooperative loop",
+    )
+    parser.add_argument(
+        "--require-negotiation",
+        default=None,
+        choices=["true", "false"],
+        help="require observed group-head negotiation in group mode",
+    )
+    parser.add_argument(
+        "--abort-file",
+        default=None,
+        help="if this file exists during runtime, cooperative loop stops with hard block",
+    )
     return parser.parse_args()
 
 
+def _manifest_exists(fabric_root: Path, project_id: str) -> bool:
+    manifest = fabric_root / "generated" / "projects" / project_id / "manifest.yaml"
+    return manifest.exists()
+
+
 def _resolve_project_fabric_root(args: argparse.Namespace, project_id: str) -> Path:
+    attempted: list[str] = []
+
     if args.fabric_root:
-        return resolve_fabric_root(args.fabric_root)
+        explicit = resolve_fabric_root(args.fabric_root)
+        if _manifest_exists(explicit, project_id):
+            return explicit
+        attempted.append(f"--fabric-root={explicit} (manifest not found)")
 
     index_path = default_project_index_path(args.project_index)
     scan_root = (
@@ -62,11 +157,112 @@ def _resolve_project_fabric_root(args: argparse.Namespace, project_id: str) -> P
         fallback_scan_root=scan_root,
     )
     if isinstance(found, dict):
-        fabric_root_raw = found.get("fabric_root")
-        if isinstance(fabric_root_raw, str) and fabric_root_raw.strip():
-            return Path(fabric_root_raw).expanduser().resolve()
+        fabric_root_raw = str(found.get("fabric_root") or "").strip()
+        if fabric_root_raw:
+            indexed_fabric = Path(fabric_root_raw).expanduser().resolve()
+            if _manifest_exists(indexed_fabric, project_id) or not args.fabric_root:
+                return indexed_fabric
+            attempted.append(f"index.fabric_root={indexed_fabric} (manifest not found)")
 
-    return resolve_fabric_root(None)
+        project_root_raw = str(found.get("project_root") or "").strip()
+        if project_root_raw:
+            project_root = Path(project_root_raw).expanduser().resolve()
+            derived = (project_root / "agent_group_fabric").resolve()
+            if _manifest_exists(derived, project_id) or not args.fabric_root:
+                return derived
+            attempted.append(f"project_root/agent_group_fabric={derived} (manifest not found)")
+
+    default_root = resolve_fabric_root(None)
+    if _manifest_exists(default_root, project_id):
+        return default_root
+    attempted.append(f"default={default_root} (manifest not found)")
+
+    raise FabricError(
+        "could not resolve fabric root for project '{0}'. attempted: {1}".format(
+            project_id,
+            "; ".join(attempted) if attempted else "none",
+        )
+    )
+
+
+def _is_non_group_message(message: str) -> bool:
+    return str(message).startswith("[non-group]")
+
+
+def _parse_bool_text(value: str | None, *, default: bool) -> bool:
+    if value is None:
+        return default
+    return str(value).strip().lower() == "true"
+
+
+def _resolve_runtime_settings(args: argparse.Namespace) -> dict:
+    profile = str(args.live_profile or "bounded").strip().lower()
+    if profile == "bounded":
+        defaults = {
+            "max_parallel": 6,
+            "retry_attempts": 1,
+            "retry_backoff_sec": 3,
+            "agent_timeout_sec": 0,
+            "max_cycles": 4,
+            "heartbeat_sec": 30,
+        }
+    else:
+        defaults = {
+            "max_parallel": 0,
+            "retry_attempts": 2,
+            "retry_backoff_sec": 5,
+            "agent_timeout_sec": 0,
+            "max_cycles": 4,
+            "heartbeat_sec": 30,
+        }
+
+    return {
+        "profile": profile,
+        "max_parallel": (
+            max(0, int(args.max_parallel))
+            if args.max_parallel is not None
+            else defaults["max_parallel"]
+        ),
+        "retry_attempts": (
+            max(0, int(args.retry_attempts))
+            if args.retry_attempts is not None
+            else defaults["retry_attempts"]
+        ),
+        "retry_backoff_sec": (
+            max(0, int(args.retry_backoff_sec))
+            if args.retry_backoff_sec is not None
+            else defaults["retry_backoff_sec"]
+        ),
+        "agent_timeout_sec": (
+            max(0, int(args.agent_timeout_sec))
+            if args.agent_timeout_sec is not None
+            else defaults["agent_timeout_sec"]
+        ),
+        "max_cycles": (
+            max(0, int(args.max_cycles)) if args.max_cycles is not None else defaults["max_cycles"]
+        ),
+        "heartbeat_sec": (
+            max(5, int(args.heartbeat_sec))
+            if args.heartbeat_sec is not None
+            else defaults["heartbeat_sec"]
+        ),
+    }
+
+
+_BLOCKED_RE = re.compile(
+    r"BLOCKED\[(?P<status>[^\]]+)\]\s+blocked_report=(?P<report>\S+)\s+blocked_reasons=(?P<reasons>\S+)"
+)
+
+
+def _parse_blocked_error(text: str) -> dict | None:
+    match = _BLOCKED_RE.search(str(text))
+    if not match:
+        return None
+    return {
+        "status": match.group("status"),
+        "blocked_report": match.group("report"),
+        "blocked_reasons": match.group("reasons"),
+    }
 
 
 def main() -> int:
@@ -75,6 +271,20 @@ def main() -> int:
         project_id = slugify(str(args.project_id))
         fabric_root = _resolve_project_fabric_root(args, project_id)
         ensure_fabric_root_initialized(fabric_root)
+        is_non_group = _is_non_group_message(str(args.message))
+        runtime = _resolve_runtime_settings(args)
+        require_negotiation = _parse_bool_text(
+            args.require_negotiation,
+            default=(not is_non_group),
+        )
+        if not is_non_group:
+            if not bool(args.meeting_enabled):
+                raise FabricError(
+                    "group mode requires meeting loop. Remove --no-meeting or use [non-group] prefix."
+                )
+            if int(runtime["max_cycles"]) < 2:
+                raise FabricError("group mode requires --max-cycles >= 2.")
+
         config = OrchestratorReplyConfig(
             fabric_root=fabric_root,
             project_id=project_id,
@@ -83,17 +293,47 @@ def main() -> int:
                 "auto" if str(args.group or "auto") == "auto" else slugify(str(args.group or ""))
             ),
             output_dir=Path(args.output_dir).expanduser().resolve() if args.output_dir else None,
+            max_parallel=int(runtime["max_parallel"]),
+            retry_attempts=int(runtime["retry_attempts"]),
+            retry_backoff_sec=int(runtime["retry_backoff_sec"]),
+            agent_timeout_sec=int(runtime["agent_timeout_sec"]),
+            loop_mode=str(args.loop_mode or "cooperative"),
+            meeting_enabled=bool(args.meeting_enabled),
+            stop_rule=str(args.stop_rule or "unanimous-head-satisfied"),
+            max_cycles=int(runtime["max_cycles"]),
+            heartbeat_sec=int(runtime["heartbeat_sec"]),
+            abort_file=Path(args.abort_file).expanduser().resolve() if args.abort_file else None,
+            require_negotiation=bool(require_negotiation),
+            audit=bool(args.audit),
         )
         result = run_orchestrator_reply(config)
         if args.json:
             print(json.dumps(result, indent=2, sort_keys=True))
         else:
-            print(f"mode: {result.get('mode')}")
-            print(f"turn_dir: {result.get('turn_dir')}")
-            print(f"final_answer: {result.get('final_answer_path')}")
-            print(f"quality: {result.get('quality_path')}")
+            key_points_path = str(result.get("key_points_path") or "").strip()
+            if key_points_path:
+                key_points_text = Path(key_points_path).read_text(
+                    encoding="utf-8", errors="replace"
+                )
+                print(key_points_text.strip())
+            else:
+                print(f"project_id: {result.get('project_id')}")
+                print(f"turn_dir: {result.get('turn_dir')}")
+                print(f"full_report_path: {result.get('full_report_path')}")
         return 0
     except Exception as exc:  # noqa: BLE001
+        blocked = _parse_blocked_error(str(exc))
+        if blocked:
+            if args.json:
+                print(json.dumps({"error": "blocked", **blocked}, indent=2, sort_keys=True))
+            else:
+                print(f"blocked_status: {blocked['status']}")
+                print(f"blocked_report: {blocked['blocked_report']}")
+                print(f"blocked_reasons: {blocked['blocked_reasons']}")
+                print(
+                    f'rerun: agents-inc orchestrator-reply --project-id {slugify(str(args.project_id))} --message "{str(args.message).replace(chr(34), chr(39))}"'
+                )
+            return 1
         print(f"error: {exc}")
         return 1
 

@@ -21,11 +21,11 @@ git --version
 ### Recommended Install (Release-Pinned + Checksum)
 
 ```bash
-export AGI_VER="v2.2.2" && \
-WHEEL="agents_inc-2.2.2-py3-none-any.whl" && \
+export AGI_VER="v3.1.2" && \
+WHEEL="agents_inc-3.1.2-py3-none-any.whl" && \
 curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/${WHEEL}" -o "/tmp/${WHEEL}" && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/agents_inc-2.2.2.sha256" -o /tmp/agents_inc-2.2.2.sha256 && \
-(cd /tmp && grep "  ${WHEEL}$" agents_inc-2.2.2.sha256 > wheel.sha256 && shasum -a 256 -c wheel.sha256) && \
+curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/agents_inc-3.1.2.sha256" -o /tmp/agents_inc-3.1.2.sha256 && \
+(cd /tmp && grep "  ${WHEEL}$" agents_inc-3.1.2.sha256 > wheel.sha256 && shasum -a 256 -c wheel.sha256) && \
 python3 -m pip install --upgrade pip setuptools wheel && \
 python3 -m pip install --upgrade "/tmp/${WHEEL}"
 ```
@@ -37,14 +37,14 @@ agents-inc --version
 agents-inc --help
 ```
 
-Expected version for this guide: `2.2.2`.
+Expected version for this guide: `3.1.2`.
 
 ## 3. Start Your Codex Orchestrator Session
 
 Run this in Terminal to open a new Codex session with the onboarding markdown prompt:
 
 ```bash
-export AGI_VER="v2.2.2" && \
+export AGI_VER="v3.1.2" && \
 export AGI_BOOTSTRAP_URL="https://raw.githubusercontent.com/sacRedeeRhoRn/agents-inc/${AGI_VER}/docs/bootstrap/START_IN_CODEX.md" && \
 export AGI_BOOTSTRAP_HOME="$HOME/.agents-inc/bootstrap-codex-home" && \
 mkdir -p "$AGI_BOOTSTRAP_HOME/skills/local" && \
@@ -99,12 +99,28 @@ Deactivate when you want a tighter active surface:
 agents-inc skills deactivate --project-id <project-id> --groups <group-id>
 ```
 
+## 4.2.1 Expand or shrink project groups
+
+```bash
+agents-inc project-groups list --project-id <project-id>
+agents-inc project-groups add --project-id <project-id> --groups <group-id>
+agents-inc project-groups create --project-id <project-id> --group-id <new-id> --display-name "<name>" --domain "<domain>"
+agents-inc project-groups remove --project-id <project-id> --groups <group-id>
+```
+
 ## 4.3 Dispatch or reply
 
 ```bash
 agents-inc dispatch --project-id <project-id> --group <group-id> --objective "<objective>"
-agents-inc orchestrator-reply --project-id <project-id> --message "<message>"
+agents-inc orchestrator-reply --project-id <project-id> --message "<message>" --live-profile bounded --require-negotiation true
+agents-inc cleanup-projects --all-indexed --yes
 ```
+
+Timeout semantics:
+- omit `--agent-timeout-sec` for unlimited per-agent runtime
+- pass `--agent-timeout-sec 0` for unlimited explicitly
+- pass `--agent-timeout-sec <seconds>` only when you want bounded sessions
+- use `--abort-file <path>` or Ctrl+C for manual stop
 
 ## 4.4 State and artifacts
 
@@ -129,8 +145,18 @@ Turn artifacts:
 - `<project-root>/.agents-inc/turns/<turn-id>/delegation-ledger.json`
 - `<project-root>/.agents-inc/turns/<turn-id>/negotiation-sequence.md`
 - `<project-root>/.agents-inc/turns/<turn-id>/group-evidence-index.json`
-- `<project-root>/.agents-inc/turns/<turn-id>/final-exposed-answer.md`
+- `<project-root>/.agents-inc/turns/<turn-id>/cycles/cycle-0001/...` (runtime artifacts per cycle)
+- `<project-root>/.agents-inc/turns/<turn-id>/wait-state.latest.json` (latest cycle pointer)
+- `<project-root>/.agents-inc/turns/<turn-id>/cooperation-ledger.latest.ndjson` (latest cycle pointer)
+- `<project-root>/.agents-inc/turns/<turn-id>/group-head-sessions.latest.json` (latest cycle pointer)
+- `<project-root>/.agents-inc/turns/<turn-id>/specialist-sessions.latest.json` (latest cycle pointer)
+- `<project-root>/.agents-inc/turns/<turn-id>/final/full-report.md` (pass only)
+- `<project-root>/.agents-inc/turns/<turn-id>/final/full-report.json` (pass only)
+- `<project-root>/.agents-inc/turns/<turn-id>/final/key-points.txt` (printed in terminal)
+- `<project-root>/.agents-inc/turns/<turn-id>/final-exposed-answer.md` (compat pass path)
 - `<project-root>/.agents-inc/turns/<turn-id>/final-answer-quality.json`
+- `<project-root>/.agents-inc/turns/<turn-id>/blocked-report.md` (block path)
+- `<project-root>/.agents-inc/turns/<turn-id>/blocked-reasons.json` (block path)
 
 ## 5. Example Task Run (Metastable Chiral Silicide Discovery)
 
@@ -176,7 +202,7 @@ agents-inc skills activate --project-id <project-id> --groups developer,material
 ### 5.4 Run a publication-grade orchestrator turn
 
 ```bash
-agents-inc orchestrator-reply --project-id <project-id> --message "Plan an end-to-end discovery campaign for a metastable chiral silicide phase. Include hypothesis generation, DFT ranking, MD stability screening, FEM process-window analysis, and a decision-gated experimental synthesis plan with expected resistivity outcomes and evidence-backed risks."
+agents-inc orchestrator-reply --project-id <project-id> --message "Plan an end-to-end discovery campaign for a metastable chiral silicide phase. Include hypothesis generation, DFT ranking, MD stability screening, FEM process-window analysis, and a decision-gated experimental synthesis plan with expected resistivity outcomes and evidence-backed risks." --live-profile bounded --require-negotiation true
 ```
 
 ### 5.5 Push concrete objectives into developer and materials groups

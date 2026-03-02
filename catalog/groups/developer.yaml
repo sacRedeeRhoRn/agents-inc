@@ -1,6 +1,6 @@
 group_id: developer
 display_name: Developer Group
-template_version: 2.0.0
+template_version: 3.0.0
 domain: software-and-infra
 head:
   agent_id: developer-head
@@ -186,7 +186,7 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
-schema_version: '2.0'
+schema_version: '3.0'
 purpose: Coordinate expert specialists for Developer Group objectives.
 success_criteria:
 - All required artifacts produced
@@ -202,6 +202,19 @@ required_artifacts:
       - exposed/summary.md
       - exposed/handoff.json
       - exposed/INTEGRATION_NOTES.md
+    material-focused:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+      required_outputs:
+      - outputs/python/material_pipeline/__init__.py
+      - outputs/python/material_pipeline/score.py
+      - outputs/python/material_pipeline/cli.py
+      - outputs/reports/material-ranking-rationale.md
 gate_profile:
   profile_id: standard-evidence-v2
   specialist_output_schema: specialist-handoff-v2
@@ -210,6 +223,8 @@ gate_profile:
     repro_command_required: true
     consistency_required: true
     scope_enforced: true
+    material_data_contract_required: true
+    material_package_required: true
 interaction:
   mode: interactive-separated
   linked_groups: []

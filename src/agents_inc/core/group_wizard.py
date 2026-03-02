@@ -337,10 +337,10 @@ def run_interactive_wizard(
 def build_manifest_v2(draft: GroupDraft) -> dict:
     group_id = draft.group_id
     return {
-        "schema_version": "2.0",
+        "schema_version": "3.0",
         "group_id": group_id,
         "display_name": draft.display_name,
-        "template_version": "2.0.0",
+        "template_version": "3.0.0",
         "domain": draft.domain,
         "purpose": draft.purpose,
         "success_criteria": draft.success_criteria,
@@ -374,8 +374,8 @@ def build_manifest_v2(draft: GroupDraft) -> dict:
             }
         },
         "gate_profile": {
-            "profile_id": "standard-evidence-v2",
-            "specialist_output_schema": "specialist-handoff-v2",
+            "profile_id": "standard-evidence-v3",
+            "specialist_output_schema": "specialist-handoff-v3",
             "checks": {
                 "web_citations_required": True,
                 "repro_command_required": True,

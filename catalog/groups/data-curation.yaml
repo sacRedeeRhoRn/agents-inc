@@ -1,6 +1,6 @@
 group_id: data-curation
 display_name: Data Curation Group
-template_version: 2.0.0
+template_version: 3.0.0
 domain: data-pipelines
 head:
   agent_id: data-curation-head
@@ -194,7 +194,7 @@ quality_gates:
   consistency_required: true
   scope_required: true
   reproducibility_required: true
-schema_version: '2.0'
+schema_version: '3.0'
 purpose: Coordinate expert specialists for Data Curation Group objectives.
 success_criteria:
 - All required artifacts produced

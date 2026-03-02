@@ -1,6 +1,6 @@
 ---
 name: {{HEAD_SKILL_NAME}}
-version: "2.0.0"
+version: "3.1.1"
 role: head
 description: Orchestrate {{DISPLAY_NAME}} for project {{PROJECT_ID}} with strict gate enforcement and artifact publication contracts.
 scope: Group-level orchestration, gate enforcement, and exposed artifact publication.

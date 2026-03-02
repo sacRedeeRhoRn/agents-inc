@@ -43,11 +43,29 @@ class CLIMainTests(unittest.TestCase):
         self.assertEqual(code, 12)
         mocked.assert_called_once()
 
+    def test_main_routes_cleanup_projects_command(self) -> None:
+        with patch("agents_inc.cli.cleanup_projects.main", return_value=15) as mocked:
+            with patch.object(
+                sys,
+                "argv",
+                ["agents-inc", "cleanup-projects", "--all-indexed", "--yes"],
+            ):
+                code = cli_main.main()
+        self.assertEqual(code, 15)
+        mocked.assert_called_once()
+
     def test_main_routes_groups_command(self) -> None:
         with patch("agents_inc.cli.groups.main", return_value=9) as mocked:
             with patch.object(sys, "argv", ["agents-inc", "groups", "list"]):
                 code = cli_main.main()
         self.assertEqual(code, 9)
+        mocked.assert_called_once()
+
+    def test_main_routes_project_groups_command(self) -> None:
+        with patch("agents_inc.cli.project_groups.main", return_value=14) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "project-groups", "list"]):
+                code = cli_main.main()
+        self.assertEqual(code, 14)
         mocked.assert_called_once()
 
     def test_main_routes_skills_command(self) -> None:

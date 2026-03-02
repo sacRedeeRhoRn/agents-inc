@@ -5,6 +5,7 @@ from typing import Callable, Dict, List
 
 from agents_inc import __version__
 from agents_inc.cli import (
+    cleanup_projects,
     deactivate_project,
     delete_project,
     dispatch_dry_run,
@@ -20,6 +21,7 @@ from agents_inc.cli import (
     orchestrate,
     orchestrate_report,
     orchestrator_reply,
+    project_groups,
     resume,
     skills,
     sync_overlays,
@@ -49,13 +51,15 @@ def _print_help() -> None:
     print("  resume       resume a project and launch codex")
     print("  deactivate   deactivate a project by project-id")
     print("  delete       delete a project by project-id")
+    print("  cleanup-projects hard-delete indexed project roots")
     print("  dispatch     dry-run project/group dispatch plan")
     print("  groups       catalog-level group management")
+    print("  project-groups manage active groups within a project")
     print("  skills       project-scoped skill activation and cleanup")
     print("  orchestrator-reply one-turn orchestrator reply (group-detailed or [non-group])")
     print("  orchestrate  run live orchestrator evidence campaign")
     print("  orchestrate-report regenerate report from existing run directory")
-    print("  migrate-v2   hard-cutover migration to schema v2")
+    print("  migrate-v2   hard-cutover migration to schema v3")
     print("  long-run     run full-group isolation validation")
     print("  validate     validate catalog/templates/schemas")
     print("  docs         generate full docs reference")
@@ -76,8 +80,10 @@ def main() -> int:
         "resume": resume.main,
         "deactivate": deactivate_project.main,
         "delete": delete_project.main,
+        "cleanup-projects": cleanup_projects.main,
         "dispatch": dispatch_dry_run.main,
         "groups": groups.main,
+        "project-groups": project_groups.main,
         "skills": skills.main,
         "orchestrator-reply": orchestrator_reply.main,
         "orchestrate": orchestrate.main,

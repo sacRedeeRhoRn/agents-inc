@@ -211,7 +211,7 @@ def write_group_assets(
     write_text(group_dir / "exposed" / "summary.md", "# Summary\n\nPending head publication.\n")
     write_text(
         group_dir / "exposed" / "handoff.json",
-        '{\n  "schema_version": "2.0",\n  "status": "PENDING",\n  "artifacts": []\n}\n',
+        '{\n  "schema_version": "3.0",\n  "status": "PENDING",\n  "artifacts": []\n}\n',
     )
     write_text(group_dir / "exposed" / "INTEGRATION_NOTES.md", "# Integration Notes\n\nPending.\n")
     for specialist in group["specialists"]:
@@ -221,7 +221,7 @@ def write_group_assets(
         write_text(internal_dir / "work.md", "# Work\n\nPending specialist execution.\n")
         write_text(
             internal_dir / "handoff.json",
-            '{\n  "schema_version": "2.0",\n  "status": "PENDING",\n  "claims_with_citations": [],\n  "repro_steps": [],\n  "risks": []\n}\n',
+            '{\n  "schema_version": "3.0",\n  "status": "PENDING",\n  "claims_with_citations": [],\n  "repro_steps": [],\n  "risks": []\n}\n',
         )
 
     for specialist in group["specialists"]:
@@ -344,7 +344,7 @@ def main() -> int:
             template_versions[group_id] = group.get("template_version", TEMPLATE_VERSION)
 
         manifest = {
-            "schema_version": "2.0",
+            "schema_version": "3.0",
             "project_id": project_id,
             "selected_groups": selected_groups,
             "install_targets": {

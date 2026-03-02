@@ -1,5 +1,5 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
-title: "Generated Project Manifest v2"
+title: "Generated Project Manifest v3"
 type: object
 required:
   - schema_version
@@ -14,7 +14,7 @@ required:
 properties:
   schema_version:
     type: string
-    const: "2.0"
+    const: "3.0"
   project_id:
     type: string
     pattern: "^[a-z0-9-]+$"
