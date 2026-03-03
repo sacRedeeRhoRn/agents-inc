@@ -1,125 +1,76 @@
 from __future__ import annotations
 
 import argparse
-import re
-import shutil
-import subprocess
-from pathlib import Path
+import json
 
-from agents_inc.cli.init_session import run_resume_flow
-from agents_inc.core.codex_home import (
-    codex_launch_env,
-    ensure_project_codex_home,
-    ensure_skill_activation_state,
-    resolve_project_codex_home,
-)
+from agents_inc.cli._project_context import resolve_project_context
+from agents_inc.core.fabric_lib import FabricError, ensure_json_serializable, slugify
+from agents_inc.core.orchestrator_chat import OrchestratorChatConfig, run_orchestrator_chat
+from agents_inc.core.orchestrator_state import load_orchestrator_state
+from agents_inc.core.session_state import default_project_index_path, set_index_project_status
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Resume agents-inc project orchestrator session")
+    parser = argparse.ArgumentParser(description="Resume agents-inc project orchestrator chat")
     parser.add_argument("project_id", help="project id to resume")
-    parser.add_argument("--checkpoint", default="latest", help="checkpoint id or 'latest'")
-    parser.add_argument(
-        "--resume-mode",
-        default="auto",
-        choices=["auto", "compact", "rehydrate"],
-        help="resume source preference",
-    )
+    parser.add_argument("--fabric-root", default=None, help="fabric root path")
     parser.add_argument("--project-index", default=None, help="global project index path")
-    parser.add_argument("--task", default=None, help="optional objective override")
+    parser.add_argument("--scan-root", default=None, help="projects scan root")
+    parser.add_argument("--config-path", default=None, help="config path")
     parser.add_argument(
-        "--no-launch", action="store_true", help="prepare resume artifacts without opening codex"
+        "--no-launch",
+        action="store_true",
+        help="reactivate project state but do not open managed chat",
     )
+    parser.add_argument("--json", action="store_true", help="emit JSON output")
     return parser.parse_args()
-
-
-def _build_resume_prompt(summary: dict) -> str:
-    project_id = str(summary.get("project_id", ""))
-    session_code = str(summary.get("session_code", ""))
-    router_call = str(summary.get("router_call", ""))
-    project_root = Path(str(summary.get("project_root", ""))).expanduser().resolve()
-    groups = summary.get("selected_groups", [])
-    if not isinstance(groups, list):
-        groups = []
-    groups_text = ", ".join(str(group_id) for group_id in groups)
-    codex_home = resolve_project_codex_home(project_root)
-    return (
-        "Resume orchestrator for project "
-        f"{project_id}. Session code: {session_code}. "
-        f"Active groups: {groups_text}. "
-        f"Project CODEX_HOME: {codex_home}. "
-        f"Start from router call: {router_call} "
-        "Keep group artifacts isolated by project and only exchange through exposed/ paths. "
-        "Default mode is strict artifact-grounded group synthesis. "
-        "Use strict prefix [non-group] only for concise direct state queries. "
-        "Activate specialist skills per group with agents-inc skills activate --project-id <id> --groups <group-id> --specialists."
-    )
-
-
-def _persist_resume_prompt(project_root: str, prompt: str) -> Path:
-    state_dir = Path(project_root).expanduser().resolve() / ".agents-inc" / "state"
-    state_dir.mkdir(parents=True, exist_ok=True)
-    prompt_path = state_dir / "resume-prompt.md"
-    prompt_path.write_text(prompt.strip() + "\n", encoding="utf-8")
-    return prompt_path
-
-
-def _sanitize_prompt(prompt: str, max_len: int = 1200) -> str:
-    single = re.sub(r"\s+", " ", prompt).strip()
-    if len(single) <= max_len:
-        return single
-    return single[: max_len - 3].rstrip() + "..."
-
-
-def _launch_codex(project_root: str, prompt: str, env: dict) -> int:
-    codex_bin = shutil.which("codex")
-    if not codex_bin:
-        print(
-            "warning: 'codex' command not found on PATH. Resume artifacts were generated, but auto-launch was skipped."
-        )
-        return 0
-    cmd = [codex_bin, "-C", project_root, prompt]
-    print(f"launching: {' '.join(cmd[:3])} <prompt>")
-    proc = subprocess.run(cmd, env=env)
-    return int(proc.returncode)
 
 
 def main() -> int:
     args = parse_args()
     try:
-        resume_args = argparse.Namespace(
-            mode="resume",
-            resume_project_id=args.project_id,
-            project_id=args.project_id,
-            resume_checkpoint=args.checkpoint,
-            resume_mode=args.resume_mode,
+        project_id = slugify(args.project_id)
+        if not project_id:
+            raise FabricError("project id cannot be empty")
+        fabric_root, project_root, _, _, _ = resolve_project_context(
+            project_id=project_id,
+            fabric_root=args.fabric_root,
             project_index=args.project_index,
-            task=args.task,
-            non_interactive=True,
+            scan_root=args.scan_root,
+            config_path=args.config_path,
         )
-        summary = run_resume_flow(
-            resume_args, requested_project_id=args.project_id, emit_output=True
+
+        # Mark as active when present in index; if not present, continue with local project state.
+        try:
+            set_index_project_status(default_project_index_path(args.project_index), project_id, "active")
+        except Exception:  # noqa: BLE001
+            pass
+
+        state = load_orchestrator_state(project_root, project_id=project_id)
+        resume_thread_id = str(state.get("thread_id") or "")
+        chat = run_orchestrator_chat(
+            OrchestratorChatConfig(
+                fabric_root=fabric_root,
+                project_root=project_root,
+                project_id=project_id,
+                resume_thread_id=resume_thread_id,
+                no_launch=bool(args.no_launch),
+            )
         )
-        if args.no_launch:
-            return 0
-        project_root = str(summary.get("project_root", ""))
-        project_root_path = Path(project_root).expanduser().resolve()
-        project_id = str(summary.get("project_id", args.project_id))
-        selected_groups = summary.get("selected_groups", [])
-        if not isinstance(selected_groups, list):
-            selected_groups = []
-        ensure_project_codex_home(project_root_path, project_id=project_id)
-        ensure_skill_activation_state(
-            project_root_path,
-            default_head_groups=[str(group_id) for group_id in selected_groups],
-        )
-        prompt = _build_resume_prompt(summary)
-        prompt_path = _persist_resume_prompt(project_root, prompt)
-        prompt = _sanitize_prompt(prompt)
-        print(f"resume prompt saved: {prompt_path}")
-        env = codex_launch_env(project_root_path)
-        print(f"using CODEX_HOME: {env.get('CODEX_HOME', '')}")
-        return _launch_codex(project_root, prompt, env=env)
+        summary = {
+            "project_id": project_id,
+            "project_root": str(project_root),
+            "fabric_root": str(fabric_root),
+            "thread_id": str(chat.get("thread_id") or ""),
+            "resumed_from_thread_id": resume_thread_id,
+            "fallback_from_thread": str(chat.get("fallback_from_thread") or ""),
+            "chat_log_path": str(chat.get("chat_log_path") or ""),
+        }
+        if args.json:
+            print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+        else:
+            print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+        return 0
     except Exception as exc:  # noqa: BLE001
         print(f"error: {exc}")
         return 1

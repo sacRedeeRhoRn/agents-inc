@@ -697,7 +697,9 @@ def _run_specialist_with_retries(
             specialist_sessions[group_id][specialist_id]["finished_at"] = now_iso()
             message = str(request_payload.get("reason") or "").strip()
             if not message:
-                message = "; ".join(str(item) for item in escalation_reasons) or "escalation required"
+                message = (
+                    "; ".join(str(item) for item in escalation_reasons) or "escalation required"
+                )
             specialist_sessions[group_id][specialist_id]["error"] = message
             ledger_rows.append(
                 {
@@ -776,9 +778,9 @@ def _run_specialist_with_retries(
             if gate_status != "PASS":
                 specialist_sessions[group_id][specialist_id]["status"] = "FAILED"
                 specialist_sessions[group_id][specialist_id]["finished_at"] = now_iso()
-                specialist_sessions[group_id][specialist_id]["error"] = (
-                    f"specialist gate failed: {gate_status} ({'; '.join(str(x) for x in gate_reasons)})"
-                )
+                specialist_sessions[group_id][specialist_id][
+                    "error"
+                ] = f"specialist gate failed: {gate_status} ({'; '.join(str(x) for x in gate_reasons)})"
                 snapshot_paths = _write_specialist_snapshot(
                     snapshot_root=layer4_dir / "specialists" / group_id / specialist_id,
                     work_text=result.parsed_work,
@@ -1111,9 +1113,7 @@ def _build_specialist_prompt(
         if str(skill_name or "").strip()
         else ""
     )
-    return (
-        activation
-        + (
+    return activation + (
         "You are a specialist agent in a layered multi-agent research runtime. "
         "Work only in your scope and produce structured output.\n"
         f"Objective: {objective}\n"
@@ -1146,7 +1146,6 @@ def _build_specialist_prompt(
         "END_HANDOFF_JSON\n"
         f"Artifact scope target work_path={artifact_scope['work_path']} handoff_path={artifact_scope['handoff_path']}\n"
         "If ESCALATION_RESPONSE.json exists in your working directory, consume it before finalizing output.\n"
-        )
     )
 
 
@@ -1185,9 +1184,7 @@ def _build_head_prompt(
         if head_skill
         else ""
     )
-    return (
-        activation
-        + (
+    return activation + (
         "You are the group head agent in a layered multi-agent runtime. "
         "Merge specialist outputs into one group-level exposed handoff.\n"
         f"Objective: {objective}\n"
@@ -1212,7 +1209,6 @@ def _build_head_prompt(
         '  "integration_notes": "# Integration Notes\\n\\n- ..."\n'
         "}\n"
         "END_HANDOFF_JSON\n"
-        )
     )
 
 

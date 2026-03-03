@@ -23,6 +23,8 @@ from agents_inc.core.orchestration.cycle_engine import build_cycle_summary
 from agents_inc.core.orchestration.meeting import build_negotiation_monitor
 from agents_inc.core.orchestration.turn_router import (
     resolve_primary_group as resolve_primary_group_router,
+)
+from agents_inc.core.orchestration.turn_router import (
     selected_groups_from_manifest,
 )
 from agents_inc.core.response_policy import (

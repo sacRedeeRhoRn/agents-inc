@@ -44,6 +44,8 @@ REQUIRED_SCHEMA_FILES = [
     "schemas/dispatch.schema.yaml",
     "schemas/escalation.schema.yaml",
     "schemas/connection.schema.yaml",
+    "schemas/orchestrator_session.schema.yaml",
+    "schemas/group_generation_output.schema.yaml",
 ]
 
 

@@ -88,60 +88,6 @@ class ProjectGroupsTests(unittest.TestCase):
             selected = manifest.get("selected_groups", [])
             self.assertNotIn("integration-delivery", selected)
 
-    def test_create_group_adds_catalog_and_project_selection(self) -> None:
-        with tempfile.TemporaryDirectory() as td:
-            fabric_root = Path(td) / "agent_group_fabric"
-            ensure_fabric_root_initialized(fabric_root)
-            project_id = "proj-group-create"
-
-            with patch.object(
-                sys,
-                "argv",
-                [
-                    "agents-inc new-project",
-                    "--fabric-root",
-                    str(fabric_root),
-                    "--project-id",
-                    project_id,
-                    "--groups",
-                    "developer",
-                    "--force",
-                ],
-            ):
-                self.assertEqual(new_project_cli.main(), 0)
-
-            with patch.object(
-                sys,
-                "argv",
-                [
-                    "agents-inc project-groups",
-                    "create",
-                    "--fabric-root",
-                    str(fabric_root),
-                    "--project-id",
-                    project_id,
-                    "--group-id",
-                    "literature-intelligence-lite",
-                    "--display-name",
-                    "Polymorphism Researcher Lite",
-                    "--domain",
-                    "materials-research",
-                    "--json",
-                ],
-            ):
-                self.assertEqual(project_groups_cli.main(), 0)
-
-            catalog_manifest = (
-                fabric_root / "catalog" / "groups" / "literature-intelligence-lite.yaml"
-            )
-            self.assertTrue(catalog_manifest.exists())
-
-            manifest_path = fabric_root / "generated" / "projects" / project_id / "manifest.yaml"
-            manifest = load_yaml(manifest_path)
-            self.assertIsInstance(manifest, dict)
-            selected = manifest.get("selected_groups", [])
-            self.assertIn("literature-intelligence-lite", selected)
-
     def test_list_command_reports_selected_groups(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             fabric_root = Path(td) / "agent_group_fabric"

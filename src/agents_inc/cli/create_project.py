@@ -1,0 +1,273 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Dict, List, Set
+
+from agents_inc.core.codex_home import ensure_project_codex_home
+from agents_inc.core.config_state import default_config_path, get_projects_root, set_projects_root
+from agents_inc.core.fabric_lib import (
+    FabricError,
+    ensure_fabric_root_initialized,
+    ensure_json_serializable,
+    load_group_catalog,
+    now_iso,
+    resolve_fabric_root,
+    slugify,
+)
+from agents_inc.core.orchestrator_chat import OrchestratorChatConfig, run_orchestrator_chat
+from agents_inc.core.response_policy import ensure_response_policy, upsert_specialist_sessions
+from agents_inc.core.session_compaction import compact_session
+from agents_inc.core.session_state import default_project_index_path, write_checkpoint
+
+
+def _parse_groups(value: str) -> List[str]:
+    out: List[str] = []
+    for raw in value.split(","):
+        gid = slugify(raw)
+        if gid and gid not in out:
+            out.append(gid)
+    return out
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Create a new agents-inc project")
+    parser.add_argument("project_id", help="project identifier")
+    parser.add_argument("--fabric-root", default=None, help="path to fabric root")
+    parser.add_argument("--projects-root", default=None, help="projects root path")
+    parser.add_argument("--config-path", default=None, help="config path")
+    parser.add_argument("--project-index", default=None, help="project index path")
+    parser.add_argument("--groups", default="", help="comma-separated group ids (skip interactive picker)")
+    parser.add_argument("--no-launch", action="store_true", help="skip launching managed chat")
+    parser.add_argument("--json", action="store_true", help="emit summary as JSON")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="overwrite existing generated project bundle if present",
+    )
+    return parser.parse_args()
+
+
+def _group_rows(catalog: Dict[str, dict]) -> List[str]:
+    return sorted(catalog.keys())
+
+
+def _print_picker(rows: List[str], selected: Set[str]) -> None:
+    print("Employable groups:")
+    for index, gid in enumerate(rows, start=1):
+        mark = "[x]" if gid in selected else "[ ]"
+        print(f"{index:>2}. {mark} {gid}")
+    print("")
+    print("Selection commands:")
+    print("- enter index numbers (e.g. 1 or 1,3,5) to toggle")
+    print("- 'all' to select all")
+    print("- 'none' to clear")
+    print("- 'show' to reprint list")
+    print("- 'done' to finish")
+
+
+def _interactive_select_groups(rows: List[str]) -> List[str]:
+    selected: Set[str] = set()
+    _print_picker(rows, selected)
+    while True:
+        raw = input("select> ").strip().lower()
+        if not raw:
+            continue
+        if raw == "show":
+            _print_picker(rows, selected)
+            continue
+        if raw == "all":
+            selected = set(rows)
+            print(f"selected all {len(selected)} groups")
+            continue
+        if raw == "none":
+            selected = set()
+            print("cleared selection")
+            continue
+        if raw == "done":
+            if not selected:
+                print("select at least one group before 'done'")
+                continue
+            return [gid for gid in rows if gid in selected]
+        parts = [part.strip() for part in raw.split(",") if part.strip()]
+        bad = [part for part in parts if not part.isdigit()]
+        if bad:
+            print(f"invalid tokens: {', '.join(bad)}")
+            continue
+        toggled = []
+        for part in parts:
+            index = int(part)
+            if index < 1 or index > len(rows):
+                print(f"index out of range: {index}")
+                continue
+            gid = rows[index - 1]
+            if gid in selected:
+                selected.remove(gid)
+            else:
+                selected.add(gid)
+            toggled.append(gid)
+        if toggled:
+            print("toggled:", ", ".join(toggled))
+
+
+def _run_new_project_bundle(
+    *,
+    project_fabric_root: Path,
+    project_id: str,
+    selected_groups: List[str],
+    target_skill_dir: Path,
+    force: bool,
+) -> None:
+    argv = [
+        "agents-inc-new-project",
+        "--fabric-root",
+        str(project_fabric_root),
+        "--project-id",
+        project_id,
+        "--groups",
+        ",".join(selected_groups),
+        "--visibility-mode",
+        "group-only",
+        "--audit-override",
+        "--target-skill-dir",
+        str(target_skill_dir),
+    ]
+    if force:
+        argv.append("--force")
+    prev = sys.argv
+    try:
+        from agents_inc.cli import new_project as new_project_cli
+
+        sys.argv = argv
+        rc = int(new_project_cli.main())
+    finally:
+        sys.argv = prev
+    if rc != 0:
+        raise FabricError("failed to generate project bundle")
+
+
+def _checkpoint_payload(
+    *,
+    project_id: str,
+    project_root: Path,
+    project_fabric_root: Path,
+    selected_groups: List[str],
+) -> dict:
+    return {
+        "schema_version": "3.0",
+        "project_id": project_id,
+        "project_root": str(project_root),
+        "fabric_root": str(project_fabric_root),
+        "task": "",
+        "constraints": {},
+        "selected_groups": selected_groups,
+        "router_call": "",
+        "latest_artifacts": {},
+        "pending_actions": [],
+        "updated_at": now_iso(),
+    }
+
+
+def main() -> int:
+    args = parse_args()
+    try:
+        project_id = slugify(args.project_id)
+        if not project_id:
+            raise FabricError("project id resolved to empty value")
+
+        fabric_root = resolve_fabric_root(args.fabric_root)
+        ensure_fabric_root_initialized(fabric_root)
+
+        config_path = default_config_path(args.config_path)
+        projects_root = (
+            Path(str(args.projects_root)).expanduser().resolve()
+            if args.projects_root
+            else get_projects_root(config_path)
+        )
+        set_projects_root(config_path, projects_root)
+        project_root = projects_root / project_id
+        project_root.mkdir(parents=True, exist_ok=True)
+        project_fabric_root = project_root / "agent_group_fabric"
+        ensure_fabric_root_initialized(project_fabric_root)
+
+        catalog = load_group_catalog(project_fabric_root)
+        rows = _group_rows(catalog)
+        if not rows:
+            raise FabricError("group catalog is empty")
+
+        if args.groups:
+            selected_groups = _parse_groups(args.groups)
+            missing = [gid for gid in selected_groups if gid not in catalog]
+            if missing:
+                raise FabricError("unknown groups: " + ", ".join(missing))
+        else:
+            selected_groups = _interactive_select_groups(rows)
+        if not selected_groups:
+            raise FabricError("no groups selected")
+
+        codex_home_state = ensure_project_codex_home(project_root, project_id=project_id)
+        target_skill_dir = Path(str(codex_home_state["skills_dir"])).expanduser().resolve()
+        _run_new_project_bundle(
+            project_fabric_root=project_fabric_root,
+            project_id=project_id,
+            selected_groups=selected_groups,
+            target_skill_dir=target_skill_dir,
+            force=bool(args.force),
+        )
+        ensure_response_policy(project_root)
+        upsert_specialist_sessions(
+            project_root=project_root,
+            project_fabric_root=project_fabric_root,
+            project_id=project_id,
+            selected_groups=selected_groups,
+        )
+
+        payload = _checkpoint_payload(
+            project_id=project_id,
+            project_root=project_root,
+            project_fabric_root=project_fabric_root,
+            selected_groups=selected_groups,
+        )
+        checkpoint = write_checkpoint(
+            project_root=project_root,
+            payload=payload,
+            project_index_path=default_project_index_path(args.project_index),
+        )
+        compact = compact_session(
+            project_root=project_root,
+            payload=payload,
+            selected_groups=selected_groups,
+        )
+
+        chat = run_orchestrator_chat(
+            OrchestratorChatConfig(
+                fabric_root=project_fabric_root,
+                project_root=project_root,
+                project_id=project_id,
+                no_launch=bool(args.no_launch),
+            )
+        )
+        summary = {
+            "project_id": project_id,
+            "project_root": str(project_root),
+            "fabric_root": str(project_fabric_root),
+            "selected_groups": selected_groups,
+            "checkpoint_id": str(checkpoint["checkpoint_id"]),
+            "compact_id": str(compact["compact_id"]),
+            "thread_id": str(chat.get("thread_id") or ""),
+            "chat_log_path": str(chat.get("chat_log_path") or ""),
+        }
+        if args.json:
+            print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+        else:
+            print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+        return 0
+    except Exception as exc:  # noqa: BLE001
+        print(f"error: {exc}")
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

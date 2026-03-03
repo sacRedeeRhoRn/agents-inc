@@ -2,6 +2,7 @@
 
 No other module in agents_inc defines slugify(), stable_json(), etc.
 """
+
 from __future__ import annotations
 
 import json

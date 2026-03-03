@@ -4,7 +4,11 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from agents_inc.core.agent_session_runner import AgentRunConfig, AgentRunResult, AgentSessionRunner
+    from agents_inc.core.agent_session_runner import (
+        AgentRunConfig,
+        AgentRunResult,
+        AgentSessionRunner,
+    )
 
 
 class AgentBackend(ABC):

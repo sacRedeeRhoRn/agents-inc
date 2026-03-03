@@ -3,6 +3,7 @@
 These constants are test-only fixtures for cross-group orchestration and isolation checks.
 They are NOT part of the framework runtime behavior.
 """
+
 from __future__ import annotations
 
 from typing import List, Tuple

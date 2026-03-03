@@ -7,17 +7,16 @@ The private helpers _dump_yaml() and _load_yaml_map() that were duplicated
 across session_state.py, session_compaction.py, codex_home.py, and
 response_policy.py are replaced by the public functions here.
 """
+
 from __future__ import annotations
 
 import io
-import os
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from agents_inc.core.util.errors import FabricError
-
 
 # ── YAML I/O ──────────────────────────────────────────────────────────────
 

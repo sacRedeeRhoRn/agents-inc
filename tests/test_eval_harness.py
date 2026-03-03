@@ -21,7 +21,9 @@ class EvalHarnessTests(unittest.TestCase):
             root = Path(td)
             project_dir = root / "project"
             turn_dir = root / "turn"
-            specialist_dir = project_dir / "agent-groups" / "developer" / "internal" / "python-expert"
+            specialist_dir = (
+                project_dir / "agent-groups" / "developer" / "internal" / "python-expert"
+            )
             snapshot_dir = turn_dir / "layer4" / "specialists" / "developer" / "python-expert"
             specialist_dir.mkdir(parents=True, exist_ok=True)
             snapshot_dir.mkdir(parents=True, exist_ok=True)

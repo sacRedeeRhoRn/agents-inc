@@ -147,13 +147,14 @@ def score_session(
         group_score = 0.0
         if group_scores:
             group_score = round(
-                sum(float(row["score"]) for row in group_scores.values()) / float(len(group_scores)),
+                sum(float(row["score"]) for row in group_scores.values())
+                / float(len(group_scores)),
                 3,
             )
         by_group[group_id] = {
             "group_score": group_score,
-                "specialists": group_scores,
-            }
+            "specialists": group_scores,
+        }
 
     overall = 0.0
     if specialist_scores:

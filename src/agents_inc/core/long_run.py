@@ -24,13 +24,13 @@ from agents_inc.core.fabric_lib import (
     stable_json,
     write_text,
 )
-from agents_inc.core.util.edges import resolve_handoff_edges
 from agents_inc.core.session_compaction import compact_session
 from agents_inc.core.session_state import (
     default_project_index_path,
     resolve_state_project_root,
     write_checkpoint,
 )
+from agents_inc.core.util.edges import resolve_handoff_edges
 
 EXIT_OK = 0
 EXIT_ISOLATION_VIOLATION = 2

@@ -1,0 +1,70 @@
+schema_version: "1.0"
+groups:
+  - group_id: developer
+    display_name: Developer
+    domain: software-delivery
+    purpose: Coordinate implementation and operational delivery across software objectives.
+    success_criteria:
+      - Required implementation artifacts are complete and consistent.
+      - Integration risks are explicitly identified with mitigations.
+      - Reproduction and evidence checks are satisfied.
+    extra_roles:
+      - python-expert
+      - shell-expert
+      - ssh-remote-ops-expert
+  - group_id: integration-delivery
+    display_name: Integration Delivery
+    domain: service-integration
+    purpose: Build integration plans, rollout sequencing, and handoff-ready delivery packages.
+    success_criteria:
+      - Cross-team dependencies are mapped and sequenced.
+      - Integration artifacts are consumable by downstream teams.
+      - Risks and blockers are clearly documented.
+    extra_roles:
+      - deployment-planner
+      - release-coordinator
+  - group_id: literature-intelligence
+    display_name: Literature Intelligence
+    domain: research-scouting
+    purpose: Gather, synthesize, and contextualize external evidence for decision support.
+    success_criteria:
+      - Source quality and relevance are documented.
+      - Claims map to citations with contradiction handling.
+      - Outputs support next-step decision making.
+    extra_roles:
+      - citation-analyst
+      - trend-scout
+  - group_id: data-curation
+    display_name: Data Curation
+    domain: data-operations
+    purpose: Curate structured evidence, normalize records, and prepare reusable data assets.
+    success_criteria:
+      - Data lineage and provenance are preserved.
+      - Normalization rules are explicit and reproducible.
+      - Deliverables are integration-ready.
+    extra_roles:
+      - schema-curator
+      - data-quality-auditor
+  - group_id: quality-assurance
+    display_name: Quality Assurance
+    domain: verification
+    purpose: Audit evidence quality, reproducibility, and consistency before publication.
+    success_criteria:
+      - Critical claims pass evidence sufficiency checks.
+      - Reproduction procedures are executable and validated.
+      - Final outputs are blocked when unresolved issues remain.
+    extra_roles:
+      - consistency-auditor
+      - reproducibility-auditor
+      - risk-auditor
+  - group_id: design-communication
+    display_name: Design Communication
+    domain: design-ops
+    purpose: Convert technical outputs into clear stakeholder-facing narratives and assets.
+    success_criteria:
+      - Deliverables are tailored to stakeholder audiences.
+      - Key decisions and tradeoffs are communicated clearly.
+      - Messaging remains evidence-grounded and actionable.
+    extra_roles:
+      - narrative-designer
+      - visual-communication-specialist

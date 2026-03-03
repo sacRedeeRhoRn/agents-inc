@@ -79,23 +79,6 @@ def parse_args() -> argparse.Namespace:
     add_parser.add_argument("--activate-specialists", action="store_true")
     add_parser.add_argument("--json", action="store_true")
 
-    create_parser = sub.add_parser("create", help="create a catalog group then add it to project")
-    create_parser.add_argument("--project-id", required=True)
-    create_parser.add_argument("--group-id", default=None)
-    create_parser.add_argument("--display-name", default=None)
-    create_parser.add_argument("--domain", default=None)
-    create_parser.add_argument("--purpose", default=None)
-    create_parser.add_argument("--success-criteria", default=None)
-    create_parser.add_argument("--interactive", action="store_true")
-    create_parser.add_argument("--force", action="store_true")
-    create_parser.add_argument("--fabric-root", default=None)
-    create_parser.add_argument("--project-index", default=None)
-    create_parser.add_argument("--scan-root", default=None)
-    create_parser.add_argument("--config-path", default=None)
-    create_parser.add_argument("--activate-heads", action="store_true")
-    create_parser.add_argument("--activate-specialists", action="store_true")
-    create_parser.add_argument("--json", action="store_true")
-
     remove_parser = sub.add_parser("remove", help="remove groups from project")
     remove_parser.add_argument("--project-id", required=True)
     remove_parser.add_argument("--groups", required=True, help="comma-separated group ids")
@@ -630,11 +613,9 @@ def main() -> int:
             return _cmd_list(args)
         if args.command == "add":
             return _cmd_add(args)
-        if args.command == "create":
-            return _cmd_create(args)
         if args.command == "remove":
             return _cmd_remove(args)
-        raise FabricError("usage: agents-inc project-groups <list|add|create|remove> ...")
+        raise FabricError("usage: agents-inc project-groups <list|add|remove> ...")
     except Exception as exc:  # noqa: BLE001
         print(f"error: {exc}")
         return 1

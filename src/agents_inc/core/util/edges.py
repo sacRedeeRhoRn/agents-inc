@@ -45,4 +45,3 @@ def resolve_handoff_edges(
         if edge not in out:
             out.append(edge)
     return out
-

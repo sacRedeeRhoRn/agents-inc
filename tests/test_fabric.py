@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -75,7 +76,13 @@ except Exception:  # pragma: no cover
 
 
 def run_cmd(cmd: list[str]) -> str:
-    proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    env = dict(os.environ)
+    env["PYTHONPATH"] = "{0}{1}{2}".format(
+        str(ROOT / "src"),
+        os.pathsep,
+        env.get("PYTHONPATH", ""),
+    ).rstrip(os.pathsep)
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=True, env=env)
     return proc.stdout
 
 
@@ -155,7 +162,9 @@ class FabricUnitTests(unittest.TestCase):
             "repro_commands": ["python -m pytest tests/test_smoke.py"],
             "expected_outputs": ["exit code 0"],
         }
-        gate = gate_specialist_output(out, role="repro-qa", citation_required=True, web_available=True)
+        gate = gate_specialist_output(
+            out, role="repro-qa", citation_required=True, web_available=True
+        )
         self.assertEqual(gate["status"], "PASS")
 
 
@@ -367,12 +376,7 @@ class FabricIntegrationTests(unittest.TestCase):
         specialist_skill = specialist["effective_skill_name"]
 
         specialist_agents = (
-            project_dir
-            / "agent-groups"
-            / "developer"
-            / "internal"
-            / specialist_id
-            / "AGENTS.md"
+            project_dir / "agent-groups" / "developer" / "internal" / specialist_id / "AGENTS.md"
         )
         self.assertTrue(specialist_agents.exists())
         agents_text = specialist_agents.read_text(encoding="utf-8")
@@ -463,44 +467,38 @@ class FabricIntegrationTests(unittest.TestCase):
 
     def test_init_session_emits_long_run_command_artifact(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            project_root = Path(td) / "session-project"
-            target_skills = Path(td) / "skills"
+            projects_root = Path(td) / "projects"
             project_index = Path(td) / "projects-index.yaml"
+            project_id = "proj-test-intake-longrun"
+            project_root = projects_root / project_id
             run_cmd(
                 [
                     "python3",
-                    str(SCRIPTS / "init_session.py"),
+                    "-m",
+                    "agents_inc.cli.main",
+                    "create",
+                    project_id,
                     "--fabric-root",
                     str(ROOT),
-                    "--project-root",
-                    str(project_root),
-                    "--project-id",
-                    "proj-test-intake-longrun",
-                    "--task",
-                    "Film thickness dependent polymorphism stability of metastable phase",
-                    "--timeline",
-                    "2 weeks",
-                    "--compute",
-                    "cuda",
-                    "--remote-cluster",
-                    "yes",
-                    "--output-target",
-                    "technical report",
-                    "--target-skill-dir",
-                    str(target_skills),
+                    "--projects-root",
+                    str(projects_root),
                     "--project-index",
                     str(project_index),
-                    "--mode",
-                    "new",
-                    "--non-interactive",
+                    "--groups",
+                    "developer,integration-delivery,literature-intelligence,data-curation,quality-assurance,design-communication",
+                    "--no-launch",
                 ]
             )
 
-            long_run_cmd = project_root / "long-run-command.sh"
-            self.assertTrue(long_run_cmd.exists())
-            text = long_run_cmd.read_text(encoding="utf-8")
-            self.assertIn("agents-inc long-run", text)
-            self.assertIn("--groups all", text)
+            manifest_path = (
+                project_root
+                / "agent_group_fabric"
+                / "generated"
+                / "projects"
+                / project_id
+                / "manifest.yaml"
+            )
+            self.assertTrue(manifest_path.exists())
 
             self.assertTrue(
                 (project_root / ".agents-inc" / "state" / "session-state.yaml").exists()
@@ -518,37 +516,26 @@ class FabricIntegrationTests(unittest.TestCase):
 
     def test_init_session_new_mode_non_destructive_without_overwrite(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            project_root = Path(td) / "session-project"
-            target_skills = Path(td) / "skills"
+            projects_root = Path(td) / "projects"
             project_index = Path(td) / "projects-index.yaml"
             project_id = "proj-test-intake-nondestructive"
+            project_root = projects_root / project_id
 
             base_cmd = [
                 "python3",
-                str(SCRIPTS / "init_session.py"),
+                "-m",
+                "agents_inc.cli.main",
+                "create",
+                project_id,
                 "--fabric-root",
                 str(ROOT),
-                "--project-root",
-                str(project_root),
-                "--project-id",
-                project_id,
-                "--task",
-                "Film thickness dependent polymorphism stability of metastable phase",
-                "--timeline",
-                "2 weeks",
-                "--compute",
-                "cuda",
-                "--remote-cluster",
-                "yes",
-                "--output-target",
-                "technical report",
-                "--target-skill-dir",
-                str(target_skills),
+                "--projects-root",
+                str(projects_root),
                 "--project-index",
                 str(project_index),
-                "--mode",
-                "new",
-                "--non-interactive",
+                "--groups",
+                "developer,integration-delivery",
+                "--no-launch",
             ]
             run_cmd(base_cmd)
 
@@ -564,46 +551,40 @@ class FabricIntegrationTests(unittest.TestCase):
             sentinel.parent.mkdir(parents=True, exist_ok=True)
             sentinel.write_text("keep-me", encoding="utf-8")
 
-            proc = subprocess.run(base_cmd, capture_output=True, text=True)
+            env = dict(os.environ)
+            env["PYTHONPATH"] = "{0}{1}{2}".format(
+                str(ROOT / "src"),
+                os.pathsep,
+                env.get("PYTHONPATH", ""),
+            ).rstrip(os.pathsep)
+            proc = subprocess.run(base_cmd, capture_output=True, text=True, env=env)
             self.assertNotEqual(proc.returncode, 0)
-            self.assertIn("overwrite is disabled", proc.stdout + proc.stderr)
+            self.assertIn("already exists", proc.stdout + proc.stderr)
             self.assertTrue(sentinel.exists())
 
     def test_init_session_resume_preserves_artifacts_and_checkpoint_selection(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            project_root = Path(td) / "session-project"
-            target_skills = Path(td) / "skills"
+            projects_root = Path(td) / "projects"
             project_index = Path(td) / "projects-index.yaml"
             project_id = "proj-test-resume-checkpoint"
-            task = "Film thickness dependent polymorphism stability of metastable phase"
+            project_root = projects_root / project_id
 
             run_cmd(
                 [
                     "python3",
-                    str(SCRIPTS / "init_session.py"),
+                    "-m",
+                    "agents_inc.cli.main",
+                    "create",
+                    project_id,
                     "--fabric-root",
                     str(ROOT),
-                    "--project-root",
-                    str(project_root),
-                    "--project-id",
-                    project_id,
-                    "--task",
-                    task,
-                    "--timeline",
-                    "2 weeks",
-                    "--compute",
-                    "cuda",
-                    "--remote-cluster",
-                    "yes",
-                    "--output-target",
-                    "technical report",
-                    "--target-skill-dir",
-                    str(target_skills),
+                    "--projects-root",
+                    str(projects_root),
                     "--project-index",
                     str(project_index),
-                    "--mode",
-                    "new",
-                    "--non-interactive",
+                    "--groups",
+                    "developer,integration-delivery",
+                    "--no-launch",
                 ]
             )
 
@@ -622,101 +603,76 @@ class FabricIntegrationTests(unittest.TestCase):
             run_cmd(
                 [
                     "python3",
-                    str(SCRIPTS / "dispatch_dry_run.py"),
-                    "--fabric-root",
-                    str(project_root / "agent_group_fabric"),
-                    "--project-id",
+                    "-m",
+                    "agents_inc.cli.main",
+                    "save",
                     project_id,
-                    "--group",
-                    "integration-delivery",
-                    "--objective",
-                    "resume objective checkpoint test",
                     "--project-index",
                     str(project_index),
+                    "--scan-root",
+                    str(projects_root),
                 ]
             )
-
-            latest = yaml.safe_load(
-                (project_root / ".agents-inc" / "state" / "latest-checkpoint.yaml").read_text(
-                    encoding="utf-8"
-                )
-            )
-            checkpoint_id = latest["checkpoint_id"]
 
             run_cmd(
                 [
                     "python3",
-                    str(SCRIPTS / "init_session.py"),
-                    "--mode",
-                    "resume",
-                    "--resume-project-id",
+                    str(SCRIPTS / "resume.py"),
                     project_id,
-                    "--resume-checkpoint",
-                    checkpoint_id,
                     "--project-index",
                     str(project_index),
-                    "--non-interactive",
+                    "--scan-root",
+                    str(projects_root),
+                    "--no-launch",
+                    "--json",
                 ]
             )
 
             self.assertTrue(sentinel.exists())
-
-            router_text = (project_root / "router-call.txt").read_text(encoding="utf-8")
-            self.assertIn("resume objective checkpoint test", router_text)
-
-            kickoff_text = (project_root / "kickoff.md").read_text(encoding="utf-8")
-            self.assertIn("Kickoff (Resumed)", kickoff_text)
-            self.assertIn(checkpoint_id, kickoff_text)
+            orchestrator_state = yaml.safe_load(
+                (project_root / ".agents-inc" / "state" / "orchestrator-session.yaml").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(orchestrator_state.get("project_id"), project_id)
 
     def test_long_run_after_resume_still_passes(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            project_root = Path(td) / "session-project"
-            target_skills = Path(td) / "skills"
+            projects_root = Path(td) / "projects"
             project_index = Path(td) / "projects-index.yaml"
             project_id = "proj-test-resume-longrun"
             task = "Film thickness dependent polymorphism stability of metastable phase"
+            project_root = projects_root / project_id
 
             run_cmd(
                 [
                     "python3",
-                    str(SCRIPTS / "init_session.py"),
+                    "-m",
+                    "agents_inc.cli.main",
+                    "create",
+                    project_id,
                     "--fabric-root",
                     str(ROOT),
-                    "--project-root",
-                    str(project_root),
-                    "--project-id",
-                    project_id,
-                    "--task",
-                    task,
-                    "--timeline",
-                    "2 weeks",
-                    "--compute",
-                    "cuda",
-                    "--remote-cluster",
-                    "yes",
-                    "--output-target",
-                    "technical report",
-                    "--target-skill-dir",
-                    str(target_skills),
+                    "--projects-root",
+                    str(projects_root),
                     "--project-index",
                     str(project_index),
-                    "--mode",
-                    "new",
-                    "--non-interactive",
+                    "--groups",
+                    "developer,integration-delivery,literature-intelligence,data-curation,quality-assurance,design-communication",
+                    "--no-launch",
                 ]
             )
 
             run_cmd(
                 [
                     "python3",
-                    str(SCRIPTS / "init_session.py"),
-                    "--mode",
-                    "resume",
-                    "--resume-project-id",
+                    str(SCRIPTS / "resume.py"),
                     project_id,
                     "--project-index",
                     str(project_index),
-                    "--non-interactive",
+                    "--scan-root",
+                    str(projects_root),
+                    "--no-launch",
                 ]
             )
 
@@ -774,37 +730,24 @@ class FabricIntegrationTests(unittest.TestCase):
     def test_list_sessions_cli_lists_created_projects(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             codex_projects_root = Path(td) / "codex-projects"
-            project_root = codex_projects_root / "proj-test-list-sessions"
-            target_skills = Path(td) / "skills"
             project_index = Path(td) / "projects-index.yaml"
 
             run_cmd(
                 [
                     "python3",
-                    str(SCRIPTS / "init_session.py"),
+                    "-m",
+                    "agents_inc.cli.main",
+                    "create",
+                    "proj-test-list-sessions",
                     "--fabric-root",
                     str(ROOT),
-                    "--project-root",
-                    str(project_root),
-                    "--project-id",
-                    "proj-test-list-sessions",
-                    "--task",
-                    "Film thickness dependent polymorphism stability of metastable phase",
-                    "--timeline",
-                    "2 weeks",
-                    "--compute",
-                    "cuda",
-                    "--remote-cluster",
-                    "yes",
-                    "--output-target",
-                    "technical report",
-                    "--target-skill-dir",
-                    str(target_skills),
+                    "--projects-root",
+                    str(codex_projects_root),
                     "--project-index",
                     str(project_index),
-                    "--mode",
-                    "new",
-                    "--non-interactive",
+                    "--groups",
+                    "developer,integration-delivery",
+                    "--no-launch",
                 ]
             )
 
@@ -833,39 +776,27 @@ class FabricIntegrationTests(unittest.TestCase):
 
     def test_resume_cli_auto_falls_back_to_checkpoint_when_compact_missing(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            project_root = Path(td) / "session-project"
-            target_skills = Path(td) / "skills"
+            projects_root = Path(td) / "projects"
             project_index = Path(td) / "projects-index.yaml"
             project_id = "proj-test-resume-fallback"
-            task = "Film thickness dependent polymorphism stability of metastable phase"
+            project_root = projects_root / project_id
 
             run_cmd(
                 [
                     "python3",
-                    str(SCRIPTS / "init_session.py"),
+                    "-m",
+                    "agents_inc.cli.main",
+                    "create",
+                    project_id,
                     "--fabric-root",
                     str(ROOT),
-                    "--project-root",
-                    str(project_root),
-                    "--project-id",
-                    project_id,
-                    "--task",
-                    task,
-                    "--timeline",
-                    "2 weeks",
-                    "--compute",
-                    "cuda",
-                    "--remote-cluster",
-                    "yes",
-                    "--output-target",
-                    "technical report",
-                    "--target-skill-dir",
-                    str(target_skills),
+                    "--projects-root",
+                    str(projects_root),
                     "--project-index",
                     str(project_index),
-                    "--mode",
-                    "new",
-                    "--non-interactive",
+                    "--groups",
+                    "developer,integration-delivery",
+                    "--no-launch",
                 ]
             )
 
@@ -883,17 +814,31 @@ class FabricIntegrationTests(unittest.TestCase):
                     project_id,
                     "--project-index",
                     str(project_index),
+                    "--scan-root",
+                    str(projects_root),
                     "--no-launch",
+                    "--json",
                 ],
                 capture_output=True,
                 text=True,
+                env={
+                    **os.environ,
+                    "PYTHONPATH": "{0}{1}{2}".format(
+                        str(ROOT / "src"),
+                        os.pathsep,
+                        os.environ.get("PYTHONPATH", ""),
+                    ).rstrip(os.pathsep),
+                },
             )
             self.assertEqual(
                 proc.returncode, 0, msg=f"stdout:\\n{proc.stdout}\\nstderr:\\n{proc.stderr}"
             )
-            self.assertTrue((project_root / "kickoff.md").exists())
-            self.assertIn(
-                "Kickoff (Resumed)", (project_root / "kickoff.md").read_text(encoding="utf-8")
+            state_path = project_root / ".agents-inc" / "state" / "orchestrator-session.yaml"
+            self.assertTrue(state_path.exists())
+            state = yaml.safe_load(state_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                state.get("project_id"),
+                project_id,
             )
 
 

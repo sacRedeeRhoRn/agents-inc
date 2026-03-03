@@ -5,28 +5,16 @@ from typing import Callable, Dict, List
 
 from agents_inc import __version__
 from agents_inc.cli import (
-    cleanup_projects,
+    create_project,
     deactivate_project,
     delete_project,
-    dispatch_dry_run,
-    eval as eval_cli,
-    generate_docs,
-    groups,
+    group_list,
     init_session,
-    install_skills,
     list_sessions,
-    long_run_test,
-    migrate_v2,
     new_group,
-    new_project,
-    orchestrate,
-    orchestrate_report,
-    orchestrator_reply,
     project_groups,
     resume,
-    skills,
-    sync_overlays,
-    validate,
+    save_project,
 )
 
 
@@ -46,31 +34,17 @@ def _print_help() -> None:
     print("  agents-inc <command> [args]")
     print("  agents-inc --version")
     print("")
-    print("Primary commands:")
-    print("  init         interactive/new/resume project intake")
-    print("  list         list resumable project sessions")
-    print("  resume       resume a project and launch codex")
-    print("  deactivate   deactivate a project by project-id")
-    print("  delete       delete a project by project-id")
-    print("  cleanup-projects hard-delete indexed project roots")
-    print("  dispatch     dry-run project/group dispatch plan")
-    print("  groups       catalog-level group management")
-    print("  project-groups manage active groups within a project")
-    print("  skills       project-scoped skill activation and cleanup")
-    print("  orchestrator-reply one-turn orchestrator reply (group-detailed or [non-group])")
-    print("  orchestrate  run live orchestrator evidence campaign")
-    print("  orchestrate-report regenerate report from existing run directory")
-    print("  migrate-v2   hard-cutover migration to schema v3")
-    print("  long-run     run full-group isolation validation")
-    print("  eval         score specialist outputs for a completed turn")
-    print("  validate     validate catalog/templates/schemas")
-    print("  docs         generate full docs reference")
-    print("")
-    print("Additional commands:")
-    print("  new-group")
-    print("  new-project")
-    print("  install-skills")
-    print("  sync-overlays")
+    print("Commands:")
+    print("  init                    bootstrap agents-inc configuration")
+    print("  group-list              list employable groups")
+    print("  create <project-id>     create project and launch orchestrator chat")
+    print("  save <project-id>       save project state snapshot")
+    print("  deactivate <project-id> deactivate project")
+    print("  list                    list projects")
+    print("  resume <project-id>     resume project orchestrator chat")
+    print("  project-groups          list/add/remove groups for a project")
+    print("  delete <project-id>     delete project data (requires confirmation)")
+    print("  new-group               launch group creation flow")
     print("")
     print("Run 'agents-inc <command> --help' for command-specific options.")
 
@@ -78,34 +52,15 @@ def _print_help() -> None:
 def main() -> int:
     commands: Dict[str, Callable[[], int]] = {
         "init": init_session.main,
+        "group-list": group_list.main,
+        "create": create_project.main,
+        "save": save_project.main,
         "list": list_sessions.main,
         "resume": resume.main,
         "deactivate": deactivate_project.main,
         "delete": delete_project.main,
-        "cleanup-projects": cleanup_projects.main,
-        "dispatch": dispatch_dry_run.main,
-        "groups": groups.main,
         "project-groups": project_groups.main,
-        "skills": skills.main,
-        "orchestrator-reply": orchestrator_reply.main,
-        "orchestrate": orchestrate.main,
-        "orchestrate-report": orchestrate_report.main,
-        "migrate-v2": migrate_v2.main,
-        "long-run": long_run_test.main,
-        "eval": eval_cli.main,
-        "validate": validate.main,
-        "docs": generate_docs.main,
         "new-group": new_group.main,
-        "new-project": new_project.main,
-        "install-skills": install_skills.main,
-        "sync-overlays": sync_overlays.main,
-    }
-    deprecated_aliases = {
-        "init-session": "init",
-        "list-sessions": "list",
-        "dispatch-dry-run": "dispatch",
-        "long-run-test": "long-run",
-        "generate-docs": "docs",
     }
 
     if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help", "help"}:
@@ -117,14 +72,6 @@ def main() -> int:
         return 0
 
     cmd = str(sys.argv[1]).strip().lower()
-    if cmd in deprecated_aliases:
-        replacement = deprecated_aliases[cmd]
-        print(
-            f"deprecated: 'agents-inc {cmd}' will be removed in a future release. "
-            f"Use 'agents-inc {replacement}' instead.",
-            file=sys.stderr,
-        )
-        cmd = replacement
     if cmd not in commands:
         print(f"error: unknown command '{cmd}'")
         _print_help()

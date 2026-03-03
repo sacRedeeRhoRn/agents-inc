@@ -13,6 +13,7 @@ What stays here (to be split in later phases):
   - Skill record collection and managed-dir helpers
   - Locked-section overlay merge
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -198,9 +199,7 @@ def validate_skill_markdown(path: Path) -> List[str]:
 
     unexpected = sorted(set(frontmatter.keys()) - SKILL_ALLOWED_FRONTMATTER_KEYS)
     if unexpected:
-        errors.append(
-            "{0}: unexpected frontmatter key(s): {1}".format(path, ", ".join(unexpected))
-        )
+        errors.append("{0}: unexpected frontmatter key(s): {1}".format(path, ", ".join(unexpected)))
 
     name = frontmatter.get("name")
     version = frontmatter.get("version")
@@ -400,9 +399,7 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
             continue
         for dep in deps:
             if not isinstance(dep, dict):
-                errors.append(
-                    f"{source}: specialists[{idx}].depends_on entries must be maps"
-                )
+                errors.append(f"{source}: specialists[{idx}].depends_on entries must be maps")
                 continue
             dep_agent = dep.get("agent_id")
             if dep_agent not in specialist_id_set:
@@ -417,8 +414,7 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
                 )
             validate_with = dep.get("validate_with")
             if not isinstance(validate_with, str) or not (
-                validate_with in {"exists", "json-parse"}
-                or validate_with.startswith("schema:")
+                validate_with in {"exists", "json-parse"} or validate_with.startswith("schema:")
             ):
                 errors.append(
                     f"{source}: specialists[{idx}].depends_on.validate_with must be "
@@ -789,9 +785,7 @@ def collect_project_skill_records(
     return records
 
 
-def find_managed_skill_dirs(
-    target: Path, marker_file: str = ".fabric-managed.json"
-) -> List[Path]:
+def find_managed_skill_dirs(target: Path, marker_file: str = ".fabric-managed.json") -> List[Path]:
     if not target.exists():
         return []
     out: List[Path] = []

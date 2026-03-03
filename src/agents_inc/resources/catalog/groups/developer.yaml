@@ -1,12 +1,17 @@
+schema_version: '3.0'
 group_id: developer
-display_name: Developer Group
+display_name: Developer
 template_version: 3.0.0
-domain: software-and-infra
+domain: software-delivery
+purpose: Coordinate implementation and operational delivery across software objectives.
+success_criteria:
+- Required implementation artifacts are complete and consistent.
+- Integration risks are explicitly identified with mitigations.
+- Reproduction and evidence checks are satisfied.
 head:
   agent_id: developer-head
   skill_name: grp-developer-head
-  mission: Deliver robust implementation, debugging, and automation support for research
-    projects.
+  mission: Route and quality-gate specialist outputs for Developer.
   publish_contract:
     exposed_required:
     - summary.md
@@ -14,18 +19,15 @@ head:
     - INTEGRATION_NOTES.md
     visibility: group-only
 specialists:
-- agent_id: python-expert
-  skill_name: grp-developer-python
-  focus: Python architecture, package reliability, tests, and runtime debugging
+- agent_id: domain-core-specialist
+  skill_name: grp-developer-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Developer in software-delivery
   required_references:
-  - references/python-engineering-core.md
+  - references/domain-core-core.md
   required_outputs:
-  - implementation_patch.md
-  - test_plan.md
-  - claims_with_citations.md
   - work.md
   - handoff.json
-  role: domain-core
   contract:
     inputs:
     - objective.md
@@ -36,117 +38,7 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: shell-expert
-  skill_name: grp-developer-shell
-  focus: Shell automation, reproducible scripts, CLI hardening
-  required_references:
-  - references/shell-engineering-core.md
-  required_outputs:
-  - automation_scripts.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: repro-qa
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: python-expert
-    required_artifacts:
-    - internal/python-expert/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: ssh-remote-ops-expert
-  skill_name: grp-developer-ssh
-  focus: Remote operations, secure SSH workflows, transfer and execution protocols
-  required_references:
-  - references/ssh-ops-core.md
-  required_outputs:
-  - remote_ops_plan.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on: []
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: integration-specialist
-  skill_name: grp-developer-integration
-  role: integration
-  focus: Cross-artifact integration and consumability checks for Developer Group
-  required_references:
-  - references/integration-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: python-expert
-    required_artifacts:
-    - internal/python-expert/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: evidence-review-specialist
-  skill_name: grp-developer-evidence-review
-  role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Developer Group
-  required_references:
-  - references/evidence-review-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: python-expert
-    required_artifacts:
-    - internal/python-expert/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
@@ -154,7 +46,7 @@ specialists:
 - agent_id: web-research-specialist
   skill_name: grp-developer-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Developer
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -170,28 +62,170 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-tool_profile: developer-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate expert specialists for Developer Group objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- agent_id: integration-specialist
+  skill_name: grp-developer-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Developer
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-review-specialist
+  skill_name: grp-developer-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Developer
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: repro-qa-specialist
+  skill_name: grp-developer-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Developer
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: python-expert-specialist
+  skill_name: grp-developer-python-expert
+  role: python-expert
+  focus: Specialized python-expert analysis for Developer
+  required_references:
+  - references/python-expert-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: shell-expert-specialist
+  skill_name: grp-developer-shell-expert
+  role: shell-expert
+  focus: Specialized shell-expert analysis for Developer
+  required_references:
+  - references/shell-expert-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: ssh-remote-ops-expert-specialist
+  skill_name: grp-developer-ssh-remote-ops-expert
+  role: ssh-remote-ops-expert
+  focus: Specialized ssh-remote-ops-expert analysis for Developer
+  required_references:
+  - references/ssh-remote-ops-expert-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 required_artifacts:
   objective_types:
     default:
@@ -202,29 +236,21 @@ required_artifacts:
       - exposed/summary.md
       - exposed/handoff.json
       - exposed/INTEGRATION_NOTES.md
-    material-focused:
-      specialist_internal:
-      - internal/<agent-id>/work.md
-      - internal/<agent-id>/handoff.json
-      head_exposed:
-      - exposed/summary.md
-      - exposed/handoff.json
-      - exposed/INTEGRATION_NOTES.md
-      required_outputs:
-      - outputs/python/material_pipeline/__init__.py
-      - outputs/python/material_pipeline/score.py
-      - outputs/python/material_pipeline/cli.py
-      - outputs/reports/material-ranking-rationale.md
 gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
   checks:
     web_citations_required: true
     repro_command_required: true
     consistency_required: true
     scope_enforced: true
-    material_data_contract_required: true
-    material_package_required: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
 interaction:
   mode: interactive-separated
   linked_groups: []
@@ -235,3 +261,8 @@ execution_defaults:
   - local
   hardware:
   - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs

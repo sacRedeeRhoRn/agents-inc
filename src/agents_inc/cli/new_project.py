@@ -139,7 +139,9 @@ def render_handoff_block(specialists: List[dict]) -> str:
 def render_gate_checks_block(group: dict) -> str:
     checks = group.get("gate_profile", {}).get("checks", {})
     if not isinstance(checks, dict) or not checks:
-        return "- `citation_required`: `true`\n- `scope_enforced`: `true`\n- `repro_required`: `true`"
+        return (
+            "- `citation_required`: `true`\n- `scope_enforced`: `true`\n- `repro_required`: `true`"
+        )
     rows: List[str] = []
     for key, value in checks.items():
         rows.append("- `{0}`: `{1}`".format(key, bool(value)))
@@ -345,9 +347,7 @@ def write_group_assets(
                                 "GROUP_ID": group_id,
                                 "DISPLAY_NAME": group["display_name"],
                                 "SPECIALIST_AGENT_ID": specialist["agent_id"],
-                                "SPECIALIST_ROLE": str(
-                                    specialist.get("role") or "domain-core"
-                                ),
+                                "SPECIALIST_ROLE": str(specialist.get("role") or "domain-core"),
                                 "REFERENCE_TITLE": Path(ref_rel).stem.replace("-", " ").title(),
                             },
                         ),

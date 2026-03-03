@@ -3,6 +3,7 @@
 Kept in a leaf module (no internal imports) so every other util module can
 import FabricError without creating circular dependencies.
 """
+
 from __future__ import annotations
 
 

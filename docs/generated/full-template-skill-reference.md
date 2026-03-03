@@ -1,6 +1,6 @@
 # Full Template and Skill Reference
 
-Generated at: `2026-03-02T13:55:14Z`
+Generated at: `2026-03-03T00:48:21Z`
 Fabric root: `/home/msj/Desktop/playground/agents-inc_dev/agents-inc`
 Include generated projects: `True`
 
@@ -30,54 +30,61 @@ It is intended for publication-grade audit and onboarding readiness checks.
 | 17 | `schemas/dispatch.schema.yaml` | schema | Validation schema for manifests and dispatch contracts | `-` | schema-validated | source |
 | 18 | `schemas/escalation.schema.yaml` | schema | Validation schema for manifests and dispatch contracts | `-` | schema-validated | source |
 | 19 | `schemas/group.schema.yaml` | schema | Validation schema for manifests and dispatch contracts | `-` | schema-validated | source |
-| 20 | `schemas/project.schema.yaml` | schema | Validation schema for manifests and dispatch contracts | `-` | schema-validated | source |
-| 21 | `schemas/tool_policy.schema.yaml` | schema | Validation schema for manifests and dispatch contracts | `-` | schema-validated | source |
-| 22 | `catalog/groups/data-curation.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 23 | `catalog/groups/design-communication.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 24 | `catalog/groups/developer.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 25 | `catalog/groups/integration-delivery.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 26 | `catalog/groups/literature-intelligence.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 27 | `catalog/groups/quality-assurance.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 28 | `catalog/profiles/delivery-core.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 29 | `catalog/profiles/professional-services-core.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 30 | `catalog/profiles/rapid-debug.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 31 | `catalog/project-registry.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
-| 32 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
-| 33 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
-| 34 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
-| 35 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/delivery-architect/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 36 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/dependency-mapping-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 37 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/evidence-review-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 38 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/integration-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 39 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/repro-qa-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 40 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/web-research-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 41 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-delivery-architect--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 42 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-dependency-mapping-specialist--pro-acbf437d/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 43 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 44 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 45 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 46 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 47 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 48 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
-| 49 | `generated/projects/proj-test-alpha/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
-| 50 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
-| 51 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
-| 52 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
-| 53 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/delivery-architect/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 54 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/dependency-mapping-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 55 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/evidence-review-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 56 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/integration-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 57 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/repro-qa-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 58 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/web-research-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
-| 59 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-delivery-architect--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 60 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-dependency-mapping-specialist--pro-e1e000cd/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 61 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 62 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 63 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 64 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 65 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
-| 66 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
-| 67 | `generated/projects/proj-test-hpc/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 20 | `schemas/group_generation_output.schema.yaml` | schema | Validation schema for manifests and dispatch contracts | `-` | schema-validated | source |
+| 21 | `schemas/orchestrator_session.schema.yaml` | schema | Validation schema for manifests and dispatch contracts | `-` | schema-validated | source |
+| 22 | `schemas/project.schema.yaml` | schema | Validation schema for manifests and dispatch contracts | `-` | schema-validated | source |
+| 23 | `schemas/tool_policy.schema.yaml` | schema | Validation schema for manifests and dispatch contracts | `-` | schema-validated | source |
+| 24 | `catalog/core-group-seeds.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 25 | `catalog/groups/data-curation.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 26 | `catalog/groups/design-communication.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 27 | `catalog/groups/developer.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 28 | `catalog/groups/integration-delivery.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 29 | `catalog/groups/literature-intelligence.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 30 | `catalog/groups/quality-assurance.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 31 | `catalog/profiles/delivery-core.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 32 | `catalog/profiles/professional-services-core.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 33 | `catalog/profiles/rapid-debug.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 34 | `catalog/project-registry.yaml` | catalog | Reusable source-of-truth group/profile/registry metadata | `-` | schema-validated | source |
+| 35 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
+| 36 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 37 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
+| 38 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/deployment-planner-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 39 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/domain-core-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 40 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/evidence-review-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 41 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/integration-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 42 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/release-coordinator-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 43 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/repro-qa-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 44 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/web-research-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 45 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-deployment-planner-specialist--pro-4e25b51a/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 46 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-domain-core-specialist--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 47 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 48 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 49 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 50 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-release-coordinator-specialist--pr-ab92c60d/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 51 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 52 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-alpha/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 53 | `generated/projects/proj-test-alpha/agent-groups/integration-delivery/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
+| 54 | `generated/projects/proj-test-alpha/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 55 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/AGENTS.md` | agents | Group operating contract and policy | `safety_policy, citation_gate, routing_audit, exposure_policy` | content-reviewed | source |
+| 56 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/group.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
+| 57 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/handoffs.yaml` | handoff | Intra-group handoff protocol | `-` | content-reviewed | source |
+| 58 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/deployment-planner-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 59 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/domain-core-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 60 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/evidence-review-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 61 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/integration-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 62 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/release-coordinator-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 63 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/repro-qa-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 64 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/web-research-specialist/AGENTS.md` | agents | Group operating contract and policy | `-` | content-reviewed | source |
+| 65 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-deployment-planner-specialist--pro-f048d687/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 66 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-domain-core-specialist--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 67 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 68 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 69 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 70 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-release-coordinator-specialist--pr-cadcbb01/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 71 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 72 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-hpc/SKILL.md` | skill | Operational skill definition for an agent or router | `-` | content-reviewed | source |
+| 73 | `generated/projects/proj-test-hpc/agent-groups/integration-delivery/tools/allowlist.yaml` | tool-policy | Command/tool policy for group operations | `tool_restrictions` | schema-validated | source |
+| 74 | `generated/projects/proj-test-hpc/manifest.yaml` | manifest | Project or group manifest instance | `-` | schema-validated | source |
 
 ## Inlined Contents
 ## 1. `templates/group/AGENTS.template.md`
@@ -1081,7 +1088,95 @@ properties:
 additionalProperties: true
 ```
 
-## 20. `schemas/project.schema.yaml`
+## 20. `schemas/group_generation_output.schema.yaml`
+
+- Type: `schema`
+- Purpose: Validation schema for manifests and dispatch contracts
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+type: object
+required:
+  - group_id
+  - display_name
+  - domain
+  - purpose
+  - success_criteria
+  - specialists
+properties:
+  group_id:
+    type: string
+  display_name:
+    type: string
+  domain:
+    type: string
+  purpose:
+    type: string
+  success_criteria:
+    type: array
+    items:
+      type: string
+  specialists:
+    type: array
+    items:
+      type: object
+      required: [agent_id, role, focus]
+      properties:
+        agent_id:
+          type: string
+        role:
+          type: string
+        focus:
+          type: string
+  extra_roles:
+    type: array
+    items:
+      type: string
+```
+
+## 21. `schemas/orchestrator_session.schema.yaml`
+
+- Type: `schema`
+- Purpose: Validation schema for manifests and dispatch contracts
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+type: object
+required:
+  - schema_version
+  - project_id
+  - thread_id
+  - status
+  - updated_at
+properties:
+  schema_version:
+    type: string
+  project_id:
+    type: string
+  thread_id:
+    type: string
+  status:
+    type: string
+    enum: [active, inactive]
+  last_turn_id:
+    type: string
+  last_saved_checkpoint_id:
+    type: string
+  last_saved_at:
+    type: string
+  chat_log_path:
+    type: string
+  prefix:
+    type: string
+  updated_at:
+    type: string
+```
+
+## 22. `schemas/project.schema.yaml`
 
 - Type: `schema`
 - Purpose: Validation schema for manifests and dispatch contracts
@@ -1163,7 +1258,7 @@ properties:
 additionalProperties: true
 ```
 
-## 21. `schemas/tool_policy.schema.yaml`
+## 23. `schemas/tool_policy.schema.yaml`
 
 - Type: `schema`
 - Purpose: Validation schema for manifests and dispatch contracts
@@ -1198,7 +1293,7 @@ properties:
 additionalProperties: true
 ```
 
-## 22. `catalog/groups/data-curation.yaml`
+## 24. `catalog/core-group-seeds.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -1207,14 +1302,102 @@ additionalProperties: true
 - Exposure Policy: source
 
 ```yaml
+schema_version: "1.0"
+groups:
+  - group_id: developer
+    display_name: Developer
+    domain: software-delivery
+    purpose: Coordinate implementation and operational delivery across software objectives.
+    success_criteria:
+      - Required implementation artifacts are complete and consistent.
+      - Integration risks are explicitly identified with mitigations.
+      - Reproduction and evidence checks are satisfied.
+    extra_roles:
+      - python-expert
+      - shell-expert
+      - ssh-remote-ops-expert
+  - group_id: integration-delivery
+    display_name: Integration Delivery
+    domain: service-integration
+    purpose: Build integration plans, rollout sequencing, and handoff-ready delivery packages.
+    success_criteria:
+      - Cross-team dependencies are mapped and sequenced.
+      - Integration artifacts are consumable by downstream teams.
+      - Risks and blockers are clearly documented.
+    extra_roles:
+      - deployment-planner
+      - release-coordinator
+  - group_id: literature-intelligence
+    display_name: Literature Intelligence
+    domain: research-scouting
+    purpose: Gather, synthesize, and contextualize external evidence for decision support.
+    success_criteria:
+      - Source quality and relevance are documented.
+      - Claims map to citations with contradiction handling.
+      - Outputs support next-step decision making.
+    extra_roles:
+      - citation-analyst
+      - trend-scout
+  - group_id: data-curation
+    display_name: Data Curation
+    domain: data-operations
+    purpose: Curate structured evidence, normalize records, and prepare reusable data assets.
+    success_criteria:
+      - Data lineage and provenance are preserved.
+      - Normalization rules are explicit and reproducible.
+      - Deliverables are integration-ready.
+    extra_roles:
+      - schema-curator
+      - data-quality-auditor
+  - group_id: quality-assurance
+    display_name: Quality Assurance
+    domain: verification
+    purpose: Audit evidence quality, reproducibility, and consistency before publication.
+    success_criteria:
+      - Critical claims pass evidence sufficiency checks.
+      - Reproduction procedures are executable and validated.
+      - Final outputs are blocked when unresolved issues remain.
+    extra_roles:
+      - consistency-auditor
+      - reproducibility-auditor
+      - risk-auditor
+  - group_id: design-communication
+    display_name: Design Communication
+    domain: design-ops
+    purpose: Convert technical outputs into clear stakeholder-facing narratives and assets.
+    success_criteria:
+      - Deliverables are tailored to stakeholder audiences.
+      - Key decisions and tradeoffs are communicated clearly.
+      - Messaging remains evidence-grounded and actionable.
+    extra_roles:
+      - narrative-designer
+      - visual-communication-specialist
+```
+
+## 25. `catalog/groups/data-curation.yaml`
+
+- Type: `catalog`
+- Purpose: Reusable source-of-truth group/profile/registry metadata
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+schema_version: '3.0'
 group_id: data-curation
-display_name: Data Curation Group
+display_name: Data Curation
 template_version: 3.0.0
-domain: data-pipelines
+domain: data-operations
+purpose: Curate structured evidence, normalize records, and prepare reusable data
+  assets.
+success_criteria:
+- Data lineage and provenance are preserved.
+- Normalization rules are explicit and reproducible.
+- Deliverables are integration-ready.
 head:
   agent_id: data-curation-head
   skill_name: grp-data-curation-head
-  mission: Ensure trustworthy, traceable research data pipelines and metadata quality.
+  mission: Route and quality-gate specialist outputs for Data Curation.
   publish_contract:
     exposed_required:
     - summary.md
@@ -1222,17 +1405,15 @@ head:
     - INTEGRATION_NOTES.md
     visibility: group-only
 specialists:
-- agent_id: data-ingest-specialist
-  skill_name: grp-data-curation-ingest
-  focus: Data ingest strategy, provenance capture, and schema conformance
+- agent_id: domain-core-specialist
+  skill_name: grp-data-curation-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Data Curation in data-operations
   required_references:
-  - references/data-ingest-core.md
+  - references/domain-core-core.md
   required_outputs:
-  - ingest_report.md
-  - claims_with_citations.md
   - work.md
   - handoff.json
-  role: domain-core
   contract:
     inputs:
     - objective.md
@@ -1243,127 +1424,7 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: metadata-specialist
-  skill_name: grp-data-curation-metadata
-  focus: Metadata normalization, ontologies, and traceability annotations
-  depends_on:
-  - agent_id: data-ingest-specialist
-    required_artifacts:
-    - internal/data-ingest-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  required_references:
-  - references/metadata-core.md
-  required_outputs:
-  - metadata_dictionary.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: data-quality-specialist
-  skill_name: grp-data-curation-quality
-  focus: Data quality checks, anomaly detection heuristics, and acceptance thresholds
-  depends_on:
-  - agent_id: metadata-specialist
-    required_artifacts:
-    - internal/metadata-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  - agent_id: data-ingest-specialist
-    required_artifacts:
-    - internal/data-ingest-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  required_references:
-  - references/data-quality-core.md
-  required_outputs:
-  - quality_report.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: repro-qa
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: integration-specialist
-  skill_name: grp-data-curation-integration
-  role: integration
-  focus: Cross-artifact integration and consumability checks for Data Curation Group
-  required_references:
-  - references/integration-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: data-ingest-specialist
-    required_artifacts:
-    - internal/data-ingest-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: evidence-review-specialist
-  skill_name: grp-data-curation-evidence-review
-  role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Data Curation Group
-  required_references:
-  - references/evidence-review-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: data-ingest-specialist
-    required_artifacts:
-    - internal/data-ingest-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
@@ -1371,7 +1432,7 @@ specialists:
 - agent_id: web-research-specialist
   skill_name: grp-data-curation-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Data Curation
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -1387,141 +1448,15 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-tool_profile: data-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate expert specialists for Data Curation Group objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
-required_artifacts:
-  objective_types:
-    default:
-      specialist_internal:
-      - internal/<agent-id>/work.md
-      - internal/<agent-id>/handoff.json
-      head_exposed:
-      - exposed/summary.md
-      - exposed/handoff.json
-      - exposed/INTEGRATION_NOTES.md
-gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
-  checks:
-    web_citations_required: true
-    repro_command_required: true
-    consistency_required: true
-    scope_enforced: true
-interaction:
-  mode: interactive-separated
-  linked_groups: []
-execution_defaults:
-  web_search_enabled: true
-  remote_transport: local
-  schedulers:
-  - local
-  hardware:
-  - cpu
-```
-
-## 23. `catalog/groups/design-communication.yaml`
-
-- Type: `catalog`
-- Purpose: Reusable source-of-truth group/profile/registry metadata
-- Locked Sections: `-`
-- Validation Check: schema-validated
-- Exposure Policy: source
-
-```yaml
-group_id: design-communication
-display_name: Design Communication Group
-template_version: 3.0.0
-domain: design-and-communication
-head:
-  agent_id: design-communication-head
-  skill_name: grp-design-communication-head
-  mission: Shape clear narratives, communication assets, and stakeholder-facing deliverables across service workflows.
-  publish_contract:
-    exposed_required:
-    - summary.md
-    - handoff.json
-    - INTEGRATION_NOTES.md
-    visibility: group-only
-specialists:
-- agent_id: communication-strategy-specialist
-  skill_name: grp-design-communication-strategy
-  focus: Communication strategy, stakeholder alignment, and message intent mapping
-  required_references:
-  - references/communication-strategy-core.md
-  required_outputs:
-  - communication_strategy.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on: []
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: narrative-design-specialist
-  skill_name: grp-design-communication-narrative
-  focus: Narrative flow, artifact framing, and audience-oriented readability
-  required_references:
-  - references/narrative-design-core.md
-  required_outputs:
-  - narrative_outline.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: communication-strategy-specialist
-    required_artifacts:
-    - internal/communication-strategy-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
 - agent_id: integration-specialist
-  skill_name: grp-design-communication-integration
+  skill_name: grp-data-curation-integration
   role: integration
-  focus: Cross-artifact integration and consumability checks for Design Communication Group
+  focus: Cross-artifact integration and consumability checks for Data Curation
   required_references:
   - references/integration-core.md
   required_outputs:
@@ -1536,20 +1471,21 @@ specialists:
     - handoff.json
     output_schema: specialist-handoff-v2
   depends_on:
-  - agent_id: narrative-design-specialist
+  - agent_id: domain-core-specialist
     required_artifacts:
-    - internal/narrative-design-specialist/handoff.json
+    - internal/domain-core-specialist/handoff.json
     validate_with: json-parse
     on_missing: request-rerun
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
 - agent_id: evidence-review-specialist
-  skill_name: grp-design-communication-evidence-review
+  skill_name: grp-data-curation-evidence-review
   role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Design Communication Group
+  focus: Claim-level evidence review and citation sufficiency for Data Curation
   required_references:
   - references/evidence-review-core.md
   required_outputs:
@@ -1564,20 +1500,21 @@ specialists:
     - handoff.json
     output_schema: specialist-handoff-v2
   depends_on:
-  - agent_id: communication-strategy-specialist
+  - agent_id: domain-core-specialist
     required_artifacts:
-    - internal/communication-strategy-specialist/handoff.json
+    - internal/domain-core-specialist/handoff.json
     validate_with: json-parse
     on_missing: request-rerun
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
 - agent_id: repro-qa-specialist
-  skill_name: grp-design-communication-repro-qa
+  skill_name: grp-data-curation-repro-qa
   role: repro-qa
-  focus: Reproducibility and quality assurance checks for Design Communication Group
+  focus: Reproducibility and quality assurance checks for Data Curation
   required_references:
   - references/repro-qa-core.md
   required_outputs:
@@ -1592,12 +1529,157 @@ specialists:
     - handoff.json
     output_schema: specialist-handoff-v2
   depends_on:
-  - agent_id: communication-strategy-specialist
+  - agent_id: domain-core-specialist
     required_artifacts:
-    - internal/communication-strategy-specialist/handoff.json
+    - internal/domain-core-specialist/handoff.json
     validate_with: json-parse
     on_missing: request-rerun
   execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: schema-curator-specialist
+  skill_name: grp-data-curation-schema-curator
+  role: schema-curator
+  focus: Specialized schema-curator analysis for Data Curation
+  required_references:
+  - references/schema-curator-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: data-quality-auditor-specialist
+  skill_name: grp-data-curation-data-quality-auditor
+  role: data-quality-auditor
+  focus: Specialized data-quality-auditor analysis for Data Curation
+  required_references:
+  - references/data-quality-auditor-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
+interaction:
+  mode: interactive-separated
+  linked_groups: []
+execution_defaults:
+  web_search_enabled: true
+  remote_transport: local
+  schedulers:
+  - local
+  hardware:
+  - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs
+```
+
+## 26. `catalog/groups/design-communication.yaml`
+
+- Type: `catalog`
+- Purpose: Reusable source-of-truth group/profile/registry metadata
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+schema_version: '3.0'
+group_id: design-communication
+display_name: Design Communication
+template_version: 3.0.0
+domain: design-ops
+purpose: Convert technical outputs into clear stakeholder-facing narratives and assets.
+success_criteria:
+- Deliverables are tailored to stakeholder audiences.
+- Key decisions and tradeoffs are communicated clearly.
+- Messaging remains evidence-grounded and actionable.
+head:
+  agent_id: design-communication-head
+  skill_name: grp-design-communication-head
+  mission: Route and quality-gate specialist outputs for Design Communication.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
+specialists:
+- agent_id: domain-core-specialist
+  skill_name: grp-design-communication-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Design Communication in design-ops
+  required_references:
+  - references/domain-core-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
@@ -1605,7 +1687,7 @@ specialists:
 - agent_id: web-research-specialist
   skill_name: grp-design-communication-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Design Communication
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -1621,168 +1703,15 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-tool_profile: design-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate specialist design and communication workflows for service outcomes.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
-required_artifacts:
-  objective_types:
-    default:
-      specialist_internal:
-      - internal/<agent-id>/work.md
-      - internal/<agent-id>/handoff.json
-      head_exposed:
-      - exposed/summary.md
-      - exposed/handoff.json
-      - exposed/INTEGRATION_NOTES.md
-gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
-  checks:
-    web_citations_required: true
-    repro_command_required: true
-    consistency_required: true
-    scope_enforced: true
-interaction:
-  mode: interactive-separated
-  linked_groups: []
-execution_defaults:
-  web_search_enabled: true
-  remote_transport: local
-  schedulers:
-  - local
-  hardware:
-  - cpu
-```
-
-## 24. `catalog/groups/developer.yaml`
-
-- Type: `catalog`
-- Purpose: Reusable source-of-truth group/profile/registry metadata
-- Locked Sections: `-`
-- Validation Check: schema-validated
-- Exposure Policy: source
-
-```yaml
-group_id: developer
-display_name: Developer Group
-template_version: 3.0.0
-domain: software-and-infra
-head:
-  agent_id: developer-head
-  skill_name: grp-developer-head
-  mission: Deliver robust implementation, debugging, and automation support for research
-    projects.
-  publish_contract:
-    exposed_required:
-    - summary.md
-    - handoff.json
-    - INTEGRATION_NOTES.md
-    visibility: group-only
-specialists:
-- agent_id: python-expert
-  skill_name: grp-developer-python
-  focus: Python architecture, package reliability, tests, and runtime debugging
-  required_references:
-  - references/python-engineering-core.md
-  required_outputs:
-  - implementation_patch.md
-  - test_plan.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on: []
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: shell-expert
-  skill_name: grp-developer-shell
-  focus: Shell automation, reproducible scripts, CLI hardening
-  required_references:
-  - references/shell-engineering-core.md
-  required_outputs:
-  - automation_scripts.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: repro-qa
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: python-expert
-    required_artifacts:
-    - internal/python-expert/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: ssh-remote-ops-expert
-  skill_name: grp-developer-ssh
-  focus: Remote operations, secure SSH workflows, transfer and execution protocols
-  required_references:
-  - references/ssh-ops-core.md
-  required_outputs:
-  - remote_ops_plan.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on: []
-  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
 - agent_id: integration-specialist
-  skill_name: grp-developer-integration
+  skill_name: grp-design-communication-integration
   role: integration
-  focus: Cross-artifact integration and consumability checks for Developer Group
+  focus: Cross-artifact integration and consumability checks for Design Communication
   required_references:
   - references/integration-core.md
   required_outputs:
@@ -1797,20 +1726,21 @@ specialists:
     - handoff.json
     output_schema: specialist-handoff-v2
   depends_on:
-  - agent_id: python-expert
+  - agent_id: domain-core-specialist
     required_artifacts:
-    - internal/python-expert/handoff.json
+    - internal/domain-core-specialist/handoff.json
     validate_with: json-parse
     on_missing: request-rerun
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
 - agent_id: evidence-review-specialist
-  skill_name: grp-developer-evidence-review
+  skill_name: grp-design-communication-evidence-review
   role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Developer Group
+  focus: Claim-level evidence review and citation sufficiency for Design Communication
   required_references:
   - references/evidence-review-core.md
   required_outputs:
@@ -1825,241 +1755,21 @@ specialists:
     - handoff.json
     output_schema: specialist-handoff-v2
   depends_on:
-  - agent_id: python-expert
+  - agent_id: domain-core-specialist
     required_artifacts:
-    - internal/python-expert/handoff.json
+    - internal/domain-core-specialist/handoff.json
     validate_with: json-parse
     on_missing: request-rerun
   execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: web-research-specialist
-  skill_name: grp-developer-web-research
-  role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
-  required_references:
-  - references/web-research-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on: []
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-tool_profile: developer-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate expert specialists for Developer Group objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
-required_artifacts:
-  objective_types:
-    default:
-      specialist_internal:
-      - internal/<agent-id>/work.md
-      - internal/<agent-id>/handoff.json
-      head_exposed:
-      - exposed/summary.md
-      - exposed/handoff.json
-      - exposed/INTEGRATION_NOTES.md
-    material-focused:
-      specialist_internal:
-      - internal/<agent-id>/work.md
-      - internal/<agent-id>/handoff.json
-      head_exposed:
-      - exposed/summary.md
-      - exposed/handoff.json
-      - exposed/INTEGRATION_NOTES.md
-      required_outputs:
-      - outputs/python/material_pipeline/__init__.py
-      - outputs/python/material_pipeline/score.py
-      - outputs/python/material_pipeline/cli.py
-      - outputs/reports/material-ranking-rationale.md
-gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
-  checks:
-    web_citations_required: true
-    repro_command_required: true
-    consistency_required: true
-    scope_enforced: true
-    material_data_contract_required: true
-    material_package_required: true
-interaction:
-  mode: interactive-separated
-  linked_groups: []
-execution_defaults:
-  web_search_enabled: true
-  remote_transport: local
-  schedulers:
-  - local
-  hardware:
-  - cpu
-```
-
-## 25. `catalog/groups/integration-delivery.yaml`
-
-- Type: `catalog`
-- Purpose: Reusable source-of-truth group/profile/registry metadata
-- Locked Sections: `-`
-- Validation Check: schema-validated
-- Exposure Policy: source
-
-```yaml
-group_id: integration-delivery
-display_name: Integration Delivery Group
-template_version: 3.0.0
-domain: integration-and-delivery
-head:
-  agent_id: integration-delivery-head
-  skill_name: grp-integration-delivery-head
-  mission: Coordinate cross-team integration, release readiness, and delivery quality for professional services workflows.
-  publish_contract:
-    exposed_required:
-    - summary.md
-    - handoff.json
-    - INTEGRATION_NOTES.md
-    visibility: group-only
-specialists:
-- agent_id: delivery-architect
-  skill_name: grp-integration-delivery-architect
-  focus: Delivery architecture, staged rollout plans, and dependency-aware release strategy
-  required_references:
-  - references/delivery-architecture-core.md
-  required_outputs:
-  - rollout_plan.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on: []
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: dependency-mapping-specialist
-  skill_name: grp-integration-delivery-dependencies
-  focus: Dependency graph mapping, integration sequencing, and handoff risk detection
-  required_references:
-  - references/dependency-mapping-core.md
-  required_outputs:
-  - dependency_matrix.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: delivery-architect
-    required_artifacts:
-    - internal/delivery-architect/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: integration-specialist
-  skill_name: grp-integration-delivery-integration
-  role: integration
-  focus: Cross-artifact integration and consumability checks for Integration Delivery Group
-  required_references:
-  - references/integration-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: dependency-mapping-specialist
-    required_artifacts:
-    - internal/dependency-mapping-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: evidence-review-specialist
-  skill_name: grp-integration-delivery-evidence-review
-  role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Integration Delivery Group
-  required_references:
-  - references/evidence-review-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: delivery-architect
-    required_artifacts:
-    - internal/delivery-architect/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
 - agent_id: repro-qa-specialist
-  skill_name: grp-integration-delivery-repro-qa
+  skill_name: grp-design-communication-repro-qa
   role: repro-qa
-  focus: Reproducibility and quality assurance checks for Integration Delivery Group
+  focus: Reproducibility and quality assurance checks for Design Communication
   required_references:
   - references/repro-qa-core.md
   required_outputs:
@@ -2074,20 +1784,165 @@ specialists:
     - handoff.json
     output_schema: specialist-handoff-v2
   depends_on:
-  - agent_id: delivery-architect
+  - agent_id: domain-core-specialist
     required_artifacts:
-    - internal/delivery-architect/handoff.json
+    - internal/domain-core-specialist/handoff.json
     validate_with: json-parse
     on_missing: request-rerun
   execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: narrative-designer-specialist
+  skill_name: grp-design-communication-narrative-designer
+  role: narrative-designer
+  focus: Specialized narrative-designer analysis for Design Communication
+  required_references:
+  - references/narrative-designer-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: visual-communication-specialist-specialist
+  skill_name: grp-design-communication-visual-communication-specialist
+  role: visual-communication-specialist
+  focus: Specialized visual-communication-specialist analysis for Design Communication
+  required_references:
+  - references/visual-communication-specialist-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
+interaction:
+  mode: interactive-separated
+  linked_groups: []
+execution_defaults:
+  web_search_enabled: true
+  remote_transport: local
+  schedulers:
+  - local
+  hardware:
+  - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs
+```
+
+## 27. `catalog/groups/developer.yaml`
+
+- Type: `catalog`
+- Purpose: Reusable source-of-truth group/profile/registry metadata
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+schema_version: '3.0'
+group_id: developer
+display_name: Developer
+template_version: 3.0.0
+domain: software-delivery
+purpose: Coordinate implementation and operational delivery across software objectives.
+success_criteria:
+- Required implementation artifacts are complete and consistent.
+- Integration risks are explicitly identified with mitigations.
+- Reproduction and evidence checks are satisfied.
+head:
+  agent_id: developer-head
+  skill_name: grp-developer-head
+  mission: Route and quality-gate specialist outputs for Developer.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
+specialists:
+- agent_id: domain-core-specialist
+  skill_name: grp-developer-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Developer in software-delivery
+  required_references:
+  - references/domain-core-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
 - agent_id: web-research-specialist
-  skill_name: grp-integration-delivery-web-research
+  skill_name: grp-developer-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Developer
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -2103,28 +1958,170 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-tool_profile: delivery-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate specialist integration and delivery workflows for cross-team objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- agent_id: integration-specialist
+  skill_name: grp-developer-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Developer
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-review-specialist
+  skill_name: grp-developer-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Developer
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: repro-qa-specialist
+  skill_name: grp-developer-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Developer
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: python-expert-specialist
+  skill_name: grp-developer-python-expert
+  role: python-expert
+  focus: Specialized python-expert analysis for Developer
+  required_references:
+  - references/python-expert-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: shell-expert-specialist
+  skill_name: grp-developer-shell-expert
+  role: shell-expert
+  focus: Specialized shell-expert analysis for Developer
+  required_references:
+  - references/shell-expert-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: ssh-remote-ops-expert-specialist
+  skill_name: grp-developer-ssh-remote-ops-expert
+  role: ssh-remote-ops-expert
+  focus: Specialized ssh-remote-ops-expert analysis for Developer
+  required_references:
+  - references/ssh-remote-ops-expert-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 required_artifacts:
   objective_types:
     default:
@@ -2136,13 +2133,20 @@ required_artifacts:
       - exposed/handoff.json
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
   checks:
     web_citations_required: true
     repro_command_required: true
     consistency_required: true
     scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
 interaction:
   mode: interactive-separated
   linked_groups: []
@@ -2153,9 +2157,14 @@ execution_defaults:
   - local
   hardware:
   - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs
 ```
 
-## 26. `catalog/groups/literature-intelligence.yaml`
+## 28. `catalog/groups/integration-delivery.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -2164,15 +2173,20 @@ execution_defaults:
 - Exposure Policy: source
 
 ```yaml
-group_id: literature-intelligence
-display_name: Literature Intelligence Group
+schema_version: '3.0'
+group_id: integration-delivery
+display_name: Integration Delivery
 template_version: 3.0.0
-domain: literature-analysis
+domain: service-integration
+purpose: Build integration plans, rollout sequencing, and handoff-ready delivery packages.
+success_criteria:
+- Cross-team dependencies are mapped and sequenced.
+- Integration artifacts are consumable by downstream teams.
+- Risks and blockers are clearly documented.
 head:
-  agent_id: literature-intelligence-head
-  skill_name: grp-literature-intelligence-head
-  mission: Extract, compare, and evidence-grade literature claims for project decision
-    support.
+  agent_id: integration-delivery-head
+  skill_name: grp-integration-delivery-head
+  mission: Route and quality-gate specialist outputs for Integration Delivery.
   publish_contract:
     exposed_required:
     - summary.md
@@ -2180,17 +2194,15 @@ head:
     - INTEGRATION_NOTES.md
     visibility: group-only
 specialists:
-- agent_id: retrieval-specialist
-  skill_name: grp-literature-intelligence-retrieval
-  focus: Paper retrieval strategy, inclusion criteria, and source tracking
+- agent_id: domain-core-specialist
+  skill_name: grp-integration-delivery-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Integration Delivery in service-integration
   required_references:
-  - references/retrieval-core.md
+  - references/domain-core-core.md
   required_outputs:
-  - source_inventory.md
-  - claims_with_citations.md
   - work.md
   - handoff.json
-  role: domain-core
   contract:
     inputs:
     - objective.md
@@ -2201,27 +2213,73 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-- agent_id: evidence-grading-specialist
-  skill_name: grp-literature-intelligence-evidence
-  focus: Evidence grading, study quality interpretation, and confidence assignment
-  depends_on:
-  - agent_id: retrieval-specialist
-    required_artifacts:
-    - internal/retrieval-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
+- agent_id: web-research-specialist
+  skill_name: grp-integration-delivery-web-research
+  role: web-research
+  focus: Web evidence and experimental data gathering for Integration Delivery
   required_references:
-  - references/evidence-grading-core.md
+  - references/web-research-core.md
   required_outputs:
-  - evidence_matrix.md
-  - claims_with_citations.md
   - work.md
   - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: integration-specialist
+  skill_name: grp-integration-delivery-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Integration Delivery
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-review-specialist
+  skill_name: grp-integration-delivery-evidence-review
   role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Integration Delivery
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
   contract:
     inputs:
     - objective.md
@@ -2230,33 +2288,27 @@ specialists:
     - work.md
     - handoff.json
     output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-- agent_id: gap-analysis-specialist
-  skill_name: grp-literature-intelligence-gap
-  focus: Research gap mapping and risk-aware recommendation framing
-  depends_on:
-  - agent_id: evidence-grading-specialist
-    required_artifacts:
-    - internal/evidence-grading-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  - agent_id: retrieval-specialist
-    required_artifacts:
-    - internal/retrieval-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
+- agent_id: repro-qa-specialist
+  skill_name: grp-integration-delivery-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Integration Delivery
   required_references:
-  - references/gap-analysis-core.md
+  - references/repro-qa-core.md
   required_outputs:
-  - gap_map.md
-  - claims_with_citations.md
   - work.md
   - handoff.json
-  role: repro-qa
   contract:
     inputs:
     - objective.md
@@ -2265,7 +2317,182 @@ specialists:
     - work.md
     - handoff.json
     output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
   execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: deployment-planner-specialist
+  skill_name: grp-integration-delivery-deployment-planner
+  role: deployment-planner
+  focus: Specialized deployment-planner analysis for Integration Delivery
+  required_references:
+  - references/deployment-planner-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: release-coordinator-specialist
+  skill_name: grp-integration-delivery-release-coordinator
+  role: release-coordinator
+  focus: Specialized release-coordinator analysis for Integration Delivery
+  required_references:
+  - references/release-coordinator-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
+interaction:
+  mode: interactive-separated
+  linked_groups: []
+execution_defaults:
+  web_search_enabled: true
+  remote_transport: local
+  schedulers:
+  - local
+  hardware:
+  - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs
+```
+
+## 29. `catalog/groups/literature-intelligence.yaml`
+
+- Type: `catalog`
+- Purpose: Reusable source-of-truth group/profile/registry metadata
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+schema_version: '3.0'
+group_id: literature-intelligence
+display_name: Literature Intelligence
+template_version: 3.0.0
+domain: research-scouting
+purpose: Gather, synthesize, and contextualize external evidence for decision support.
+success_criteria:
+- Source quality and relevance are documented.
+- Claims map to citations with contradiction handling.
+- Outputs support next-step decision making.
+head:
+  agent_id: literature-intelligence-head
+  skill_name: grp-literature-intelligence-head
+  mission: Route and quality-gate specialist outputs for Literature Intelligence.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
+specialists:
+- agent_id: domain-core-specialist
+  skill_name: grp-literature-intelligence-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Literature Intelligence in research-scouting
+  required_references:
+  - references/domain-core-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: web-research-specialist
+  skill_name: grp-literature-intelligence-web-research
+  role: web-research
+  focus: Web evidence and experimental data gathering for Literature Intelligence
+  required_references:
+  - references/web-research-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
@@ -2274,7 +2501,6 @@ specialists:
   skill_name: grp-literature-intelligence-integration
   role: integration
   focus: Cross-artifact integration and consumability checks for Literature Intelligence
-    Group
   required_references:
   - references/integration-core.md
   required_outputs:
@@ -2289,231 +2515,21 @@ specialists:
     - handoff.json
     output_schema: specialist-handoff-v2
   depends_on:
-  - agent_id: retrieval-specialist
+  - agent_id: domain-core-specialist
     required_artifacts:
-    - internal/retrieval-specialist/handoff.json
+    - internal/domain-core-specialist/handoff.json
     validate_with: json-parse
     on_missing: request-rerun
   execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: web-research-specialist
-  skill_name: grp-literature-intelligence-web-research
-  role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
-  required_references:
-  - references/web-research-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on: []
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-tool_profile: literature-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate expert specialists for Literature Intelligence Group objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
-required_artifacts:
-  objective_types:
-    default:
-      specialist_internal:
-      - internal/<agent-id>/work.md
-      - internal/<agent-id>/handoff.json
-      head_exposed:
-      - exposed/summary.md
-      - exposed/handoff.json
-      - exposed/INTEGRATION_NOTES.md
-gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
-  checks:
-    web_citations_required: true
-    repro_command_required: true
-    consistency_required: true
-    scope_enforced: true
-interaction:
-  mode: interactive-separated
-  linked_groups: []
-execution_defaults:
-  web_search_enabled: true
-  remote_transport: local
-  schedulers:
-  - local
-  hardware:
-  - cpu
-```
-
-## 27. `catalog/groups/quality-assurance.yaml`
-
-- Type: `catalog`
-- Purpose: Reusable source-of-truth group/profile/registry metadata
-- Locked Sections: `-`
-- Validation Check: schema-validated
-- Exposure Policy: source
-
-```yaml
-group_id: quality-assurance
-display_name: Quality Assurance Group
-template_version: 3.0.0
-domain: verification-and-risk
-head:
-  agent_id: quality-assurance-head
-  skill_name: grp-quality-assurance-head
-  mission: Audit technical outputs for reproducibility, consistency, and decision-risk
-    control.
-  publish_contract:
-    exposed_required:
-    - summary.md
-    - handoff.json
-    - INTEGRATION_NOTES.md
-    visibility: group-only
-specialists:
-- agent_id: reproducibility-auditor
-  skill_name: grp-quality-assurance-repro
-  focus: Reproducibility checks, parameter traceability, and artifact completeness
-  required_references:
-  - references/reproducibility-core.md
-  required_outputs:
-  - repro_audit.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: repro-qa
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: consistency-auditor
-    required_artifacts:
-    - internal/consistency-auditor/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: consistency-auditor
-  skill_name: grp-quality-assurance-consistency
-  focus: Cross-document consistency checks and contradiction detection
-  required_references:
-  - references/consistency-core.md
-  required_outputs:
-  - consistency_audit.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on: []
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: risk-auditor
-  skill_name: grp-quality-assurance-risk
-  focus: Risk classification, severity tagging, and mitigation recommendation framing
-  depends_on:
-  - agent_id: consistency-auditor
-    required_artifacts:
-    - internal/consistency-auditor/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  required_references:
-  - references/risk-core.md
-  required_outputs:
-  - risk_register.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: repro-qa
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: integration-specialist
-  skill_name: grp-quality-assurance-integration
-  role: integration
-  focus: Cross-artifact integration and consumability checks for Quality Assurance
-    Group
-  required_references:
-  - references/integration-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: consistency-auditor
-    required_artifacts:
-    - internal/consistency-auditor/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
 - agent_id: evidence-review-specialist
-  skill_name: grp-quality-assurance-evidence-review
+  skill_name: grp-literature-intelligence-evidence-review
   role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Quality Assurance
-    Group
+  focus: Claim-level evidence review and citation sufficiency for Literature Intelligence
   required_references:
   - references/evidence-review-core.md
   required_outputs:
@@ -2528,12 +2544,186 @@ specialists:
     - handoff.json
     output_schema: specialist-handoff-v2
   depends_on:
-  - agent_id: consistency-auditor
+  - agent_id: domain-core-specialist
     required_artifacts:
-    - internal/consistency-auditor/handoff.json
+    - internal/domain-core-specialist/handoff.json
     validate_with: json-parse
     on_missing: request-rerun
   execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: repro-qa-specialist
+  skill_name: grp-literature-intelligence-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Literature Intelligence
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: citation-analyst-specialist
+  skill_name: grp-literature-intelligence-citation-analyst
+  role: citation-analyst
+  focus: Specialized citation-analyst analysis for Literature Intelligence
+  required_references:
+  - references/citation-analyst-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: trend-scout-specialist
+  skill_name: grp-literature-intelligence-trend-scout
+  role: trend-scout
+  focus: Specialized trend-scout analysis for Literature Intelligence
+  required_references:
+  - references/trend-scout-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+required_artifacts:
+  objective_types:
+    default:
+      specialist_internal:
+      - internal/<agent-id>/work.md
+      - internal/<agent-id>/handoff.json
+      head_exposed:
+      - exposed/summary.md
+      - exposed/handoff.json
+      - exposed/INTEGRATION_NOTES.md
+gate_profile:
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
+  checks:
+    web_citations_required: true
+    repro_command_required: true
+    consistency_required: true
+    scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
+interaction:
+  mode: interactive-separated
+  linked_groups: []
+execution_defaults:
+  web_search_enabled: true
+  remote_transport: local
+  schedulers:
+  - local
+  hardware:
+  - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs
+```
+
+## 30. `catalog/groups/quality-assurance.yaml`
+
+- Type: `catalog`
+- Purpose: Reusable source-of-truth group/profile/registry metadata
+- Locked Sections: `-`
+- Validation Check: schema-validated
+- Exposure Policy: source
+
+```yaml
+schema_version: '3.0'
+group_id: quality-assurance
+display_name: Quality Assurance
+template_version: 3.0.0
+domain: verification
+purpose: Audit evidence quality, reproducibility, and consistency before publication.
+success_criteria:
+- Critical claims pass evidence sufficiency checks.
+- Reproduction procedures are executable and validated.
+- Final outputs are blocked when unresolved issues remain.
+head:
+  agent_id: quality-assurance-head
+  skill_name: grp-quality-assurance-head
+  mission: Route and quality-gate specialist outputs for Quality Assurance.
+  publish_contract:
+    exposed_required:
+    - summary.md
+    - handoff.json
+    - INTEGRATION_NOTES.md
+    visibility: group-only
+specialists:
+- agent_id: domain-core-specialist
+  skill_name: grp-quality-assurance-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Quality Assurance in verification
+  required_references:
+  - references/domain-core-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
@@ -2541,7 +2731,7 @@ specialists:
 - agent_id: web-research-specialist
   skill_name: grp-quality-assurance-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Quality Assurance
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -2557,28 +2747,170 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-tool_profile: qa-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate expert specialists for Quality Assurance Group objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- agent_id: integration-specialist
+  skill_name: grp-quality-assurance-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Quality Assurance
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-review-specialist
+  skill_name: grp-quality-assurance-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Quality Assurance
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: repro-qa-specialist
+  skill_name: grp-quality-assurance-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Quality Assurance
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: consistency-auditor-specialist
+  skill_name: grp-quality-assurance-consistency-auditor
+  role: consistency-auditor
+  focus: Specialized consistency-auditor analysis for Quality Assurance
+  required_references:
+  - references/consistency-auditor-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: reproducibility-auditor-specialist
+  skill_name: grp-quality-assurance-reproducibility-auditor
+  role: reproducibility-auditor
+  focus: Specialized reproducibility-auditor analysis for Quality Assurance
+  required_references:
+  - references/reproducibility-auditor-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: risk-auditor-specialist
+  skill_name: grp-quality-assurance-risk-auditor
+  role: risk-auditor
+  focus: Specialized risk-auditor analysis for Quality Assurance
+  required_references:
+  - references/risk-auditor-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 required_artifacts:
   objective_types:
     default:
@@ -2590,13 +2922,20 @@ required_artifacts:
       - exposed/handoff.json
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
   checks:
     web_citations_required: true
     repro_command_required: true
     consistency_required: true
     scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
 interaction:
   mode: interactive-separated
   linked_groups: []
@@ -2607,9 +2946,14 @@ execution_defaults:
   - local
   hardware:
   - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs
 ```
 
-## 28. `catalog/profiles/delivery-core.yaml`
+## 31. `catalog/profiles/delivery-core.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -2627,7 +2971,7 @@ groups:
   - "data-curation"
 ```
 
-## 29. `catalog/profiles/professional-services-core.yaml`
+## 32. `catalog/profiles/professional-services-core.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -2647,7 +2991,7 @@ groups:
   - "design-communication"
 ```
 
-## 30. `catalog/profiles/rapid-debug.yaml`
+## 33. `catalog/profiles/rapid-debug.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -2664,7 +3008,7 @@ groups:
   - "literature-intelligence"
 ```
 
-## 31. `catalog/project-registry.yaml`
+## 34. `catalog/project-registry.yaml`
 
 - Type: `catalog`
 - Purpose: Reusable source-of-truth group/profile/registry metadata
@@ -2679,15 +3023,15 @@ projects:
     manifest_path: generated/projects/proj-test-alpha/manifest.yaml
     selected_groups:
     - integration-delivery
-    updated_at: '2026-03-02T13:55:14Z'
+    updated_at: '2026-03-03T00:48:21Z'
   proj-test-hpc:
     manifest_path: generated/projects/proj-test-hpc/manifest.yaml
     selected_groups:
     - integration-delivery
-    updated_at: '2026-03-02T13:55:14Z'
+    updated_at: '2026-03-03T00:48:21Z'
 ```
 
-## 32. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/AGENTS.md`
+## 35. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -2696,33 +3040,35 @@ projects:
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group - proj-test-alpha
+# Integration Delivery - proj-test-alpha
 
 ## Mission
-Coordinate cross-team integration, release readiness, and delivery quality for professional services workflows.
+Route and quality-gate specialist outputs for Integration Delivery.
 
 ## Group Identity
 - `group_id`: `integration-delivery`
 - `template_version`: `3.0.0`
-- `tool_profile`: `delivery-default`
+- `tool_profile`: `default`
 - `head_agent`: `integration-delivery-head`
 - `head_skill`: `integration-delivery-integration-delivery-head--proj-test-alpha`
 
 ## Specialist Roster
-- `delivery-architect`: Delivery architecture, staged rollout plans, and dependency-aware release strategy (skill: `integration-delivery-delivery-architect--proj-test-alpha`)
-- `dependency-mapping-specialist`: Dependency graph mapping, integration sequencing, and handoff risk detection (skill: `integration-delivery-dependency-mapping-specialist--pro-acbf437d`)
-- `integration-specialist`: Cross-artifact integration and consumability checks for Integration Delivery Group (skill: `integration-delivery-integration-specialist--proj-test-alpha`)
-- `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Integration Delivery Group (skill: `integration-delivery-evidence-review-specialist--proj-test-alpha`)
-- `repro-qa-specialist`: Reproducibility and quality assurance checks for Integration Delivery Group (skill: `integration-delivery-repro-qa-specialist--proj-test-alpha`)
-- `web-research-specialist`: Gather web-published references and extract citation-ready evidence. (skill: `integration-delivery-web-research-specialist--proj-test-alpha`)
+- `domain-core-specialist`: Primary domain analysis for Integration Delivery in service-integration (skill: `integration-delivery-domain-core-specialist--proj-test-alpha`)
+- `web-research-specialist`: Web evidence and experimental data gathering for Integration Delivery (skill: `integration-delivery-web-research-specialist--proj-test-alpha`)
+- `integration-specialist`: Cross-artifact integration and consumability checks for Integration Delivery (skill: `integration-delivery-integration-specialist--proj-test-alpha`)
+- `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Integration Delivery (skill: `integration-delivery-evidence-review-specialist--proj-test-alpha`)
+- `repro-qa-specialist`: Reproducibility and quality assurance checks for Integration Delivery (skill: `integration-delivery-repro-qa-specialist--proj-test-alpha`)
+- `deployment-planner-specialist`: Specialized deployment-planner analysis for Integration Delivery (skill: `integration-delivery-deployment-planner-specialist--pro-4e25b51a`)
+- `release-coordinator-specialist`: Specialized release-coordinator analysis for Integration Delivery (skill: `integration-delivery-release-coordinator-specialist--pr-ab92c60d`)
 
 ## Work Directories
-- `generated/projects/proj-test-alpha/work/integration-delivery/delivery-architect`
-- `generated/projects/proj-test-alpha/work/integration-delivery/dependency-mapping-specialist`
+- `generated/projects/proj-test-alpha/work/integration-delivery/domain-core-specialist`
+- `generated/projects/proj-test-alpha/work/integration-delivery/web-research-specialist`
 - `generated/projects/proj-test-alpha/work/integration-delivery/integration-specialist`
 - `generated/projects/proj-test-alpha/work/integration-delivery/evidence-review-specialist`
 - `generated/projects/proj-test-alpha/work/integration-delivery/repro-qa-specialist`
-- `generated/projects/proj-test-alpha/work/integration-delivery/web-research-specialist`
+- `generated/projects/proj-test-alpha/work/integration-delivery/deployment-planner-specialist`
+- `generated/projects/proj-test-alpha/work/integration-delivery/release-coordinator-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/integration-delivery/internal/<specialist>/...`
@@ -2764,22 +3110,20 @@ BEGIN_LOCKED:exposure_policy
 END_LOCKED:exposure_policy
 
 ## Expected Deliverables
-- `rollout_plan.md` from `delivery-architect`
-- `claims_with_citations.md` from `delivery-architect`
-- `work.md` from `delivery-architect`
-- `handoff.json` from `delivery-architect`
-- `dependency_matrix.md` from `dependency-mapping-specialist`
-- `claims_with_citations.md` from `dependency-mapping-specialist`
-- `work.md` from `dependency-mapping-specialist`
-- `handoff.json` from `dependency-mapping-specialist`
+- `work.md` from `domain-core-specialist`
+- `handoff.json` from `domain-core-specialist`
+- `work.md` from `web-research-specialist`
+- `handoff.json` from `web-research-specialist`
 - `work.md` from `integration-specialist`
 - `handoff.json` from `integration-specialist`
 - `work.md` from `evidence-review-specialist`
 - `handoff.json` from `evidence-review-specialist`
 - `work.md` from `repro-qa-specialist`
 - `handoff.json` from `repro-qa-specialist`
-- `work.md` from `web-research-specialist`
-- `handoff.json` from `web-research-specialist`
+- `work.md` from `deployment-planner-specialist`
+- `handoff.json` from `deployment-planner-specialist`
+- `work.md` from `release-coordinator-specialist`
+- `handoff.json` from `release-coordinator-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`
@@ -2790,7 +3134,7 @@ END_LOCKED:exposure_policy
 - `reproducibility_required`: `True`
 ```
 
-## 33. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/group.yaml`
+## 36. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/group.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -2799,15 +3143,20 @@ END_LOCKED:exposure_policy
 - Exposure Policy: source
 
 ```yaml
+schema_version: '3.0'
 group_id: integration-delivery
-display_name: Integration Delivery Group
+display_name: Integration Delivery
 template_version: 3.0.0
-domain: integration-and-delivery
+domain: service-integration
+purpose: Build integration plans, rollout sequencing, and handoff-ready delivery packages.
+success_criteria:
+- Cross-team dependencies are mapped and sequenced.
+- Integration artifacts are consumable by downstream teams.
+- Risks and blockers are clearly documented.
 head:
   agent_id: integration-delivery-head
   skill_name: grp-integration-delivery-head
-  mission: Coordinate cross-team integration, release readiness, and delivery quality
-    for professional services workflows.
+  mission: Route and quality-gate specialist outputs for Integration Delivery.
   publish_contract:
     exposed_required:
     - summary.md
@@ -2816,18 +3165,15 @@ head:
     visibility: group-only
   effective_skill_name: integration-delivery-integration-delivery-head--proj-test-alpha
 specialists:
-- agent_id: delivery-architect
-  skill_name: grp-integration-delivery-architect
-  focus: Delivery architecture, staged rollout plans, and dependency-aware release
-    strategy
+- agent_id: domain-core-specialist
+  skill_name: grp-integration-delivery-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Integration Delivery in service-integration
   required_references:
-  - references/delivery-architecture-core.md
+  - references/domain-core-core.md
   required_outputs:
-  - rollout_plan.md
-  - claims_with_citations.md
   - work.md
   - handoff.json
-  role: domain-core
   contract:
     inputs:
     - objective.md
@@ -2838,135 +3184,16 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-  effective_skill_name: integration-delivery-delivery-architect--proj-test-alpha
-- agent_id: dependency-mapping-specialist
-  skill_name: grp-integration-delivery-dependencies
-  focus: Dependency graph mapping, integration sequencing, and handoff risk detection
-  required_references:
-  - references/dependency-mapping-core.md
-  required_outputs:
-  - dependency_matrix.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: delivery-architect
-    required_artifacts:
-    - internal/delivery-architect/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-  effective_skill_name: integration-delivery-dependency-mapping-specialist--pro-acbf437d
-- agent_id: integration-specialist
-  skill_name: grp-integration-delivery-integration
-  role: integration
-  focus: Cross-artifact integration and consumability checks for Integration Delivery
-    Group
-  required_references:
-  - references/integration-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: dependency-mapping-specialist
-    required_artifacts:
-    - internal/dependency-mapping-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-  effective_skill_name: integration-delivery-integration-specialist--proj-test-alpha
-- agent_id: evidence-review-specialist
-  skill_name: grp-integration-delivery-evidence-review
-  role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Integration Delivery
-    Group
-  required_references:
-  - references/evidence-review-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: delivery-architect
-    required_artifacts:
-    - internal/delivery-architect/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-  effective_skill_name: integration-delivery-evidence-review-specialist--proj-test-alpha
-- agent_id: repro-qa-specialist
-  skill_name: grp-integration-delivery-repro-qa
-  role: repro-qa
-  focus: Reproducibility and quality assurance checks for Integration Delivery Group
-  required_references:
-  - references/repro-qa-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: delivery-architect
-    required_artifacts:
-    - internal/delivery-architect/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-  effective_skill_name: integration-delivery-repro-qa-specialist--proj-test-alpha
+  effective_skill_name: integration-delivery-domain-core-specialist--proj-test-alpha
 - agent_id: web-research-specialist
   skill_name: grp-integration-delivery-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Integration Delivery
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -2982,29 +3209,152 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
   effective_skill_name: integration-delivery-web-research-specialist--proj-test-alpha
-tool_profile: delivery-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate specialist integration and delivery workflows for cross-team objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- agent_id: integration-specialist
+  skill_name: grp-integration-delivery-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Integration Delivery
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: integration-delivery-integration-specialist--proj-test-alpha
+- agent_id: evidence-review-specialist
+  skill_name: grp-integration-delivery-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Integration Delivery
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: integration-delivery-evidence-review-specialist--proj-test-alpha
+- agent_id: repro-qa-specialist
+  skill_name: grp-integration-delivery-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Integration Delivery
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: integration-delivery-repro-qa-specialist--proj-test-alpha
+- agent_id: deployment-planner-specialist
+  skill_name: grp-integration-delivery-deployment-planner
+  role: deployment-planner
+  focus: Specialized deployment-planner analysis for Integration Delivery
+  required_references:
+  - references/deployment-planner-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: integration-delivery-deployment-planner-specialist--pro-4e25b51a
+- agent_id: release-coordinator-specialist
+  skill_name: grp-integration-delivery-release-coordinator
+  role: release-coordinator
+  focus: Specialized release-coordinator analysis for Integration Delivery
+  required_references:
+  - references/release-coordinator-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: integration-delivery-release-coordinator-specialist--pr-ab92c60d
 required_artifacts:
   objective_types:
     default:
@@ -3016,13 +3366,20 @@ required_artifacts:
       - exposed/handoff.json
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
   checks:
     web_citations_required: true
     repro_command_required: true
     consistency_required: true
     scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
 interaction:
   mode: interactive-separated
   linked_groups: []
@@ -3033,9 +3390,14 @@ execution_defaults:
   - local
   hardware:
   - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs
 ```
 
-## 34. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/handoffs.yaml`
+## 37. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/handoffs.yaml`
 
 - Type: `handoff`
 - Purpose: Intra-group handoff protocol
@@ -3047,22 +3409,25 @@ execution_defaults:
 schema_version: "3.0"
 group_id: "integration-delivery"
 handoffs:
-  - from: "delivery-architect"
+  - from: "domain-core-specialist"
     to: "head-controller"
     condition: "after task completion"
-  - from: "dependency-mapping-specialist"
+  - from: "web-research-specialist"
     to: "head-controller"
-    condition: "after dependencies satisfied (delivery-architect)"
+    condition: "after task completion"
   - from: "integration-specialist"
     to: "head-controller"
-    condition: "after dependencies satisfied (dependency-mapping-specialist)"
+    condition: "after dependencies satisfied (domain-core-specialist)"
   - from: "evidence-review-specialist"
     to: "head-controller"
-    condition: "after dependencies satisfied (delivery-architect)"
+    condition: "after dependencies satisfied (domain-core-specialist)"
   - from: "repro-qa-specialist"
     to: "head-controller"
-    condition: "after dependencies satisfied (delivery-architect)"
-  - from: "web-research-specialist"
+    condition: "after dependencies satisfied (domain-core-specialist)"
+  - from: "deployment-planner-specialist"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "release-coordinator-specialist"
     to: "head-controller"
     condition: "after task completion"
 output_contract:
@@ -3075,7 +3440,7 @@ output_contract:
     - "exposed/INTEGRATION_NOTES.md"
 ```
 
-## 35. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/delivery-architect/AGENTS.md`
+## 38. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/deployment-planner-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -3084,26 +3449,24 @@ output_contract:
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - delivery-architect
+# Integration Delivery Specialist - deployment-planner-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-alpha`
 - `group_id`: `integration-delivery`
-- `role`: `domain-core`
-- `focus`: Delivery architecture, staged rollout plans, and dependency-aware release strategy
-- `skill`: `integration-delivery-delivery-architect--proj-test-alpha`
+- `role`: `deployment-planner`
+- `focus`: Specialized deployment-planner analysis for Integration Delivery
+- `skill`: `integration-delivery-deployment-planner-specialist--pro-4e25b51a`
 
 ## Activation
-Activate and follow the `$integration-delivery-delivery-architect--proj-test-alpha` skill before proceeding.
+Activate and follow the `$integration-delivery-deployment-planner-specialist--pro-4e25b51a` skill before proceeding.
 
 ## Required Outputs
-- rollout_plan.md
-- claims_with_citations.md
 - work.md
 - handoff.json
 
 ## Required References
-- references/delivery-architecture-core.md
+- references/deployment-planner-core.md
 
 ## Hard Gate Checks
 - `web_citations_required`: `True`
@@ -3112,12 +3475,12 @@ Activate and follow the `$integration-delivery-delivery-architect--proj-test-alp
 - `scope_enforced`: `True`
 
 ## Execution Boundaries
-- Write only under `agent-groups/integration-delivery/internal/delivery-architect/`.
+- Write only under `agent-groups/integration-delivery/internal/deployment-planner-specialist/`.
 - Do not publish exposed artifacts directly.
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 36. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/dependency-mapping-specialist/AGENTS.md`
+## 39. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/domain-core-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -3126,26 +3489,24 @@ Activate and follow the `$integration-delivery-delivery-architect--proj-test-alp
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - dependency-mapping-specialist
+# Integration Delivery Specialist - domain-core-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-alpha`
 - `group_id`: `integration-delivery`
 - `role`: `domain-core`
-- `focus`: Dependency graph mapping, integration sequencing, and handoff risk detection
-- `skill`: `integration-delivery-dependency-mapping-specialist--pro-acbf437d`
+- `focus`: Primary domain analysis for Integration Delivery in service-integration
+- `skill`: `integration-delivery-domain-core-specialist--proj-test-alpha`
 
 ## Activation
-Activate and follow the `$integration-delivery-dependency-mapping-specialist--pro-acbf437d` skill before proceeding.
+Activate and follow the `$integration-delivery-domain-core-specialist--proj-test-alpha` skill before proceeding.
 
 ## Required Outputs
-- dependency_matrix.md
-- claims_with_citations.md
 - work.md
 - handoff.json
 
 ## Required References
-- references/dependency-mapping-core.md
+- references/domain-core-core.md
 
 ## Hard Gate Checks
 - `web_citations_required`: `True`
@@ -3154,12 +3515,12 @@ Activate and follow the `$integration-delivery-dependency-mapping-specialist--pr
 - `scope_enforced`: `True`
 
 ## Execution Boundaries
-- Write only under `agent-groups/integration-delivery/internal/dependency-mapping-specialist/`.
+- Write only under `agent-groups/integration-delivery/internal/domain-core-specialist/`.
 - Do not publish exposed artifacts directly.
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 37. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/evidence-review-specialist/AGENTS.md`
+## 40. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/evidence-review-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -3168,13 +3529,13 @@ Activate and follow the `$integration-delivery-dependency-mapping-specialist--pr
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - evidence-review-specialist
+# Integration Delivery Specialist - evidence-review-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-alpha`
 - `group_id`: `integration-delivery`
 - `role`: `evidence-review`
-- `focus`: Claim-level evidence review and citation sufficiency for Integration Delivery Group
+- `focus`: Claim-level evidence review and citation sufficiency for Integration Delivery
 - `skill`: `integration-delivery-evidence-review-specialist--proj-test-alpha`
 
 ## Activation
@@ -3199,7 +3560,7 @@ Activate and follow the `$integration-delivery-evidence-review-specialist--proj-
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 38. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/integration-specialist/AGENTS.md`
+## 41. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/integration-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -3208,13 +3569,13 @@ Activate and follow the `$integration-delivery-evidence-review-specialist--proj-
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - integration-specialist
+# Integration Delivery Specialist - integration-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-alpha`
 - `group_id`: `integration-delivery`
 - `role`: `integration`
-- `focus`: Cross-artifact integration and consumability checks for Integration Delivery Group
+- `focus`: Cross-artifact integration and consumability checks for Integration Delivery
 - `skill`: `integration-delivery-integration-specialist--proj-test-alpha`
 
 ## Activation
@@ -3239,7 +3600,7 @@ Activate and follow the `$integration-delivery-integration-specialist--proj-test
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 39. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/repro-qa-specialist/AGENTS.md`
+## 42. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/release-coordinator-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -3248,13 +3609,53 @@ Activate and follow the `$integration-delivery-integration-specialist--proj-test
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - repro-qa-specialist
+# Integration Delivery Specialist - release-coordinator-specialist
+
+## Role Contract
+- `project_id`: `proj-test-alpha`
+- `group_id`: `integration-delivery`
+- `role`: `release-coordinator`
+- `focus`: Specialized release-coordinator analysis for Integration Delivery
+- `skill`: `integration-delivery-release-coordinator-specialist--pr-ab92c60d`
+
+## Activation
+Activate and follow the `$integration-delivery-release-coordinator-specialist--pr-ab92c60d` skill before proceeding.
+
+## Required Outputs
+- work.md
+- handoff.json
+
+## Required References
+- references/release-coordinator-core.md
+
+## Hard Gate Checks
+- `web_citations_required`: `True`
+- `repro_command_required`: `True`
+- `consistency_required`: `True`
+- `scope_enforced`: `True`
+
+## Execution Boundaries
+- Write only under `agent-groups/integration-delivery/internal/release-coordinator-specialist/`.
+- Do not publish exposed artifacts directly.
+- If key evidence is missing, return a blocked status with explicit reasons.
+```
+
+## 43. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/repro-qa-specialist/AGENTS.md`
+
+- Type: `agents`
+- Purpose: Group operating contract and policy
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+# Integration Delivery Specialist - repro-qa-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-alpha`
 - `group_id`: `integration-delivery`
 - `role`: `repro-qa`
-- `focus`: Reproducibility and quality assurance checks for Integration Delivery Group
+- `focus`: Reproducibility and quality assurance checks for Integration Delivery
 - `skill`: `integration-delivery-repro-qa-specialist--proj-test-alpha`
 
 ## Activation
@@ -3279,7 +3680,7 @@ Activate and follow the `$integration-delivery-repro-qa-specialist--proj-test-al
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 40. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/web-research-specialist/AGENTS.md`
+## 44. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/internal/web-research-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -3288,13 +3689,13 @@ Activate and follow the `$integration-delivery-repro-qa-specialist--proj-test-al
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - web-research-specialist
+# Integration Delivery Specialist - web-research-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-alpha`
 - `group_id`: `integration-delivery`
 - `role`: `web-research`
-- `focus`: Gather web-published references and extract citation-ready evidence.
+- `focus`: Web evidence and experimental data gathering for Integration Delivery
 - `skill`: `integration-delivery-web-research-specialist--proj-test-alpha`
 
 ## Activation
@@ -3319,7 +3720,7 @@ Activate and follow the `$integration-delivery-web-research-specialist--proj-tes
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 41. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-delivery-architect--proj-test-alpha/SKILL.md`
+## 45. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-deployment-planner-specialist--pro-4e25b51a/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3329,18 +3730,18 @@ Activate and follow the `$integration-delivery-web-research-specialist--proj-tes
 
 ```md
 ---
-name: integration-delivery-delivery-architect--proj-test-alpha
+name: integration-delivery-deployment-planner-specialist--pro-4e25b51a
 version: "3.1.1"
 role: specialist
-description: domain-core specialist for Integration Delivery Group focused on Delivery architecture, staged rollout plans, and dependency-aware release strategy in project proj-test-alpha.
+description: deployment-planner specialist for Integration Delivery focused on Specialized deployment-planner analysis for Integration Delivery in project proj-test-alpha.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
   - group-context.json
   - dependency artifacts
 outputs:
-  - internal/delivery-architect/work.md
-  - internal/delivery-architect/handoff.json
+  - internal/deployment-planner-specialist/work.md
+  - internal/deployment-planner-specialist/handoff.json
 failure_modes:
   - blocked_needs_evidence
   - blocked_uncited
@@ -3350,22 +3751,20 @@ autouse_triggers:
   - dependency artifact ready
 ---
 
-# delivery-architect
+# deployment-planner-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Delivery architecture, staged rollout plans, and dependency-aware release strategy
+Specialized deployment-planner analysis for Integration Delivery
 
 ## When to Invoke
-- The objective requires `domain-core` expertise.
-- Specialist focus applies: Delivery architecture, staged rollout plans, and dependency-aware release strategy
+- The objective requires `deployment-planner` expertise.
+- Specialist focus applies: Specialized deployment-planner analysis for Integration Delivery
 - Group context: `integration-delivery` in project `proj-test-alpha`.
 
 ## Definition of Done
-- Produce `rollout_plan.md`.
-- Produce `claims_with_citations.md`.
 - Produce `work.md`.
 - Produce `handoff.json`.
 - Pass gate check `web_citations_required`.
@@ -3380,8 +3779,6 @@ Delivery architecture, staged rollout plans, and dependency-aware release strate
 4. Write required artifacts and ensure paths are reproducible by peers.
 
 ## Artifacts to Produce
-- rollout_plan.md
-- claims_with_citations.md
 - work.md
 - handoff.json
 
@@ -3395,7 +3792,7 @@ Delivery architecture, staged rollout plans, and dependency-aware release strate
 - Gate `scope_enforced` violation -> return `BLOCKED_REVIEW`.
 
 ## References
-- references/delivery-architecture-core.md
+- references/deployment-planner-core.md
 
 ## Gate Profile
 - `web_citations_required`: `True`
@@ -3409,7 +3806,7 @@ Delivery architecture, staged rollout plans, and dependency-aware release strate
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 42. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-dependency-mapping-specialist--pro-acbf437d/SKILL.md`
+## 46. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-domain-core-specialist--proj-test-alpha/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3419,18 +3816,18 @@ Delivery architecture, staged rollout plans, and dependency-aware release strate
 
 ```md
 ---
-name: integration-delivery-dependency-mapping-specialist--pro-acbf437d
+name: integration-delivery-domain-core-specialist--proj-test-alpha
 version: "3.1.1"
 role: specialist
-description: domain-core specialist for Integration Delivery Group focused on Dependency graph mapping, integration sequencing, and handoff risk detection in project proj-test-alpha.
+description: domain-core specialist for Integration Delivery focused on Primary domain analysis for Integration Delivery in service-integration in project proj-test-alpha.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
   - group-context.json
   - dependency artifacts
 outputs:
-  - internal/dependency-mapping-specialist/work.md
-  - internal/dependency-mapping-specialist/handoff.json
+  - internal/domain-core-specialist/work.md
+  - internal/domain-core-specialist/handoff.json
 failure_modes:
   - blocked_needs_evidence
   - blocked_uncited
@@ -3440,22 +3837,20 @@ autouse_triggers:
   - dependency artifact ready
 ---
 
-# dependency-mapping-specialist
+# domain-core-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Dependency graph mapping, integration sequencing, and handoff risk detection
+Primary domain analysis for Integration Delivery in service-integration
 
 ## When to Invoke
 - The objective requires `domain-core` expertise.
-- Specialist focus applies: Dependency graph mapping, integration sequencing, and handoff risk detection
+- Specialist focus applies: Primary domain analysis for Integration Delivery in service-integration
 - Group context: `integration-delivery` in project `proj-test-alpha`.
 
 ## Definition of Done
-- Produce `dependency_matrix.md`.
-- Produce `claims_with_citations.md`.
 - Produce `work.md`.
 - Produce `handoff.json`.
 - Pass gate check `web_citations_required`.
@@ -3466,13 +3861,10 @@ Dependency graph mapping, integration sequencing, and handoff risk detection
 ## Method
 1. Parse the objective and isolate the sub-problem tied to this specialist focus.
 2. Load required references first; mark unknowns before claiming conclusions.
-3. Consume dependency artifacts from: delivery-architect.
-4. Build claim-level outputs with explicit evidence and assumptions.
-5. Write required artifacts and ensure paths are reproducible by peers.
+3. Build claim-level outputs with explicit evidence and assumptions.
+4. Write required artifacts and ensure paths are reproducible by peers.
 
 ## Artifacts to Produce
-- dependency_matrix.md
-- claims_with_citations.md
 - work.md
 - handoff.json
 
@@ -3486,7 +3878,7 @@ Dependency graph mapping, integration sequencing, and handoff risk detection
 - Gate `scope_enforced` violation -> return `BLOCKED_REVIEW`.
 
 ## References
-- references/dependency-mapping-core.md
+- references/domain-core-core.md
 
 ## Gate Profile
 - `web_citations_required`: `True`
@@ -3500,7 +3892,7 @@ Dependency graph mapping, integration sequencing, and handoff risk detection
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 43. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-alpha/SKILL.md`
+## 47. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-alpha/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3513,7 +3905,7 @@ Dependency graph mapping, integration sequencing, and handoff risk detection
 name: integration-delivery-evidence-review-specialist--proj-test-alpha
 version: "3.1.1"
 role: specialist
-description: evidence-review specialist for Integration Delivery Group focused on Claim-level evidence review and citation sufficiency for Integration Delivery Group in project proj-test-alpha.
+description: evidence-review specialist for Integration Delivery focused on Claim-level evidence review and citation sufficiency for Integration Delivery in project proj-test-alpha.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
@@ -3534,14 +3926,14 @@ autouse_triggers:
 # evidence-review-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Claim-level evidence review and citation sufficiency for Integration Delivery Group
+Claim-level evidence review and citation sufficiency for Integration Delivery
 
 ## When to Invoke
 - The objective requires `evidence-review` expertise.
-- Specialist focus applies: Claim-level evidence review and citation sufficiency for Integration Delivery Group
+- Specialist focus applies: Claim-level evidence review and citation sufficiency for Integration Delivery
 - Group context: `integration-delivery` in project `proj-test-alpha`.
 
 ## Definition of Done
@@ -3555,7 +3947,7 @@ Claim-level evidence review and citation sufficiency for Integration Delivery Gr
 ## Method
 1. Parse the objective and isolate the sub-problem tied to this specialist focus.
 2. Load required references first; mark unknowns before claiming conclusions.
-3. Consume dependency artifacts from: delivery-architect.
+3. Consume dependency artifacts from: domain-core-specialist.
 4. Build claim-level outputs with explicit evidence and assumptions.
 5. Write required artifacts and ensure paths are reproducible by peers.
 
@@ -3587,7 +3979,7 @@ Claim-level evidence review and citation sufficiency for Integration Delivery Gr
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 44. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-alpha/SKILL.md`
+## 48. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-alpha/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3600,7 +3992,7 @@ Claim-level evidence review and citation sufficiency for Integration Delivery Gr
 name: integration-delivery-integration-delivery-head--proj-test-alpha
 version: "3.1.1"
 role: head
-description: Head orchestrator for Integration Delivery Group in project proj-test-alpha with negotiation and quality-gate control.
+description: Head orchestrator for Integration Delivery in project proj-test-alpha with negotiation and quality-gate control.
 scope: Group-level orchestration, gate enforcement, and exposed artifact publication.
 inputs:
   - objective
@@ -3620,19 +4012,19 @@ autouse_triggers:
   - specialist handoff aggregation
 ---
 
-# Integration Delivery Group Head Controller
+# Integration Delivery Head Controller
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## When to Invoke
 - Group-level objective requires orchestration across specialists.
 - The active group is `integration-delivery` in project `proj-test-alpha`.
 
 ## Definition of Done
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- Cross-team dependencies are mapped and sequenced.
+- Integration artifacts are consumable by downstream teams.
+- Risks and blockers are clearly documented.
 
 ## Method
 1. Build a dependency-aware dispatch plan from specialist roster and handoff constraints.
@@ -3642,12 +4034,13 @@ Coordinate specialist integration and delivery workflows for cross-team objectiv
 5. Record integration notes, unresolved assumptions, and escalation requirements.
 
 ## Specialists
-- delivery-architect: `integration-delivery-delivery-architect--proj-test-alpha`
-- dependency-mapping-specialist: `integration-delivery-dependency-mapping-specialist--pro-acbf437d`
+- domain-core-specialist: `integration-delivery-domain-core-specialist--proj-test-alpha`
+- web-research-specialist: `integration-delivery-web-research-specialist--proj-test-alpha`
 - integration-specialist: `integration-delivery-integration-specialist--proj-test-alpha`
 - evidence-review-specialist: `integration-delivery-evidence-review-specialist--proj-test-alpha`
 - repro-qa-specialist: `integration-delivery-repro-qa-specialist--proj-test-alpha`
-- web-research-specialist: `integration-delivery-web-research-specialist--proj-test-alpha`
+- deployment-planner-specialist: `integration-delivery-deployment-planner-specialist--pro-4e25b51a`
+- release-coordinator-specialist: `integration-delivery-release-coordinator-specialist--pr-ab92c60d`
 
 ## Gate Profile
 - `web_citations_required`: `True`
@@ -3661,7 +4054,7 @@ Coordinate specialist integration and delivery workflows for cross-team objectiv
 - `exposed/INTEGRATION_NOTES.md`
 ```
 
-## 45. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-alpha/SKILL.md`
+## 49. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-alpha/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3674,7 +4067,7 @@ Coordinate specialist integration and delivery workflows for cross-team objectiv
 name: integration-delivery-integration-specialist--proj-test-alpha
 version: "3.1.1"
 role: specialist
-description: integration specialist for Integration Delivery Group focused on Cross-artifact integration and consumability checks for Integration Delivery Group in project proj-test-alpha.
+description: integration specialist for Integration Delivery focused on Cross-artifact integration and consumability checks for Integration Delivery in project proj-test-alpha.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
@@ -3695,14 +4088,14 @@ autouse_triggers:
 # integration-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Cross-artifact integration and consumability checks for Integration Delivery Group
+Cross-artifact integration and consumability checks for Integration Delivery
 
 ## When to Invoke
 - The objective requires `integration` expertise.
-- Specialist focus applies: Cross-artifact integration and consumability checks for Integration Delivery Group
+- Specialist focus applies: Cross-artifact integration and consumability checks for Integration Delivery
 - Group context: `integration-delivery` in project `proj-test-alpha`.
 
 ## Definition of Done
@@ -3716,7 +4109,7 @@ Cross-artifact integration and consumability checks for Integration Delivery Gro
 ## Method
 1. Parse the objective and isolate the sub-problem tied to this specialist focus.
 2. Load required references first; mark unknowns before claiming conclusions.
-3. Consume dependency artifacts from: dependency-mapping-specialist.
+3. Consume dependency artifacts from: domain-core-specialist.
 4. Build claim-level outputs with explicit evidence and assumptions.
 5. Write required artifacts and ensure paths are reproducible by peers.
 
@@ -3748,7 +4141,93 @@ Cross-artifact integration and consumability checks for Integration Delivery Gro
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 46. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-alpha/SKILL.md`
+## 50. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-release-coordinator-specialist--pr-ab92c60d/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: integration-delivery-release-coordinator-specialist--pr-ab92c60d
+version: "3.1.1"
+role: specialist
+description: release-coordinator specialist for Integration Delivery focused on Specialized release-coordinator analysis for Integration Delivery in project proj-test-alpha.
+scope: Narrow specialist execution only; no cross-domain final decisions.
+inputs:
+  - objective
+  - group-context.json
+  - dependency artifacts
+outputs:
+  - internal/release-coordinator-specialist/work.md
+  - internal/release-coordinator-specialist/handoff.json
+failure_modes:
+  - blocked_needs_evidence
+  - blocked_uncited
+  - scope_violation
+autouse_triggers:
+  - specialist dispatch task
+  - dependency artifact ready
+---
+
+# release-coordinator-specialist
+
+## Mission
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
+
+## Scope
+Specialized release-coordinator analysis for Integration Delivery
+
+## When to Invoke
+- The objective requires `release-coordinator` expertise.
+- Specialist focus applies: Specialized release-coordinator analysis for Integration Delivery
+- Group context: `integration-delivery` in project `proj-test-alpha`.
+
+## Definition of Done
+- Produce `work.md`.
+- Produce `handoff.json`.
+- Pass gate check `web_citations_required`.
+- Pass gate check `repro_command_required`.
+- Pass gate check `consistency_required`.
+- Pass gate check `scope_enforced`.
+
+## Method
+1. Parse the objective and isolate the sub-problem tied to this specialist focus.
+2. Load required references first; mark unknowns before claiming conclusions.
+3. Build claim-level outputs with explicit evidence and assumptions.
+4. Write required artifacts and ensure paths are reproducible by peers.
+
+## Artifacts to Produce
+- work.md
+- handoff.json
+
+## Failure Modes
+- Missing citations for key claims -> return `BLOCKED_UNCITED`.
+- Missing required evidence -> return `BLOCKED_NEEDS_EVIDENCE`.
+- Scope creep into other specialists' responsibilities -> return `BLOCKED_REVIEW`.
+- Gate `web_citations_required` violation -> return `BLOCKED_REVIEW`.
+- Gate `repro_command_required` violation -> return `BLOCKED_REVIEW`.
+- Gate `consistency_required` violation -> return `BLOCKED_REVIEW`.
+- Gate `scope_enforced` violation -> return `BLOCKED_REVIEW`.
+
+## References
+- references/release-coordinator-core.md
+
+## Gate Profile
+- `web_citations_required`: `True`
+- `repro_command_required`: `True`
+- `consistency_required`: `True`
+- `scope_enforced`: `True`
+
+## Output Contract
+- Return `BEGIN_WORK/END_WORK` markdown notes.
+- Return `BEGIN_HANDOFF_JSON/END_HANDOFF_JSON` JSON object.
+- Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
+```
+
+## 51. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-alpha/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3761,7 +4240,7 @@ Cross-artifact integration and consumability checks for Integration Delivery Gro
 name: integration-delivery-repro-qa-specialist--proj-test-alpha
 version: "3.1.1"
 role: specialist
-description: repro-qa specialist for Integration Delivery Group focused on Reproducibility and quality assurance checks for Integration Delivery Group in project proj-test-alpha.
+description: repro-qa specialist for Integration Delivery focused on Reproducibility and quality assurance checks for Integration Delivery in project proj-test-alpha.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
@@ -3782,14 +4261,14 @@ autouse_triggers:
 # repro-qa-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Reproducibility and quality assurance checks for Integration Delivery Group
+Reproducibility and quality assurance checks for Integration Delivery
 
 ## When to Invoke
 - The objective requires `repro-qa` expertise.
-- Specialist focus applies: Reproducibility and quality assurance checks for Integration Delivery Group
+- Specialist focus applies: Reproducibility and quality assurance checks for Integration Delivery
 - Group context: `integration-delivery` in project `proj-test-alpha`.
 
 ## Definition of Done
@@ -3803,7 +4282,7 @@ Reproducibility and quality assurance checks for Integration Delivery Group
 ## Method
 1. Parse the objective and isolate the sub-problem tied to this specialist focus.
 2. Load required references first; mark unknowns before claiming conclusions.
-3. Consume dependency artifacts from: delivery-architect.
+3. Consume dependency artifacts from: domain-core-specialist.
 4. Build claim-level outputs with explicit evidence and assumptions.
 5. Write required artifacts and ensure paths are reproducible by peers.
 
@@ -3835,7 +4314,7 @@ Reproducibility and quality assurance checks for Integration Delivery Group
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 47. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-alpha/SKILL.md`
+## 52. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-alpha/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -3848,7 +4327,7 @@ Reproducibility and quality assurance checks for Integration Delivery Group
 name: integration-delivery-web-research-specialist--proj-test-alpha
 version: "3.1.1"
 role: specialist
-description: web-research specialist for Integration Delivery Group focused on Gather web-published references and extract citation-ready evidence. in project proj-test-alpha.
+description: web-research specialist for Integration Delivery focused on Web evidence and experimental data gathering for Integration Delivery in project proj-test-alpha.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
@@ -3869,14 +4348,14 @@ autouse_triggers:
 # web-research-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Gather web-published references and extract citation-ready evidence.
+Web evidence and experimental data gathering for Integration Delivery
 
 ## When to Invoke
 - The objective requires `web-research` expertise.
-- Specialist focus applies: Gather web-published references and extract citation-ready evidence.
+- Specialist focus applies: Web evidence and experimental data gathering for Integration Delivery
 - Group context: `integration-delivery` in project `proj-test-alpha`.
 
 ## Definition of Done
@@ -3921,7 +4400,7 @@ Gather web-published references and extract citation-ready evidence.
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 48. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/tools/allowlist.yaml`
+## 53. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/tools/allowlist.yaml`
 
 - Type: `tool-policy`
 - Purpose: Command/tool policy for group operations
@@ -3955,10 +4434,10 @@ wrapper_required_prefixes:
   - "pip install"
   - "conda install"
 # END_LOCKED:tool_restrictions
-tool_profile: "delivery-default"
+tool_profile: "default"
 ```
 
-## 49. `generated/projects/proj-test-alpha/manifest.yaml`
+## 54. `generated/projects/proj-test-alpha/manifest.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -3992,23 +4471,25 @@ groups:
     manifest_path: agent-groups/integration-delivery/group.yaml
     skill_dirs:
     - agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-alpha
-    - agent-groups/integration-delivery/skills/integration-delivery-delivery-architect--proj-test-alpha
-    - agent-groups/integration-delivery/skills/integration-delivery-dependency-mapping-specialist--pro-acbf437d
+    - agent-groups/integration-delivery/skills/integration-delivery-domain-core-specialist--proj-test-alpha
+    - agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-alpha
     - agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-alpha
     - agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-alpha
     - agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-alpha
-    - agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-alpha
+    - agent-groups/integration-delivery/skills/integration-delivery-deployment-planner-specialist--pro-4e25b51a
+    - agent-groups/integration-delivery/skills/integration-delivery-release-coordinator-specialist--pr-ab92c60d
     head_skill_dir: agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-alpha
     specialist_skill_dirs:
-    - agent-groups/integration-delivery/skills/integration-delivery-delivery-architect--proj-test-alpha
-    - agent-groups/integration-delivery/skills/integration-delivery-dependency-mapping-specialist--pro-acbf437d
+    - agent-groups/integration-delivery/skills/integration-delivery-domain-core-specialist--proj-test-alpha
+    - agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-alpha
     - agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-alpha
     - agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-alpha
     - agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-alpha
-    - agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-alpha
+    - agent-groups/integration-delivery/skills/integration-delivery-deployment-planner-specialist--pro-4e25b51a
+    - agent-groups/integration-delivery/skills/integration-delivery-release-coordinator-specialist--pr-ab92c60d
 ```
 
-## 50. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/AGENTS.md`
+## 55. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -4017,33 +4498,35 @@ groups:
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group - proj-test-hpc
+# Integration Delivery - proj-test-hpc
 
 ## Mission
-Coordinate cross-team integration, release readiness, and delivery quality for professional services workflows.
+Route and quality-gate specialist outputs for Integration Delivery.
 
 ## Group Identity
 - `group_id`: `integration-delivery`
 - `template_version`: `3.0.0`
-- `tool_profile`: `delivery-default`
+- `tool_profile`: `default`
 - `head_agent`: `integration-delivery-head`
 - `head_skill`: `integration-delivery-integration-delivery-head--proj-test-hpc`
 
 ## Specialist Roster
-- `delivery-architect`: Delivery architecture, staged rollout plans, and dependency-aware release strategy (skill: `integration-delivery-delivery-architect--proj-test-hpc`)
-- `dependency-mapping-specialist`: Dependency graph mapping, integration sequencing, and handoff risk detection (skill: `integration-delivery-dependency-mapping-specialist--pro-e1e000cd`)
-- `integration-specialist`: Cross-artifact integration and consumability checks for Integration Delivery Group (skill: `integration-delivery-integration-specialist--proj-test-hpc`)
-- `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Integration Delivery Group (skill: `integration-delivery-evidence-review-specialist--proj-test-hpc`)
-- `repro-qa-specialist`: Reproducibility and quality assurance checks for Integration Delivery Group (skill: `integration-delivery-repro-qa-specialist--proj-test-hpc`)
-- `web-research-specialist`: Gather web-published references and extract citation-ready evidence. (skill: `integration-delivery-web-research-specialist--proj-test-hpc`)
+- `domain-core-specialist`: Primary domain analysis for Integration Delivery in service-integration (skill: `integration-delivery-domain-core-specialist--proj-test-hpc`)
+- `web-research-specialist`: Web evidence and experimental data gathering for Integration Delivery (skill: `integration-delivery-web-research-specialist--proj-test-hpc`)
+- `integration-specialist`: Cross-artifact integration and consumability checks for Integration Delivery (skill: `integration-delivery-integration-specialist--proj-test-hpc`)
+- `evidence-review-specialist`: Claim-level evidence review and citation sufficiency for Integration Delivery (skill: `integration-delivery-evidence-review-specialist--proj-test-hpc`)
+- `repro-qa-specialist`: Reproducibility and quality assurance checks for Integration Delivery (skill: `integration-delivery-repro-qa-specialist--proj-test-hpc`)
+- `deployment-planner-specialist`: Specialized deployment-planner analysis for Integration Delivery (skill: `integration-delivery-deployment-planner-specialist--pro-f048d687`)
+- `release-coordinator-specialist`: Specialized release-coordinator analysis for Integration Delivery (skill: `integration-delivery-release-coordinator-specialist--pr-cadcbb01`)
 
 ## Work Directories
-- `generated/projects/proj-test-hpc/work/integration-delivery/delivery-architect`
-- `generated/projects/proj-test-hpc/work/integration-delivery/dependency-mapping-specialist`
+- `generated/projects/proj-test-hpc/work/integration-delivery/domain-core-specialist`
+- `generated/projects/proj-test-hpc/work/integration-delivery/web-research-specialist`
 - `generated/projects/proj-test-hpc/work/integration-delivery/integration-specialist`
 - `generated/projects/proj-test-hpc/work/integration-delivery/evidence-review-specialist`
 - `generated/projects/proj-test-hpc/work/integration-delivery/repro-qa-specialist`
-- `generated/projects/proj-test-hpc/work/integration-delivery/web-research-specialist`
+- `generated/projects/proj-test-hpc/work/integration-delivery/deployment-planner-specialist`
+- `generated/projects/proj-test-hpc/work/integration-delivery/release-coordinator-specialist`
 
 ## Artifact Partition
 - Internal specialist artifacts: `agent-groups/integration-delivery/internal/<specialist>/...`
@@ -4085,22 +4568,20 @@ BEGIN_LOCKED:exposure_policy
 END_LOCKED:exposure_policy
 
 ## Expected Deliverables
-- `rollout_plan.md` from `delivery-architect`
-- `claims_with_citations.md` from `delivery-architect`
-- `work.md` from `delivery-architect`
-- `handoff.json` from `delivery-architect`
-- `dependency_matrix.md` from `dependency-mapping-specialist`
-- `claims_with_citations.md` from `dependency-mapping-specialist`
-- `work.md` from `dependency-mapping-specialist`
-- `handoff.json` from `dependency-mapping-specialist`
+- `work.md` from `domain-core-specialist`
+- `handoff.json` from `domain-core-specialist`
+- `work.md` from `web-research-specialist`
+- `handoff.json` from `web-research-specialist`
 - `work.md` from `integration-specialist`
 - `handoff.json` from `integration-specialist`
 - `work.md` from `evidence-review-specialist`
 - `handoff.json` from `evidence-review-specialist`
 - `work.md` from `repro-qa-specialist`
 - `handoff.json` from `repro-qa-specialist`
-- `work.md` from `web-research-specialist`
-- `handoff.json` from `web-research-specialist`
+- `work.md` from `deployment-planner-specialist`
+- `handoff.json` from `deployment-planner-specialist`
+- `work.md` from `release-coordinator-specialist`
+- `handoff.json` from `release-coordinator-specialist`
 
 ## Quality Gates
 - `citation_required`: `True`
@@ -4111,7 +4592,7 @@ END_LOCKED:exposure_policy
 - `reproducibility_required`: `True`
 ```
 
-## 51. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/group.yaml`
+## 56. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/group.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -4120,15 +4601,20 @@ END_LOCKED:exposure_policy
 - Exposure Policy: source
 
 ```yaml
+schema_version: '3.0'
 group_id: integration-delivery
-display_name: Integration Delivery Group
+display_name: Integration Delivery
 template_version: 3.0.0
-domain: integration-and-delivery
+domain: service-integration
+purpose: Build integration plans, rollout sequencing, and handoff-ready delivery packages.
+success_criteria:
+- Cross-team dependencies are mapped and sequenced.
+- Integration artifacts are consumable by downstream teams.
+- Risks and blockers are clearly documented.
 head:
   agent_id: integration-delivery-head
   skill_name: grp-integration-delivery-head
-  mission: Coordinate cross-team integration, release readiness, and delivery quality
-    for professional services workflows.
+  mission: Route and quality-gate specialist outputs for Integration Delivery.
   publish_contract:
     exposed_required:
     - summary.md
@@ -4137,18 +4623,15 @@ head:
     visibility: group-only
   effective_skill_name: integration-delivery-integration-delivery-head--proj-test-hpc
 specialists:
-- agent_id: delivery-architect
-  skill_name: grp-integration-delivery-architect
-  focus: Delivery architecture, staged rollout plans, and dependency-aware release
-    strategy
+- agent_id: domain-core-specialist
+  skill_name: grp-integration-delivery-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Integration Delivery in service-integration
   required_references:
-  - references/delivery-architecture-core.md
+  - references/domain-core-core.md
   required_outputs:
-  - rollout_plan.md
-  - claims_with_citations.md
   - work.md
   - handoff.json
-  role: domain-core
   contract:
     inputs:
     - objective.md
@@ -4159,135 +4642,16 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-  effective_skill_name: integration-delivery-delivery-architect--proj-test-hpc
-- agent_id: dependency-mapping-specialist
-  skill_name: grp-integration-delivery-dependencies
-  focus: Dependency graph mapping, integration sequencing, and handoff risk detection
-  required_references:
-  - references/dependency-mapping-core.md
-  required_outputs:
-  - dependency_matrix.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: delivery-architect
-    required_artifacts:
-    - internal/delivery-architect/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-  effective_skill_name: integration-delivery-dependency-mapping-specialist--pro-e1e000cd
-- agent_id: integration-specialist
-  skill_name: grp-integration-delivery-integration
-  role: integration
-  focus: Cross-artifact integration and consumability checks for Integration Delivery
-    Group
-  required_references:
-  - references/integration-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: dependency-mapping-specialist
-    required_artifacts:
-    - internal/dependency-mapping-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-  effective_skill_name: integration-delivery-integration-specialist--proj-test-hpc
-- agent_id: evidence-review-specialist
-  skill_name: grp-integration-delivery-evidence-review
-  role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Integration Delivery
-    Group
-  required_references:
-  - references/evidence-review-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: delivery-architect
-    required_artifacts:
-    - internal/delivery-architect/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-  effective_skill_name: integration-delivery-evidence-review-specialist--proj-test-hpc
-- agent_id: repro-qa-specialist
-  skill_name: grp-integration-delivery-repro-qa
-  role: repro-qa
-  focus: Reproducibility and quality assurance checks for Integration Delivery Group
-  required_references:
-  - references/repro-qa-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: delivery-architect
-    required_artifacts:
-    - internal/delivery-architect/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-  effective_skill_name: integration-delivery-repro-qa-specialist--proj-test-hpc
+  effective_skill_name: integration-delivery-domain-core-specialist--proj-test-hpc
 - agent_id: web-research-specialist
   skill_name: grp-integration-delivery-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Integration Delivery
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -4303,29 +4667,152 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
   effective_skill_name: integration-delivery-web-research-specialist--proj-test-hpc
-tool_profile: delivery-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate specialist integration and delivery workflows for cross-team objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- agent_id: integration-specialist
+  skill_name: grp-integration-delivery-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Integration Delivery
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: integration-delivery-integration-specialist--proj-test-hpc
+- agent_id: evidence-review-specialist
+  skill_name: grp-integration-delivery-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Integration Delivery
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: integration-delivery-evidence-review-specialist--proj-test-hpc
+- agent_id: repro-qa-specialist
+  skill_name: grp-integration-delivery-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Integration Delivery
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: integration-delivery-repro-qa-specialist--proj-test-hpc
+- agent_id: deployment-planner-specialist
+  skill_name: grp-integration-delivery-deployment-planner
+  role: deployment-planner
+  focus: Specialized deployment-planner analysis for Integration Delivery
+  required_references:
+  - references/deployment-planner-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: integration-delivery-deployment-planner-specialist--pro-f048d687
+- agent_id: release-coordinator-specialist
+  skill_name: grp-integration-delivery-release-coordinator
+  role: release-coordinator
+  focus: Specialized release-coordinator analysis for Integration Delivery
+  required_references:
+  - references/release-coordinator-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+  effective_skill_name: integration-delivery-release-coordinator-specialist--pr-cadcbb01
 required_artifacts:
   objective_types:
     default:
@@ -4337,13 +4824,20 @@ required_artifacts:
       - exposed/handoff.json
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
   checks:
     web_citations_required: true
     repro_command_required: true
     consistency_required: true
     scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
 interaction:
   mode: interactive-separated
   linked_groups: []
@@ -4354,9 +4848,14 @@ execution_defaults:
   - local
   hardware:
   - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs
 ```
 
-## 52. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/handoffs.yaml`
+## 57. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/handoffs.yaml`
 
 - Type: `handoff`
 - Purpose: Intra-group handoff protocol
@@ -4368,22 +4867,25 @@ execution_defaults:
 schema_version: "3.0"
 group_id: "integration-delivery"
 handoffs:
-  - from: "delivery-architect"
+  - from: "domain-core-specialist"
     to: "head-controller"
     condition: "after task completion"
-  - from: "dependency-mapping-specialist"
+  - from: "web-research-specialist"
     to: "head-controller"
-    condition: "after dependencies satisfied (delivery-architect)"
+    condition: "after task completion"
   - from: "integration-specialist"
     to: "head-controller"
-    condition: "after dependencies satisfied (dependency-mapping-specialist)"
+    condition: "after dependencies satisfied (domain-core-specialist)"
   - from: "evidence-review-specialist"
     to: "head-controller"
-    condition: "after dependencies satisfied (delivery-architect)"
+    condition: "after dependencies satisfied (domain-core-specialist)"
   - from: "repro-qa-specialist"
     to: "head-controller"
-    condition: "after dependencies satisfied (delivery-architect)"
-  - from: "web-research-specialist"
+    condition: "after dependencies satisfied (domain-core-specialist)"
+  - from: "deployment-planner-specialist"
+    to: "head-controller"
+    condition: "after task completion"
+  - from: "release-coordinator-specialist"
     to: "head-controller"
     condition: "after task completion"
 output_contract:
@@ -4396,7 +4898,7 @@ output_contract:
     - "exposed/INTEGRATION_NOTES.md"
 ```
 
-## 53. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/delivery-architect/AGENTS.md`
+## 58. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/deployment-planner-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -4405,26 +4907,24 @@ output_contract:
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - delivery-architect
+# Integration Delivery Specialist - deployment-planner-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-hpc`
 - `group_id`: `integration-delivery`
-- `role`: `domain-core`
-- `focus`: Delivery architecture, staged rollout plans, and dependency-aware release strategy
-- `skill`: `integration-delivery-delivery-architect--proj-test-hpc`
+- `role`: `deployment-planner`
+- `focus`: Specialized deployment-planner analysis for Integration Delivery
+- `skill`: `integration-delivery-deployment-planner-specialist--pro-f048d687`
 
 ## Activation
-Activate and follow the `$integration-delivery-delivery-architect--proj-test-hpc` skill before proceeding.
+Activate and follow the `$integration-delivery-deployment-planner-specialist--pro-f048d687` skill before proceeding.
 
 ## Required Outputs
-- rollout_plan.md
-- claims_with_citations.md
 - work.md
 - handoff.json
 
 ## Required References
-- references/delivery-architecture-core.md
+- references/deployment-planner-core.md
 
 ## Hard Gate Checks
 - `web_citations_required`: `True`
@@ -4433,12 +4933,12 @@ Activate and follow the `$integration-delivery-delivery-architect--proj-test-hpc
 - `scope_enforced`: `True`
 
 ## Execution Boundaries
-- Write only under `agent-groups/integration-delivery/internal/delivery-architect/`.
+- Write only under `agent-groups/integration-delivery/internal/deployment-planner-specialist/`.
 - Do not publish exposed artifacts directly.
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 54. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/dependency-mapping-specialist/AGENTS.md`
+## 59. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/domain-core-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -4447,26 +4947,24 @@ Activate and follow the `$integration-delivery-delivery-architect--proj-test-hpc
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - dependency-mapping-specialist
+# Integration Delivery Specialist - domain-core-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-hpc`
 - `group_id`: `integration-delivery`
 - `role`: `domain-core`
-- `focus`: Dependency graph mapping, integration sequencing, and handoff risk detection
-- `skill`: `integration-delivery-dependency-mapping-specialist--pro-e1e000cd`
+- `focus`: Primary domain analysis for Integration Delivery in service-integration
+- `skill`: `integration-delivery-domain-core-specialist--proj-test-hpc`
 
 ## Activation
-Activate and follow the `$integration-delivery-dependency-mapping-specialist--pro-e1e000cd` skill before proceeding.
+Activate and follow the `$integration-delivery-domain-core-specialist--proj-test-hpc` skill before proceeding.
 
 ## Required Outputs
-- dependency_matrix.md
-- claims_with_citations.md
 - work.md
 - handoff.json
 
 ## Required References
-- references/dependency-mapping-core.md
+- references/domain-core-core.md
 
 ## Hard Gate Checks
 - `web_citations_required`: `True`
@@ -4475,12 +4973,12 @@ Activate and follow the `$integration-delivery-dependency-mapping-specialist--pr
 - `scope_enforced`: `True`
 
 ## Execution Boundaries
-- Write only under `agent-groups/integration-delivery/internal/dependency-mapping-specialist/`.
+- Write only under `agent-groups/integration-delivery/internal/domain-core-specialist/`.
 - Do not publish exposed artifacts directly.
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 55. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/evidence-review-specialist/AGENTS.md`
+## 60. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/evidence-review-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -4489,13 +4987,13 @@ Activate and follow the `$integration-delivery-dependency-mapping-specialist--pr
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - evidence-review-specialist
+# Integration Delivery Specialist - evidence-review-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-hpc`
 - `group_id`: `integration-delivery`
 - `role`: `evidence-review`
-- `focus`: Claim-level evidence review and citation sufficiency for Integration Delivery Group
+- `focus`: Claim-level evidence review and citation sufficiency for Integration Delivery
 - `skill`: `integration-delivery-evidence-review-specialist--proj-test-hpc`
 
 ## Activation
@@ -4520,7 +5018,7 @@ Activate and follow the `$integration-delivery-evidence-review-specialist--proj-
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 56. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/integration-specialist/AGENTS.md`
+## 61. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/integration-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -4529,13 +5027,13 @@ Activate and follow the `$integration-delivery-evidence-review-specialist--proj-
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - integration-specialist
+# Integration Delivery Specialist - integration-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-hpc`
 - `group_id`: `integration-delivery`
 - `role`: `integration`
-- `focus`: Cross-artifact integration and consumability checks for Integration Delivery Group
+- `focus`: Cross-artifact integration and consumability checks for Integration Delivery
 - `skill`: `integration-delivery-integration-specialist--proj-test-hpc`
 
 ## Activation
@@ -4560,7 +5058,7 @@ Activate and follow the `$integration-delivery-integration-specialist--proj-test
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 57. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/repro-qa-specialist/AGENTS.md`
+## 62. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/release-coordinator-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -4569,13 +5067,53 @@ Activate and follow the `$integration-delivery-integration-specialist--proj-test
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - repro-qa-specialist
+# Integration Delivery Specialist - release-coordinator-specialist
+
+## Role Contract
+- `project_id`: `proj-test-hpc`
+- `group_id`: `integration-delivery`
+- `role`: `release-coordinator`
+- `focus`: Specialized release-coordinator analysis for Integration Delivery
+- `skill`: `integration-delivery-release-coordinator-specialist--pr-cadcbb01`
+
+## Activation
+Activate and follow the `$integration-delivery-release-coordinator-specialist--pr-cadcbb01` skill before proceeding.
+
+## Required Outputs
+- work.md
+- handoff.json
+
+## Required References
+- references/release-coordinator-core.md
+
+## Hard Gate Checks
+- `web_citations_required`: `True`
+- `repro_command_required`: `True`
+- `consistency_required`: `True`
+- `scope_enforced`: `True`
+
+## Execution Boundaries
+- Write only under `agent-groups/integration-delivery/internal/release-coordinator-specialist/`.
+- Do not publish exposed artifacts directly.
+- If key evidence is missing, return a blocked status with explicit reasons.
+```
+
+## 63. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/repro-qa-specialist/AGENTS.md`
+
+- Type: `agents`
+- Purpose: Group operating contract and policy
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+# Integration Delivery Specialist - repro-qa-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-hpc`
 - `group_id`: `integration-delivery`
 - `role`: `repro-qa`
-- `focus`: Reproducibility and quality assurance checks for Integration Delivery Group
+- `focus`: Reproducibility and quality assurance checks for Integration Delivery
 - `skill`: `integration-delivery-repro-qa-specialist--proj-test-hpc`
 
 ## Activation
@@ -4600,7 +5138,7 @@ Activate and follow the `$integration-delivery-repro-qa-specialist--proj-test-hp
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 58. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/web-research-specialist/AGENTS.md`
+## 64. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/internal/web-research-specialist/AGENTS.md`
 
 - Type: `agents`
 - Purpose: Group operating contract and policy
@@ -4609,13 +5147,13 @@ Activate and follow the `$integration-delivery-repro-qa-specialist--proj-test-hp
 - Exposure Policy: source
 
 ```md
-# Integration Delivery Group Specialist - web-research-specialist
+# Integration Delivery Specialist - web-research-specialist
 
 ## Role Contract
 - `project_id`: `proj-test-hpc`
 - `group_id`: `integration-delivery`
 - `role`: `web-research`
-- `focus`: Gather web-published references and extract citation-ready evidence.
+- `focus`: Web evidence and experimental data gathering for Integration Delivery
 - `skill`: `integration-delivery-web-research-specialist--proj-test-hpc`
 
 ## Activation
@@ -4640,7 +5178,7 @@ Activate and follow the `$integration-delivery-web-research-specialist--proj-tes
 - If key evidence is missing, return a blocked status with explicit reasons.
 ```
 
-## 59. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-delivery-architect--proj-test-hpc/SKILL.md`
+## 65. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-deployment-planner-specialist--pro-f048d687/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4650,18 +5188,18 @@ Activate and follow the `$integration-delivery-web-research-specialist--proj-tes
 
 ```md
 ---
-name: integration-delivery-delivery-architect--proj-test-hpc
+name: integration-delivery-deployment-planner-specialist--pro-f048d687
 version: "3.1.1"
 role: specialist
-description: domain-core specialist for Integration Delivery Group focused on Delivery architecture, staged rollout plans, and dependency-aware release strategy in project proj-test-hpc.
+description: deployment-planner specialist for Integration Delivery focused on Specialized deployment-planner analysis for Integration Delivery in project proj-test-hpc.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
   - group-context.json
   - dependency artifacts
 outputs:
-  - internal/delivery-architect/work.md
-  - internal/delivery-architect/handoff.json
+  - internal/deployment-planner-specialist/work.md
+  - internal/deployment-planner-specialist/handoff.json
 failure_modes:
   - blocked_needs_evidence
   - blocked_uncited
@@ -4671,22 +5209,20 @@ autouse_triggers:
   - dependency artifact ready
 ---
 
-# delivery-architect
+# deployment-planner-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Delivery architecture, staged rollout plans, and dependency-aware release strategy
+Specialized deployment-planner analysis for Integration Delivery
 
 ## When to Invoke
-- The objective requires `domain-core` expertise.
-- Specialist focus applies: Delivery architecture, staged rollout plans, and dependency-aware release strategy
+- The objective requires `deployment-planner` expertise.
+- Specialist focus applies: Specialized deployment-planner analysis for Integration Delivery
 - Group context: `integration-delivery` in project `proj-test-hpc`.
 
 ## Definition of Done
-- Produce `rollout_plan.md`.
-- Produce `claims_with_citations.md`.
 - Produce `work.md`.
 - Produce `handoff.json`.
 - Pass gate check `web_citations_required`.
@@ -4701,8 +5237,6 @@ Delivery architecture, staged rollout plans, and dependency-aware release strate
 4. Write required artifacts and ensure paths are reproducible by peers.
 
 ## Artifacts to Produce
-- rollout_plan.md
-- claims_with_citations.md
 - work.md
 - handoff.json
 
@@ -4716,7 +5250,7 @@ Delivery architecture, staged rollout plans, and dependency-aware release strate
 - Gate `scope_enforced` violation -> return `BLOCKED_REVIEW`.
 
 ## References
-- references/delivery-architecture-core.md
+- references/deployment-planner-core.md
 
 ## Gate Profile
 - `web_citations_required`: `True`
@@ -4730,7 +5264,7 @@ Delivery architecture, staged rollout plans, and dependency-aware release strate
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 60. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-dependency-mapping-specialist--pro-e1e000cd/SKILL.md`
+## 66. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-domain-core-specialist--proj-test-hpc/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4740,18 +5274,18 @@ Delivery architecture, staged rollout plans, and dependency-aware release strate
 
 ```md
 ---
-name: integration-delivery-dependency-mapping-specialist--pro-e1e000cd
+name: integration-delivery-domain-core-specialist--proj-test-hpc
 version: "3.1.1"
 role: specialist
-description: domain-core specialist for Integration Delivery Group focused on Dependency graph mapping, integration sequencing, and handoff risk detection in project proj-test-hpc.
+description: domain-core specialist for Integration Delivery focused on Primary domain analysis for Integration Delivery in service-integration in project proj-test-hpc.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
   - group-context.json
   - dependency artifacts
 outputs:
-  - internal/dependency-mapping-specialist/work.md
-  - internal/dependency-mapping-specialist/handoff.json
+  - internal/domain-core-specialist/work.md
+  - internal/domain-core-specialist/handoff.json
 failure_modes:
   - blocked_needs_evidence
   - blocked_uncited
@@ -4761,22 +5295,20 @@ autouse_triggers:
   - dependency artifact ready
 ---
 
-# dependency-mapping-specialist
+# domain-core-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Dependency graph mapping, integration sequencing, and handoff risk detection
+Primary domain analysis for Integration Delivery in service-integration
 
 ## When to Invoke
 - The objective requires `domain-core` expertise.
-- Specialist focus applies: Dependency graph mapping, integration sequencing, and handoff risk detection
+- Specialist focus applies: Primary domain analysis for Integration Delivery in service-integration
 - Group context: `integration-delivery` in project `proj-test-hpc`.
 
 ## Definition of Done
-- Produce `dependency_matrix.md`.
-- Produce `claims_with_citations.md`.
 - Produce `work.md`.
 - Produce `handoff.json`.
 - Pass gate check `web_citations_required`.
@@ -4787,13 +5319,10 @@ Dependency graph mapping, integration sequencing, and handoff risk detection
 ## Method
 1. Parse the objective and isolate the sub-problem tied to this specialist focus.
 2. Load required references first; mark unknowns before claiming conclusions.
-3. Consume dependency artifacts from: delivery-architect.
-4. Build claim-level outputs with explicit evidence and assumptions.
-5. Write required artifacts and ensure paths are reproducible by peers.
+3. Build claim-level outputs with explicit evidence and assumptions.
+4. Write required artifacts and ensure paths are reproducible by peers.
 
 ## Artifacts to Produce
-- dependency_matrix.md
-- claims_with_citations.md
 - work.md
 - handoff.json
 
@@ -4807,7 +5336,7 @@ Dependency graph mapping, integration sequencing, and handoff risk detection
 - Gate `scope_enforced` violation -> return `BLOCKED_REVIEW`.
 
 ## References
-- references/dependency-mapping-core.md
+- references/domain-core-core.md
 
 ## Gate Profile
 - `web_citations_required`: `True`
@@ -4821,7 +5350,7 @@ Dependency graph mapping, integration sequencing, and handoff risk detection
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 61. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-hpc/SKILL.md`
+## 67. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-hpc/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4834,7 +5363,7 @@ Dependency graph mapping, integration sequencing, and handoff risk detection
 name: integration-delivery-evidence-review-specialist--proj-test-hpc
 version: "3.1.1"
 role: specialist
-description: evidence-review specialist for Integration Delivery Group focused on Claim-level evidence review and citation sufficiency for Integration Delivery Group in project proj-test-hpc.
+description: evidence-review specialist for Integration Delivery focused on Claim-level evidence review and citation sufficiency for Integration Delivery in project proj-test-hpc.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
@@ -4855,14 +5384,14 @@ autouse_triggers:
 # evidence-review-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Claim-level evidence review and citation sufficiency for Integration Delivery Group
+Claim-level evidence review and citation sufficiency for Integration Delivery
 
 ## When to Invoke
 - The objective requires `evidence-review` expertise.
-- Specialist focus applies: Claim-level evidence review and citation sufficiency for Integration Delivery Group
+- Specialist focus applies: Claim-level evidence review and citation sufficiency for Integration Delivery
 - Group context: `integration-delivery` in project `proj-test-hpc`.
 
 ## Definition of Done
@@ -4876,7 +5405,7 @@ Claim-level evidence review and citation sufficiency for Integration Delivery Gr
 ## Method
 1. Parse the objective and isolate the sub-problem tied to this specialist focus.
 2. Load required references first; mark unknowns before claiming conclusions.
-3. Consume dependency artifacts from: delivery-architect.
+3. Consume dependency artifacts from: domain-core-specialist.
 4. Build claim-level outputs with explicit evidence and assumptions.
 5. Write required artifacts and ensure paths are reproducible by peers.
 
@@ -4908,7 +5437,7 @@ Claim-level evidence review and citation sufficiency for Integration Delivery Gr
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 62. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-hpc/SKILL.md`
+## 68. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-hpc/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4921,7 +5450,7 @@ Claim-level evidence review and citation sufficiency for Integration Delivery Gr
 name: integration-delivery-integration-delivery-head--proj-test-hpc
 version: "3.1.1"
 role: head
-description: Head orchestrator for Integration Delivery Group in project proj-test-hpc with negotiation and quality-gate control.
+description: Head orchestrator for Integration Delivery in project proj-test-hpc with negotiation and quality-gate control.
 scope: Group-level orchestration, gate enforcement, and exposed artifact publication.
 inputs:
   - objective
@@ -4941,19 +5470,19 @@ autouse_triggers:
   - specialist handoff aggregation
 ---
 
-# Integration Delivery Group Head Controller
+# Integration Delivery Head Controller
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## When to Invoke
 - Group-level objective requires orchestration across specialists.
 - The active group is `integration-delivery` in project `proj-test-hpc`.
 
 ## Definition of Done
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- Cross-team dependencies are mapped and sequenced.
+- Integration artifacts are consumable by downstream teams.
+- Risks and blockers are clearly documented.
 
 ## Method
 1. Build a dependency-aware dispatch plan from specialist roster and handoff constraints.
@@ -4963,12 +5492,13 @@ Coordinate specialist integration and delivery workflows for cross-team objectiv
 5. Record integration notes, unresolved assumptions, and escalation requirements.
 
 ## Specialists
-- delivery-architect: `integration-delivery-delivery-architect--proj-test-hpc`
-- dependency-mapping-specialist: `integration-delivery-dependency-mapping-specialist--pro-e1e000cd`
+- domain-core-specialist: `integration-delivery-domain-core-specialist--proj-test-hpc`
+- web-research-specialist: `integration-delivery-web-research-specialist--proj-test-hpc`
 - integration-specialist: `integration-delivery-integration-specialist--proj-test-hpc`
 - evidence-review-specialist: `integration-delivery-evidence-review-specialist--proj-test-hpc`
 - repro-qa-specialist: `integration-delivery-repro-qa-specialist--proj-test-hpc`
-- web-research-specialist: `integration-delivery-web-research-specialist--proj-test-hpc`
+- deployment-planner-specialist: `integration-delivery-deployment-planner-specialist--pro-f048d687`
+- release-coordinator-specialist: `integration-delivery-release-coordinator-specialist--pr-cadcbb01`
 
 ## Gate Profile
 - `web_citations_required`: `True`
@@ -4982,7 +5512,7 @@ Coordinate specialist integration and delivery workflows for cross-team objectiv
 - `exposed/INTEGRATION_NOTES.md`
 ```
 
-## 63. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-hpc/SKILL.md`
+## 69. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-hpc/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -4995,7 +5525,7 @@ Coordinate specialist integration and delivery workflows for cross-team objectiv
 name: integration-delivery-integration-specialist--proj-test-hpc
 version: "3.1.1"
 role: specialist
-description: integration specialist for Integration Delivery Group focused on Cross-artifact integration and consumability checks for Integration Delivery Group in project proj-test-hpc.
+description: integration specialist for Integration Delivery focused on Cross-artifact integration and consumability checks for Integration Delivery in project proj-test-hpc.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
@@ -5016,14 +5546,14 @@ autouse_triggers:
 # integration-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Cross-artifact integration and consumability checks for Integration Delivery Group
+Cross-artifact integration and consumability checks for Integration Delivery
 
 ## When to Invoke
 - The objective requires `integration` expertise.
-- Specialist focus applies: Cross-artifact integration and consumability checks for Integration Delivery Group
+- Specialist focus applies: Cross-artifact integration and consumability checks for Integration Delivery
 - Group context: `integration-delivery` in project `proj-test-hpc`.
 
 ## Definition of Done
@@ -5037,7 +5567,7 @@ Cross-artifact integration and consumability checks for Integration Delivery Gro
 ## Method
 1. Parse the objective and isolate the sub-problem tied to this specialist focus.
 2. Load required references first; mark unknowns before claiming conclusions.
-3. Consume dependency artifacts from: dependency-mapping-specialist.
+3. Consume dependency artifacts from: domain-core-specialist.
 4. Build claim-level outputs with explicit evidence and assumptions.
 5. Write required artifacts and ensure paths are reproducible by peers.
 
@@ -5069,7 +5599,93 @@ Cross-artifact integration and consumability checks for Integration Delivery Gro
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 64. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-hpc/SKILL.md`
+## 70. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-release-coordinator-specialist--pr-cadcbb01/SKILL.md`
+
+- Type: `skill`
+- Purpose: Operational skill definition for an agent or router
+- Locked Sections: `-`
+- Validation Check: content-reviewed
+- Exposure Policy: source
+
+```md
+---
+name: integration-delivery-release-coordinator-specialist--pr-cadcbb01
+version: "3.1.1"
+role: specialist
+description: release-coordinator specialist for Integration Delivery focused on Specialized release-coordinator analysis for Integration Delivery in project proj-test-hpc.
+scope: Narrow specialist execution only; no cross-domain final decisions.
+inputs:
+  - objective
+  - group-context.json
+  - dependency artifacts
+outputs:
+  - internal/release-coordinator-specialist/work.md
+  - internal/release-coordinator-specialist/handoff.json
+failure_modes:
+  - blocked_needs_evidence
+  - blocked_uncited
+  - scope_violation
+autouse_triggers:
+  - specialist dispatch task
+  - dependency artifact ready
+---
+
+# release-coordinator-specialist
+
+## Mission
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
+
+## Scope
+Specialized release-coordinator analysis for Integration Delivery
+
+## When to Invoke
+- The objective requires `release-coordinator` expertise.
+- Specialist focus applies: Specialized release-coordinator analysis for Integration Delivery
+- Group context: `integration-delivery` in project `proj-test-hpc`.
+
+## Definition of Done
+- Produce `work.md`.
+- Produce `handoff.json`.
+- Pass gate check `web_citations_required`.
+- Pass gate check `repro_command_required`.
+- Pass gate check `consistency_required`.
+- Pass gate check `scope_enforced`.
+
+## Method
+1. Parse the objective and isolate the sub-problem tied to this specialist focus.
+2. Load required references first; mark unknowns before claiming conclusions.
+3. Build claim-level outputs with explicit evidence and assumptions.
+4. Write required artifacts and ensure paths are reproducible by peers.
+
+## Artifacts to Produce
+- work.md
+- handoff.json
+
+## Failure Modes
+- Missing citations for key claims -> return `BLOCKED_UNCITED`.
+- Missing required evidence -> return `BLOCKED_NEEDS_EVIDENCE`.
+- Scope creep into other specialists' responsibilities -> return `BLOCKED_REVIEW`.
+- Gate `web_citations_required` violation -> return `BLOCKED_REVIEW`.
+- Gate `repro_command_required` violation -> return `BLOCKED_REVIEW`.
+- Gate `consistency_required` violation -> return `BLOCKED_REVIEW`.
+- Gate `scope_enforced` violation -> return `BLOCKED_REVIEW`.
+
+## References
+- references/release-coordinator-core.md
+
+## Gate Profile
+- `web_citations_required`: `True`
+- `repro_command_required`: `True`
+- `consistency_required`: `True`
+- `scope_enforced`: `True`
+
+## Output Contract
+- Return `BEGIN_WORK/END_WORK` markdown notes.
+- Return `BEGIN_HANDOFF_JSON/END_HANDOFF_JSON` JSON object.
+- Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
+```
+
+## 71. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-hpc/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -5082,7 +5698,7 @@ Cross-artifact integration and consumability checks for Integration Delivery Gro
 name: integration-delivery-repro-qa-specialist--proj-test-hpc
 version: "3.1.1"
 role: specialist
-description: repro-qa specialist for Integration Delivery Group focused on Reproducibility and quality assurance checks for Integration Delivery Group in project proj-test-hpc.
+description: repro-qa specialist for Integration Delivery focused on Reproducibility and quality assurance checks for Integration Delivery in project proj-test-hpc.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
@@ -5103,14 +5719,14 @@ autouse_triggers:
 # repro-qa-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Reproducibility and quality assurance checks for Integration Delivery Group
+Reproducibility and quality assurance checks for Integration Delivery
 
 ## When to Invoke
 - The objective requires `repro-qa` expertise.
-- Specialist focus applies: Reproducibility and quality assurance checks for Integration Delivery Group
+- Specialist focus applies: Reproducibility and quality assurance checks for Integration Delivery
 - Group context: `integration-delivery` in project `proj-test-hpc`.
 
 ## Definition of Done
@@ -5124,7 +5740,7 @@ Reproducibility and quality assurance checks for Integration Delivery Group
 ## Method
 1. Parse the objective and isolate the sub-problem tied to this specialist focus.
 2. Load required references first; mark unknowns before claiming conclusions.
-3. Consume dependency artifacts from: delivery-architect.
+3. Consume dependency artifacts from: domain-core-specialist.
 4. Build claim-level outputs with explicit evidence and assumptions.
 5. Write required artifacts and ensure paths are reproducible by peers.
 
@@ -5156,7 +5772,7 @@ Reproducibility and quality assurance checks for Integration Delivery Group
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 65. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-hpc/SKILL.md`
+## 72. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-hpc/SKILL.md`
 
 - Type: `skill`
 - Purpose: Operational skill definition for an agent or router
@@ -5169,7 +5785,7 @@ Reproducibility and quality assurance checks for Integration Delivery Group
 name: integration-delivery-web-research-specialist--proj-test-hpc
 version: "3.1.1"
 role: specialist
-description: web-research specialist for Integration Delivery Group focused on Gather web-published references and extract citation-ready evidence. in project proj-test-hpc.
+description: web-research specialist for Integration Delivery focused on Web evidence and experimental data gathering for Integration Delivery in project proj-test-hpc.
 scope: Narrow specialist execution only; no cross-domain final decisions.
 inputs:
   - objective
@@ -5190,14 +5806,14 @@ autouse_triggers:
 # web-research-specialist
 
 ## Mission
-Coordinate specialist integration and delivery workflows for cross-team objectives.
+Build integration plans, rollout sequencing, and handoff-ready delivery packages.
 
 ## Scope
-Gather web-published references and extract citation-ready evidence.
+Web evidence and experimental data gathering for Integration Delivery
 
 ## When to Invoke
 - The objective requires `web-research` expertise.
-- Specialist focus applies: Gather web-published references and extract citation-ready evidence.
+- Specialist focus applies: Web evidence and experimental data gathering for Integration Delivery
 - Group context: `integration-delivery` in project `proj-test-hpc`.
 
 ## Definition of Done
@@ -5242,7 +5858,7 @@ Gather web-published references and extract citation-ready evidence.
 - Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
 ```
 
-## 66. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/tools/allowlist.yaml`
+## 73. `generated/projects/proj-test-hpc/agent-groups/integration-delivery/tools/allowlist.yaml`
 
 - Type: `tool-policy`
 - Purpose: Command/tool policy for group operations
@@ -5276,10 +5892,10 @@ wrapper_required_prefixes:
   - "pip install"
   - "conda install"
 # END_LOCKED:tool_restrictions
-tool_profile: "delivery-default"
+tool_profile: "default"
 ```
 
-## 67. `generated/projects/proj-test-hpc/manifest.yaml`
+## 74. `generated/projects/proj-test-hpc/manifest.yaml`
 
 - Type: `manifest`
 - Purpose: Project or group manifest instance
@@ -5313,19 +5929,21 @@ groups:
     manifest_path: agent-groups/integration-delivery/group.yaml
     skill_dirs:
     - agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-hpc
-    - agent-groups/integration-delivery/skills/integration-delivery-delivery-architect--proj-test-hpc
-    - agent-groups/integration-delivery/skills/integration-delivery-dependency-mapping-specialist--pro-e1e000cd
+    - agent-groups/integration-delivery/skills/integration-delivery-domain-core-specialist--proj-test-hpc
+    - agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-hpc
     - agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-hpc
     - agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-hpc
     - agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-hpc
-    - agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-hpc
+    - agent-groups/integration-delivery/skills/integration-delivery-deployment-planner-specialist--pro-f048d687
+    - agent-groups/integration-delivery/skills/integration-delivery-release-coordinator-specialist--pr-cadcbb01
     head_skill_dir: agent-groups/integration-delivery/skills/integration-delivery-integration-delivery-head--proj-test-hpc
     specialist_skill_dirs:
-    - agent-groups/integration-delivery/skills/integration-delivery-delivery-architect--proj-test-hpc
-    - agent-groups/integration-delivery/skills/integration-delivery-dependency-mapping-specialist--pro-e1e000cd
+    - agent-groups/integration-delivery/skills/integration-delivery-domain-core-specialist--proj-test-hpc
+    - agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-hpc
     - agent-groups/integration-delivery/skills/integration-delivery-integration-specialist--proj-test-hpc
     - agent-groups/integration-delivery/skills/integration-delivery-evidence-review-specialist--proj-test-hpc
     - agent-groups/integration-delivery/skills/integration-delivery-repro-qa-specialist--proj-test-hpc
-    - agent-groups/integration-delivery/skills/integration-delivery-web-research-specialist--proj-test-hpc
+    - agent-groups/integration-delivery/skills/integration-delivery-deployment-planner-specialist--pro-f048d687
+    - agent-groups/integration-delivery/skills/integration-delivery-release-coordinator-specialist--pr-cadcbb01
 ```
 

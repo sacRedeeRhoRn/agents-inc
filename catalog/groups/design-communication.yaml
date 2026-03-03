@@ -1,11 +1,17 @@
+schema_version: '3.0'
 group_id: design-communication
-display_name: Design Communication Group
+display_name: Design Communication
 template_version: 3.0.0
-domain: design-and-communication
+domain: design-ops
+purpose: Convert technical outputs into clear stakeholder-facing narratives and assets.
+success_criteria:
+- Deliverables are tailored to stakeholder audiences.
+- Key decisions and tradeoffs are communicated clearly.
+- Messaging remains evidence-grounded and actionable.
 head:
   agent_id: design-communication-head
   skill_name: grp-design-communication-head
-  mission: Shape clear narratives, communication assets, and stakeholder-facing deliverables across service workflows.
+  mission: Route and quality-gate specialist outputs for Design Communication.
   publish_contract:
     exposed_required:
     - summary.md
@@ -13,17 +19,15 @@ head:
     - INTEGRATION_NOTES.md
     visibility: group-only
 specialists:
-- agent_id: communication-strategy-specialist
-  skill_name: grp-design-communication-strategy
-  focus: Communication strategy, stakeholder alignment, and message intent mapping
+- agent_id: domain-core-specialist
+  skill_name: grp-design-communication-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Design Communication in design-ops
   required_references:
-  - references/communication-strategy-core.md
+  - references/domain-core-core.md
   required_outputs:
-  - communication_strategy.md
-  - claims_with_citations.md
   - work.md
   - handoff.json
-  role: domain-core
   contract:
     inputs:
     - objective.md
@@ -34,120 +38,7 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: narrative-design-specialist
-  skill_name: grp-design-communication-narrative
-  focus: Narrative flow, artifact framing, and audience-oriented readability
-  required_references:
-  - references/narrative-design-core.md
-  required_outputs:
-  - narrative_outline.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: communication-strategy-specialist
-    required_artifacts:
-    - internal/communication-strategy-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: integration-specialist
-  skill_name: grp-design-communication-integration
-  role: integration
-  focus: Cross-artifact integration and consumability checks for Design Communication Group
-  required_references:
-  - references/integration-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: narrative-design-specialist
-    required_artifacts:
-    - internal/narrative-design-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: evidence-review-specialist
-  skill_name: grp-design-communication-evidence-review
-  role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Design Communication Group
-  required_references:
-  - references/evidence-review-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: communication-strategy-specialist
-    required_artifacts:
-    - internal/communication-strategy-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: repro-qa-specialist
-  skill_name: grp-design-communication-repro-qa
-  role: repro-qa
-  focus: Reproducibility and quality assurance checks for Design Communication Group
-  required_references:
-  - references/repro-qa-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: communication-strategy-specialist
-    required_artifacts:
-    - internal/communication-strategy-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
@@ -155,7 +46,7 @@ specialists:
 - agent_id: web-research-specialist
   skill_name: grp-design-communication-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Design Communication
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -171,28 +62,146 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-tool_profile: design-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate specialist design and communication workflows for service outcomes.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- agent_id: integration-specialist
+  skill_name: grp-design-communication-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Design Communication
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-review-specialist
+  skill_name: grp-design-communication-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Design Communication
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: repro-qa-specialist
+  skill_name: grp-design-communication-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Design Communication
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: narrative-designer-specialist
+  skill_name: grp-design-communication-narrative-designer
+  role: narrative-designer
+  focus: Specialized narrative-designer analysis for Design Communication
+  required_references:
+  - references/narrative-designer-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: visual-communication-specialist-specialist
+  skill_name: grp-design-communication-visual-communication-specialist
+  role: visual-communication-specialist
+  focus: Specialized visual-communication-specialist analysis for Design Communication
+  required_references:
+  - references/visual-communication-specialist-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 required_artifacts:
   objective_types:
     default:
@@ -204,13 +213,20 @@ required_artifacts:
       - exposed/handoff.json
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
   checks:
     web_citations_required: true
     repro_command_required: true
     consistency_required: true
     scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
 interaction:
   mode: interactive-separated
   linked_groups: []
@@ -221,3 +237,8 @@ execution_defaults:
   - local
   hardware:
   - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs

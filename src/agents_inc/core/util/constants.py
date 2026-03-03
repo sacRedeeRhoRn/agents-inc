@@ -3,6 +3,7 @@
 Kept in a leaf module (no internal imports) so every util module can import
 these without creating circular dependencies.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

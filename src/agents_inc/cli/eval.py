@@ -6,7 +6,13 @@ from pathlib import Path
 from typing import Dict
 
 from agents_inc.core.eval_harness import score_session
-from agents_inc.core.fabric_lib import FabricError, load_project_manifest, load_yaml, resolve_fabric_root, slugify
+from agents_inc.core.fabric_lib import (
+    FabricError,
+    load_project_manifest,
+    load_yaml,
+    resolve_fabric_root,
+    slugify,
+)
 from agents_inc.core.session_state import resolve_state_project_root
 
 
@@ -74,7 +80,9 @@ def main() -> int:
         fabric_root = resolve_fabric_root(args.fabric_root)
         project_dir, manifest = load_project_manifest(fabric_root, project_id)
         project_root = resolve_state_project_root(fabric_root, project_id)
-        turn_dir = _resolve_turn_dir(project_root=project_root, turn_id=args.turn_id, turn_dir=args.turn_dir)
+        turn_dir = _resolve_turn_dir(
+            project_root=project_root, turn_id=args.turn_id, turn_dir=args.turn_dir
+        )
         report = score_session(
             turn_dir=turn_dir,
             project_dir=project_dir,

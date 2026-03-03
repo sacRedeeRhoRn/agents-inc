@@ -29,6 +29,7 @@ from agents_inc.core.transcript_capture import (
     write_command_log,
 )
 
+
 @dataclass
 class OrchestratorConfig:
     fabric_root: Path

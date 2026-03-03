@@ -4,13 +4,13 @@ build_dispatch_plan(), gate_specialist_output(), and suggest_groups() were
 defined in fabric_lib.py alongside ~1000 lines of unrelated logic.  They live
 here so the dispatch concern is self-contained and independently testable.
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from agents_inc.core.util.constants import SCHEMA_VERSION
 from agents_inc.core.util.errors import FabricError
-
 
 # ── Internal helpers ───────────────────────────────────────────────────────
 
@@ -275,7 +275,9 @@ def gate_specialist_output(
             refs = claim.get("citations")
             if isinstance(refs, list):
                 candidates.extend(refs)
-            if any(str(item or "").strip().startswith(("http://", "https://")) for item in candidates):
+            if any(
+                str(item or "").strip().startswith(("http://", "https://")) for item in candidates
+            ):
                 web_citation_count += 1
         if web_citation_count < 3:
             reasons.append("web-research requires at least 3 web citations")

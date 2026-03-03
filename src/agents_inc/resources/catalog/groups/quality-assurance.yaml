@@ -1,12 +1,17 @@
+schema_version: '3.0'
 group_id: quality-assurance
-display_name: Quality Assurance Group
+display_name: Quality Assurance
 template_version: 3.0.0
-domain: verification-and-risk
+domain: verification
+purpose: Audit evidence quality, reproducibility, and consistency before publication.
+success_criteria:
+- Critical claims pass evidence sufficiency checks.
+- Reproduction procedures are executable and validated.
+- Final outputs are blocked when unresolved issues remain.
 head:
   agent_id: quality-assurance-head
   skill_name: grp-quality-assurance-head
-  mission: Audit technical outputs for reproducibility, consistency, and decision-risk
-    control.
+  mission: Route and quality-gate specialist outputs for Quality Assurance.
   publish_contract:
     exposed_required:
     - summary.md
@@ -14,47 +19,15 @@ head:
     - INTEGRATION_NOTES.md
     visibility: group-only
 specialists:
-- agent_id: reproducibility-auditor
-  skill_name: grp-quality-assurance-repro
-  focus: Reproducibility checks, parameter traceability, and artifact completeness
-  required_references:
-  - references/reproducibility-core.md
-  required_outputs:
-  - repro_audit.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: repro-qa
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: consistency-auditor
-    required_artifacts:
-    - internal/consistency-auditor/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: consistency-auditor
-  skill_name: grp-quality-assurance-consistency
-  focus: Cross-document consistency checks and contradiction detection
-  required_references:
-  - references/consistency-core.md
-  required_outputs:
-  - consistency_audit.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
+- agent_id: domain-core-specialist
+  skill_name: grp-quality-assurance-domain-core
   role: domain-core
+  focus: Primary domain analysis for Quality Assurance in verification
+  required_references:
+  - references/domain-core-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
   contract:
     inputs:
     - objective.md
@@ -65,94 +38,7 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: risk-auditor
-  skill_name: grp-quality-assurance-risk
-  focus: Risk classification, severity tagging, and mitigation recommendation framing
-  depends_on:
-  - agent_id: consistency-auditor
-    required_artifacts:
-    - internal/consistency-auditor/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  required_references:
-  - references/risk-core.md
-  required_outputs:
-  - risk_register.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: repro-qa
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: integration-specialist
-  skill_name: grp-quality-assurance-integration
-  role: integration
-  focus: Cross-artifact integration and consumability checks for Quality Assurance
-    Group
-  required_references:
-  - references/integration-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: consistency-auditor
-    required_artifacts:
-    - internal/consistency-auditor/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: evidence-review-specialist
-  skill_name: grp-quality-assurance-evidence-review
-  role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Quality Assurance
-    Group
-  required_references:
-  - references/evidence-review-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: consistency-auditor
-    required_artifacts:
-    - internal/consistency-auditor/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
@@ -160,7 +46,7 @@ specialists:
 - agent_id: web-research-specialist
   skill_name: grp-quality-assurance-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Quality Assurance
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -176,28 +62,170 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-tool_profile: qa-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate expert specialists for Quality Assurance Group objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- agent_id: integration-specialist
+  skill_name: grp-quality-assurance-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Quality Assurance
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-review-specialist
+  skill_name: grp-quality-assurance-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Quality Assurance
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: repro-qa-specialist
+  skill_name: grp-quality-assurance-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Quality Assurance
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: consistency-auditor-specialist
+  skill_name: grp-quality-assurance-consistency-auditor
+  role: consistency-auditor
+  focus: Specialized consistency-auditor analysis for Quality Assurance
+  required_references:
+  - references/consistency-auditor-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: reproducibility-auditor-specialist
+  skill_name: grp-quality-assurance-reproducibility-auditor
+  role: reproducibility-auditor
+  focus: Specialized reproducibility-auditor analysis for Quality Assurance
+  required_references:
+  - references/reproducibility-auditor-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: risk-auditor-specialist
+  skill_name: grp-quality-assurance-risk-auditor
+  role: risk-auditor
+  focus: Specialized risk-auditor analysis for Quality Assurance
+  required_references:
+  - references/risk-auditor-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 required_artifacts:
   objective_types:
     default:
@@ -209,13 +237,20 @@ required_artifacts:
       - exposed/handoff.json
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
   checks:
     web_citations_required: true
     repro_command_required: true
     consistency_required: true
     scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
 interaction:
   mode: interactive-separated
   linked_groups: []
@@ -226,3 +261,8 @@ execution_defaults:
   - local
   hardware:
   - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs

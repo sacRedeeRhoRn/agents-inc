@@ -1,11 +1,18 @@
+schema_version: '3.0'
 group_id: data-curation
-display_name: Data Curation Group
+display_name: Data Curation
 template_version: 3.0.0
-domain: data-pipelines
+domain: data-operations
+purpose: Curate structured evidence, normalize records, and prepare reusable data
+  assets.
+success_criteria:
+- Data lineage and provenance are preserved.
+- Normalization rules are explicit and reproducible.
+- Deliverables are integration-ready.
 head:
   agent_id: data-curation-head
   skill_name: grp-data-curation-head
-  mission: Ensure trustworthy, traceable research data pipelines and metadata quality.
+  mission: Route and quality-gate specialist outputs for Data Curation.
   publish_contract:
     exposed_required:
     - summary.md
@@ -13,17 +20,15 @@ head:
     - INTEGRATION_NOTES.md
     visibility: group-only
 specialists:
-- agent_id: data-ingest-specialist
-  skill_name: grp-data-curation-ingest
-  focus: Data ingest strategy, provenance capture, and schema conformance
+- agent_id: domain-core-specialist
+  skill_name: grp-data-curation-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Data Curation in data-operations
   required_references:
-  - references/data-ingest-core.md
+  - references/domain-core-core.md
   required_outputs:
-  - ingest_report.md
-  - claims_with_citations.md
   - work.md
   - handoff.json
-  role: domain-core
   contract:
     inputs:
     - objective.md
@@ -34,127 +39,7 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: metadata-specialist
-  skill_name: grp-data-curation-metadata
-  focus: Metadata normalization, ontologies, and traceability annotations
-  depends_on:
-  - agent_id: data-ingest-specialist
-    required_artifacts:
-    - internal/data-ingest-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  required_references:
-  - references/metadata-core.md
-  required_outputs:
-  - metadata_dictionary.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: domain-core
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: data-quality-specialist
-  skill_name: grp-data-curation-quality
-  focus: Data quality checks, anomaly detection heuristics, and acceptance thresholds
-  depends_on:
-  - agent_id: metadata-specialist
-    required_artifacts:
-    - internal/metadata-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  - agent_id: data-ingest-specialist
-    required_artifacts:
-    - internal/data-ingest-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  required_references:
-  - references/data-quality-core.md
-  required_outputs:
-  - quality_report.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: repro-qa
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: integration-specialist
-  skill_name: grp-data-curation-integration
-  role: integration
-  focus: Cross-artifact integration and consumability checks for Data Curation Group
-  required_references:
-  - references/integration-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: data-ingest-specialist
-    required_artifacts:
-    - internal/data-ingest-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: evidence-review-specialist
-  skill_name: grp-data-curation-evidence-review
-  role: evidence-review
-  focus: Claim-level evidence review and citation sufficiency for Data Curation Group
-  required_references:
-  - references/evidence-review-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: data-ingest-specialist
-    required_artifacts:
-    - internal/data-ingest-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
@@ -162,7 +47,7 @@ specialists:
 - agent_id: web-research-specialist
   skill_name: grp-data-curation-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Data Curation
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -178,28 +63,146 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-tool_profile: data-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate expert specialists for Data Curation Group objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- agent_id: integration-specialist
+  skill_name: grp-data-curation-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Data Curation
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-review-specialist
+  skill_name: grp-data-curation-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Data Curation
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: repro-qa-specialist
+  skill_name: grp-data-curation-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Data Curation
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: schema-curator-specialist
+  skill_name: grp-data-curation-schema-curator
+  role: schema-curator
+  focus: Specialized schema-curator analysis for Data Curation
+  required_references:
+  - references/schema-curator-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: data-quality-auditor-specialist
+  skill_name: grp-data-curation-data-quality-auditor
+  role: data-quality-auditor
+  focus: Specialized data-quality-auditor analysis for Data Curation
+  required_references:
+  - references/data-quality-auditor-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 required_artifacts:
   objective_types:
     default:
@@ -211,13 +214,20 @@ required_artifacts:
       - exposed/handoff.json
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
   checks:
     web_citations_required: true
     repro_command_required: true
     consistency_required: true
     scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
 interaction:
   mode: interactive-separated
   linked_groups: []
@@ -228,3 +238,8 @@ execution_defaults:
   - local
   hardware:
   - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs

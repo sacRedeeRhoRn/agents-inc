@@ -1,12 +1,17 @@
+schema_version: '3.0'
 group_id: literature-intelligence
-display_name: Literature Intelligence Group
+display_name: Literature Intelligence
 template_version: 3.0.0
-domain: literature-analysis
+domain: research-scouting
+purpose: Gather, synthesize, and contextualize external evidence for decision support.
+success_criteria:
+- Source quality and relevance are documented.
+- Claims map to citations with contradiction handling.
+- Outputs support next-step decision making.
 head:
   agent_id: literature-intelligence-head
   skill_name: grp-literature-intelligence-head
-  mission: Extract, compare, and evidence-grade literature claims for project decision
-    support.
+  mission: Route and quality-gate specialist outputs for Literature Intelligence.
   publish_contract:
     exposed_required:
     - summary.md
@@ -14,17 +19,15 @@ head:
     - INTEGRATION_NOTES.md
     visibility: group-only
 specialists:
-- agent_id: retrieval-specialist
-  skill_name: grp-literature-intelligence-retrieval
-  focus: Paper retrieval strategy, inclusion criteria, and source tracking
+- agent_id: domain-core-specialist
+  skill_name: grp-literature-intelligence-domain-core
+  role: domain-core
+  focus: Primary domain analysis for Literature Intelligence in research-scouting
   required_references:
-  - references/retrieval-core.md
+  - references/domain-core-core.md
   required_outputs:
-  - source_inventory.md
-  - claims_with_citations.md
   - work.md
   - handoff.json
-  role: domain-core
   contract:
     inputs:
     - objective.md
@@ -35,100 +38,7 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: evidence-grading-specialist
-  skill_name: grp-literature-intelligence-evidence
-  focus: Evidence grading, study quality interpretation, and confidence assignment
-  depends_on:
-  - agent_id: retrieval-specialist
-    required_artifacts:
-    - internal/retrieval-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  required_references:
-  - references/evidence-grading-core.md
-  required_outputs:
-  - evidence_matrix.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: evidence-review
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: gap-analysis-specialist
-  skill_name: grp-literature-intelligence-gap
-  focus: Research gap mapping and risk-aware recommendation framing
-  depends_on:
-  - agent_id: evidence-grading-specialist
-    required_artifacts:
-    - internal/evidence-grading-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  - agent_id: retrieval-specialist
-    required_artifacts:
-    - internal/retrieval-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  required_references:
-  - references/gap-analysis-core.md
-  required_outputs:
-  - gap_map.md
-  - claims_with_citations.md
-  - work.md
-  - handoff.json
-  role: repro-qa
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  execution:
-    remote_transport: local
-    scheduler: local
-    hardware: cpu
-    requires_gpu: false
-- agent_id: integration-specialist
-  skill_name: grp-literature-intelligence-integration
-  role: integration
-  focus: Cross-artifact integration and consumability checks for Literature Intelligence
-    Group
-  required_references:
-  - references/integration-core.md
-  required_outputs:
-  - work.md
-  - handoff.json
-  contract:
-    inputs:
-    - objective.md
-    - group-context.json
-    outputs:
-    - work.md
-    - handoff.json
-    output_schema: specialist-handoff-v2
-  depends_on:
-  - agent_id: retrieval-specialist
-    required_artifacts:
-    - internal/retrieval-specialist/handoff.json
-    validate_with: json-parse
-    on_missing: request-rerun
-  execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
@@ -136,7 +46,7 @@ specialists:
 - agent_id: web-research-specialist
   skill_name: grp-literature-intelligence-web-research
   role: web-research
-  focus: Gather web-published references and extract citation-ready evidence.
+  focus: Web evidence and experimental data gathering for Literature Intelligence
   required_references:
   - references/web-research-core.md
   required_outputs:
@@ -152,28 +62,146 @@ specialists:
     output_schema: specialist-handoff-v2
   depends_on: []
   execution:
+    web_search_enabled: true
     remote_transport: local
     scheduler: local
     hardware: cpu
     requires_gpu: false
-tool_profile: literature-default
-default_workdirs:
-- inputs
-- analysis
-- outputs
-quality_gates:
-  citation_required: true
-  unresolved_claims_block: true
-  peer_check_required: true
-  consistency_required: true
-  scope_required: true
-  reproducibility_required: true
-schema_version: '3.0'
-purpose: Coordinate expert specialists for Literature Intelligence Group objectives.
-success_criteria:
-- All required artifacts produced
-- Gate profile satisfied
-- Exposed handoff consumable
+- agent_id: integration-specialist
+  skill_name: grp-literature-intelligence-integration
+  role: integration
+  focus: Cross-artifact integration and consumability checks for Literature Intelligence
+  required_references:
+  - references/integration-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: evidence-review-specialist
+  skill_name: grp-literature-intelligence-evidence-review
+  role: evidence-review
+  focus: Claim-level evidence review and citation sufficiency for Literature Intelligence
+  required_references:
+  - references/evidence-review-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: repro-qa-specialist
+  skill_name: grp-literature-intelligence-repro-qa
+  role: repro-qa
+  focus: Reproducibility and quality assurance checks for Literature Intelligence
+  required_references:
+  - references/repro-qa-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on:
+  - agent_id: domain-core-specialist
+    required_artifacts:
+    - internal/domain-core-specialist/handoff.json
+    validate_with: json-parse
+    on_missing: request-rerun
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: citation-analyst-specialist
+  skill_name: grp-literature-intelligence-citation-analyst
+  role: citation-analyst
+  focus: Specialized citation-analyst analysis for Literature Intelligence
+  required_references:
+  - references/citation-analyst-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
+- agent_id: trend-scout-specialist
+  skill_name: grp-literature-intelligence-trend-scout
+  role: trend-scout
+  focus: Specialized trend-scout analysis for Literature Intelligence
+  required_references:
+  - references/trend-scout-core.md
+  required_outputs:
+  - work.md
+  - handoff.json
+  contract:
+    inputs:
+    - objective.md
+    - group-context.json
+    outputs:
+    - work.md
+    - handoff.json
+    output_schema: specialist-handoff-v2
+  depends_on: []
+  execution:
+    web_search_enabled: true
+    remote_transport: local
+    scheduler: local
+    hardware: cpu
+    requires_gpu: false
 required_artifacts:
   objective_types:
     default:
@@ -185,13 +213,20 @@ required_artifacts:
       - exposed/handoff.json
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
-  profile_id: standard-evidence-v2
-  specialist_output_schema: specialist-handoff-v2
+  profile_id: standard-evidence-v3
+  specialist_output_schema: specialist-handoff-v3
   checks:
     web_citations_required: true
     repro_command_required: true
     consistency_required: true
     scope_enforced: true
+quality_gates:
+  citation_required: true
+  unresolved_claims_block: true
+  peer_check_required: true
+  consistency_required: true
+  scope_required: true
+  reproducibility_required: true
 interaction:
   mode: interactive-separated
   linked_groups: []
@@ -202,3 +237,8 @@ execution_defaults:
   - local
   hardware:
   - cpu
+tool_profile: default
+default_workdirs:
+- inputs
+- analysis
+- outputs

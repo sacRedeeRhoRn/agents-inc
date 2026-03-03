@@ -1,0 +1,37 @@
+type: object
+required:
+  - group_id
+  - display_name
+  - domain
+  - purpose
+  - success_criteria
+  - specialists
+properties:
+  group_id:
+    type: string
+  display_name:
+    type: string
+  domain:
+    type: string
+  purpose:
+    type: string
+  success_criteria:
+    type: array
+    items:
+      type: string
+  specialists:
+    type: array
+    items:
+      type: object
+      required: [agent_id, role, focus]
+      properties:
+        agent_id:
+          type: string
+        role:
+          type: string
+        focus:
+          type: string
+  extra_roles:
+    type: array
+    items:
+      type: string

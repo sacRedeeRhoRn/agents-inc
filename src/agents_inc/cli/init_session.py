@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import Optional
 
@@ -27,11 +25,9 @@ from agents_inc.core.fabric_lib import (
     ensure_json_serializable,
     load_project_manifest,
     now_iso,
-    package_root,
     read_text,
     resolve_fabric_root,
     slugify,
-    suggest_groups,
     write_text,
 )
 from agents_inc.core.response_policy import ensure_response_policy, upsert_specialist_sessions
@@ -82,6 +78,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resume-mode", default="auto", choices=["auto", "compact", "rehydrate"])
     parser.add_argument("--project-index", default=None, help="global project index path")
     parser.add_argument(
+        "--no-launch",
+        action="store_true",
+        help="prepare bootstrap state only and skip Codex launch",
+    )
+    parser.add_argument(
         "--overwrite-existing",
         action="store_true",
         help="allow destructive re-generation when project already exists",
@@ -122,6 +123,27 @@ def _ask_existing_project_action() -> str:
         if value in {"resume", "overwrite", "cancel"}:
             return value
         print("Please enter 'resume', 'overwrite', or 'cancel'.")
+
+
+def _build_bootstrap_prompt(*, fabric_root: Path, projects_root: Path, config_path: Path) -> str:
+    return "\n".join(
+        [
+            "Bootstrap agents-inc for first use.",
+            f"Workspace root: {fabric_root}",
+            f"Projects root default: {projects_root}",
+            f"Config file: {config_path}",
+            "",
+            "Explain this startup sequence to the user in concise steps:",
+            "1) List employable groups with `agents-inc group-list`.",
+            "2) Create a project with `agents-inc create <project-id>`.",
+            "3) Save progress with `agents-inc save <project-id>`.",
+            "4) Resume with `agents-inc resume <project-id>`.",
+            "5) Manage groups with `agents-inc project-groups`.",
+            "",
+            "When the user asks a normal question, answer directly.",
+            "When the user starts input with `/agents-inc`, route through agents-inc orchestration workflow.",
+        ]
+    )
 
 
 def _build_long_run_command(fabric_root: Path, project_id: str, task: str) -> str:
@@ -387,8 +409,7 @@ def _load_from_checkpoint(
 
     task = str(task_override or checkpoint.get("task") or "Continue orchestrator workflow")
     primary_group = str(
-        checkpoint.get("primary_group")
-        or (selected_groups[0] if selected_groups else "developer")
+        checkpoint.get("primary_group") or (selected_groups[0] if selected_groups else "developer")
     )
     router_call = str(
         checkpoint.get("router_call")
@@ -417,8 +438,7 @@ def _load_from_compacted(
 
     task = str(task_override or compact.get("task") or "Continue orchestrator workflow")
     primary_group = str(
-        compact.get("primary_group")
-        or (selected_groups[0] if selected_groups else "developer")
+        compact.get("primary_group") or (selected_groups[0] if selected_groups else "developer")
     )
     router_call = str(
         compact.get("router_call")
@@ -692,306 +712,64 @@ def run_resume_flow(
 def main() -> int:
     args = parse_args()
     try:
-        root_hint = resolve_fabric_root(args.fabric_root)
-        ensure_fabric_root_initialized(root_hint)
+        fabric_root = resolve_fabric_root(args.fabric_root)
+        ensure_fabric_root_initialized(fabric_root)
 
         config_path = default_config_path(args.config_path)
-        saved_projects_root = get_projects_root(config_path)
-
-        mode = str(args.mode)
-        if args.non_interactive and mode == "ask":
-            proposed_id = args.resume_project_id or args.project_id
-            if proposed_id:
-                candidate_project_root = (
-                    Path(args.project_root).expanduser().resolve()
-                    if args.project_root
-                    else (saved_projects_root / slugify(proposed_id))
-                )
-                manifest_path = (
-                    candidate_project_root
-                    / "agent_group_fabric"
-                    / "generated"
-                    / "projects"
-                    / slugify(proposed_id)
-                    / "manifest.yaml"
-                )
-                mode = "resume" if manifest_path.exists() else "new"
-            else:
-                mode = "new"
-
-        if not args.non_interactive:
-            print("agents-inc intake wizard")
-            if mode == "ask":
-                mode = _ask_mode("new")
-
-        if mode == "resume":
-            run_resume_flow(args)
-            return 0
-
-        if args.non_interactive:
-            missing = [
-                key
-                for key, value in {
-                    "task": args.task,
-                    "timeline": args.timeline,
-                    "compute": args.compute,
-                    "remote_cluster": args.remote_cluster,
-                    "output_target": args.output_target,
-                }.items()
-                if not value
-            ]
-            if missing:
-                raise FabricError(
-                    "missing required args in non-interactive mode: " + ", ".join(missing)
-                )
-            task = args.task or ""
-            timeline = args.timeline or ""
-            compute = args.compute or "cpu"
-            remote_cluster = args.remote_cluster or "no"
-            output_target = args.output_target or "report"
-        else:
-            task = args.task or _ask("What task do you want to start")
-            timeline = args.timeline or _ask("Timeline", "2 weeks")
-            compute = args.compute or _ask("Compute requirement (cpu/gpu/cuda)", "cpu").lower()
-            remote_cluster = (
-                args.remote_cluster or _ask("Remote cluster over SSH? (yes/no)", "yes").lower()
-            )
-            output_target = args.output_target or _ask("Output target", "technical report")
-
-        suggested_groups, rationale = suggest_groups(task, compute, remote_cluster, output_target)
-
-        if args.non_interactive:
-            selected_groups = _parse_groups(args.groups or ",".join(suggested_groups))
-        else:
-            default_groups = ",".join(suggested_groups)
-            print("Recommended groups:")
-            for group_id in suggested_groups:
-                print(f"- {group_id}")
-            selected_groups = _parse_groups(
-                _ask("Groups to activate (comma-separated)", default_groups)
-            )
-        if not selected_groups:
-            selected_groups = suggested_groups
-
-        default_project_id = slugify(args.project_id or task)
-        if args.non_interactive:
-            project_id = default_project_id
-        else:
-            project_id = slugify(_ask("Project id", default_project_id))
-        if not project_id:
-            raise FabricError("project id resolved to empty value")
-
-        if args.project_root:
-            project_root = Path(args.project_root).expanduser().resolve()
-            projects_root = project_root.parent
-        else:
-            if args.projects_root:
-                projects_root = Path(args.projects_root).expanduser().resolve()
-            elif args.non_interactive:
-                projects_root = saved_projects_root
-            else:
-                projects_root = (
-                    Path(_ask("Projects root directory", str(saved_projects_root)))
-                    .expanduser()
-                    .resolve()
-                )
-            project_root = projects_root / project_id
-
+        projects_root = (
+            Path(str(args.projects_root)).expanduser().resolve()
+            if args.projects_root
+            else get_projects_root(config_path)
+        )
         set_projects_root(config_path, projects_root)
 
-        project_root.mkdir(parents=True, exist_ok=True)
-        project_fabric_root = project_root / "agent_group_fabric"
-        ensure_fabric_root_initialized(project_fabric_root)
-        codex_home_state = ensure_project_codex_home(project_root, project_id=project_id)
-        project_skill_target = (
-            Path(args.target_skill_dir).expanduser().resolve()
-            if args.target_skill_dir
-            else Path(str(codex_home_state["skills_dir"]))
-        )
-
-        existing_manifest = (
-            project_fabric_root / "generated" / "projects" / project_id / "manifest.yaml"
-        )
-        if existing_manifest.exists() and not args.overwrite_existing:
-            if args.non_interactive:
-                raise FabricError(
-                    "project already exists and overwrite is disabled. Use --mode resume or pass --overwrite-existing."
-                )
-            action = _ask_existing_project_action()
-            if action == "cancel":
-                raise FabricError("cancelled by user")
-            if action == "resume":
-                run_resume_flow(args, requested_project_id=project_id)
-                return 0
-            args.overwrite_existing = True
-
-        if args.overwrite_existing and project_fabric_root.exists():
-            # Hard refresh project-local fabric when destructive recreate is requested.
-            shutil.rmtree(project_fabric_root)
-            ensure_fabric_root_initialized(project_fabric_root)
-
-        cmd_env = os.environ.copy()
-        src_root = str(package_root().parents[1])
-        current_path = cmd_env.get("PYTHONPATH", "")
-        cmd_env["PYTHONPATH"] = f"{src_root}:{current_path}" if current_path else src_root
-
-        group_csv = ",".join(selected_groups)
-        new_project_cmd = [
-            sys.executable,
-            "-m",
-            "agents_inc.cli.new_project",
-            "--fabric-root",
-            str(project_fabric_root),
-            "--project-id",
-            project_id,
-            "--groups",
-            group_csv,
-            "--visibility-mode",
-            "group-only",
-            "--audit-override",
-            "--target-skill-dir",
-            str(project_skill_target),
-        ]
-        if args.overwrite_existing:
-            new_project_cmd.append("--force")
-        run_cmd(new_project_cmd, env=cmd_env)
-
-        _, manifest = load_project_manifest(project_fabric_root, project_id)
-        ensure_response_policy(project_root)
-        activation_state = save_skill_activation_state(
-            project_root,
-            active_head_groups=selected_groups,
-            active_specialist_groups=[],
-        )
-        install_project_skills(
-            fabric_root=project_fabric_root,
-            project_id=project_id,
-            target=project_skill_target,
-            sync=True,
-            head_groups=activation_state["active_head_groups"],
-            specialist_groups=activation_state["active_specialist_groups"],
-            include_specialists=False,
-        )
-        ensure_skill_activation_state(project_root, default_head_groups=selected_groups)
-        upsert_specialist_sessions(
-            project_root=project_root,
-            project_fabric_root=project_fabric_root,
-            project_id=project_id,
-            selected_groups=selected_groups,
-        )
-
-        primary_group = selected_groups[0]
-        router_call = (
-            f"Use $research-router for project {project_id} group {primary_group}: {task}."
-        )
-        long_run_command = _build_long_run_command(project_fabric_root, project_id, task)
-
-        latest_artifacts = {
-            "kickoff": str(project_root / "kickoff.md"),
-            "router_call": str(project_root / "router-call.txt"),
-            "long_run_command": str(project_root / "long-run-command.sh"),
-            "project_manifest": str(project_root / "project-manifest.yaml"),
-            "response_policy": str(project_root / ".agents-inc" / "state" / "response-policy.yaml"),
-            "specialist_sessions": str(
-                project_root / ".agents-inc" / "state" / "specialist-sessions.yaml"
-            ),
-            "codex_home_state": str(project_root / ".agents-inc" / "state" / "codex-home.yaml"),
-            "skill_activation": str(skill_activation_state_path(project_root)),
+        bootstrap_state_path = config_path.parent / "bootstrap.yaml"
+        bootstrap_payload = {
+            "schema_version": "1.0",
+            "initialized_at": now_iso(),
+            "fabric_root": str(fabric_root),
+            "projects_root": str(projects_root),
+            "config_path": str(config_path),
         }
-
-        payload = _build_checkpoint_payload(
-            project_id=project_id,
-            project_root=project_root,
-            project_fabric_root=project_fabric_root,
-            task=task,
-            constraints={
-                "timeline": timeline,
-                "compute": compute,
-                "remote_cluster": remote_cluster,
-                "output_target": output_target,
-            },
-            selected_groups=selected_groups,
-            router_call=router_call,
-            latest_artifacts=latest_artifacts,
-            pending_actions=[
-                "Paste router-call.txt into the Codex session.",
-                "Use agents-inc orchestrator-reply for strict artifact-grounded group responses.",
-                "Run long-run-command.sh to validate all-group interaction and isolation.",
-                "Use agents-inc skills activate --project-id <id> --groups <group-id> --specialists for group-selective specialist skills.",
-            ],
+        bootstrap_state_path.parent.mkdir(parents=True, exist_ok=True)
+        bootstrap_state_path.write_text(
+            json.dumps(bootstrap_payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
         )
 
-        records = _write_session_records(
-            args=args,
-            project_root=project_root,
-            project_fabric_root=project_fabric_root,
-            payload=payload,
-        )
-        kickoff_md = _build_new_kickoff(
-            project_id=project_id,
-            task=task,
-            timeline=timeline,
-            compute=compute,
-            remote_cluster=remote_cluster,
-            output_target=output_target,
-            groups=selected_groups,
-            rationale=rationale,
-            router_call=router_call,
-            long_run_command=long_run_command,
+        prompt = _build_bootstrap_prompt(
+            fabric_root=fabric_root,
             projects_root=projects_root,
-            session_code=str(records["compact"]["session_code"]),
-        )
-
-        manifest_src = project_fabric_root / "generated" / "projects" / project_id / "manifest.yaml"
-        _write_common_project_artifacts(
-            project_root=project_root,
-            router_call=router_call,
-            long_run_command=long_run_command,
-            kickoff_md=kickoff_md,
-            project_manifest_src=manifest_src,
+            config_path=config_path,
         )
 
         summary = {
-            "mode": "new",
-            "project_id": project_id,
-            "project_root": project_root,
-            "projects_root": projects_root,
-            "fabric_root": project_fabric_root,
-            "selected_groups": selected_groups,
-            "active_groups": selected_groups,
-            "rationale": rationale,
-            "router_call": router_call,
-            "session_code": str(records["compact"]["session_code"]),
-            "group_session_map": records["compact"].get("group_session_map", {}),
-            "artifacts": {
-                "kickoff": project_root / "kickoff.md",
-                "router_call": project_root / "router-call.txt",
-                "long_run_command": project_root / "long-run-command.sh",
-                "project_manifest": project_root / "project-manifest.yaml",
-                "response_policy": project_root / ".agents-inc" / "state" / "response-policy.yaml",
-                "specialist_sessions": project_root
-                / ".agents-inc"
-                / "state"
-                / "specialist-sessions.yaml",
-                "codex_home_state": project_root / ".agents-inc" / "state" / "codex-home.yaml",
-                "skill_activation": skill_activation_state_path(project_root),
-                "checkpoint": records["checkpoint"]["checkpoint_path"],
-                "compact": records["compact"]["compact_path"],
-                "project_index": records["checkpoint"]["project_index_path"],
-            },
-            "visibility": manifest.get("visibility", {}),
-            "next_actions": [
-                "Paste router-call.txt into the Codex session.",
-                "Use agents-inc orchestrator-reply for strict artifact-grounded group responses.",
-                "Run long-run-command.sh to validate all-group interaction and isolation.",
-                "Use agents-inc skills activate --project-id <id> --groups <group-id> --specialists for group-selective specialist skills.",
-            ],
+            "mode": "bootstrap",
+            "fabric_root": str(fabric_root),
+            "projects_root": str(projects_root),
+            "config_path": str(config_path),
+            "bootstrap_state": str(bootstrap_state_path),
+            "launch_prompt": prompt,
         }
+
+        if args.no_launch:
+            print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+            return 0
+
+        codex_bin = shutil.which("codex")
+        if not codex_bin:
+            print(
+                "warning: 'codex' command not found on PATH. Bootstrap is initialized; launch manually with the prompt below."
+            )
+            print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+            return 0
 
         print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
         print("\n---\n")
-        print(kickoff_md)
-        return 0
+        cmd = [codex_bin, "-C", str(fabric_root), prompt]
+        print(f"launching: {' '.join(cmd[:3])} <prompt>")
+        proc = subprocess.run(cmd)
+        return int(proc.returncode)
     except Exception as exc:  # noqa: BLE001
         print(f"error: {exc}")
         return 1

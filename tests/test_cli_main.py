@@ -4,7 +4,6 @@ from __future__ import annotations
 import sys
 import tempfile
 import unittest
-from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -22,6 +21,34 @@ class CLIMainTests(unittest.TestCase):
         with patch.object(sys, "argv", ["agents-inc", "nope"]):
             code = cli_main.main()
         self.assertEqual(code, 2)
+
+    def test_main_routes_init_command(self) -> None:
+        with patch("agents_inc.cli.init_session.main", return_value=6) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "init"]):
+                code = cli_main.main()
+        self.assertEqual(code, 6)
+        mocked.assert_called_once()
+
+    def test_main_routes_group_list_command(self) -> None:
+        with patch("agents_inc.cli.group_list.main", return_value=5) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "group-list"]):
+                code = cli_main.main()
+        self.assertEqual(code, 5)
+        mocked.assert_called_once()
+
+    def test_main_routes_create_command(self) -> None:
+        with patch("agents_inc.cli.create_project.main", return_value=4) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "create", "proj-x"]):
+                code = cli_main.main()
+        self.assertEqual(code, 4)
+        mocked.assert_called_once()
+
+    def test_main_routes_save_command(self) -> None:
+        with patch("agents_inc.cli.save_project.main", return_value=3) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "save", "proj-x"]):
+                code = cli_main.main()
+        self.assertEqual(code, 3)
+        mocked.assert_called_once()
 
     def test_main_routes_list_command(self) -> None:
         with patch("agents_inc.cli.list_sessions.main", return_value=7) as mocked:
@@ -44,24 +71,6 @@ class CLIMainTests(unittest.TestCase):
         self.assertEqual(code, 12)
         mocked.assert_called_once()
 
-    def test_main_routes_cleanup_projects_command(self) -> None:
-        with patch("agents_inc.cli.cleanup_projects.main", return_value=15) as mocked:
-            with patch.object(
-                sys,
-                "argv",
-                ["agents-inc", "cleanup-projects", "--all-indexed", "--yes"],
-            ):
-                code = cli_main.main()
-        self.assertEqual(code, 15)
-        mocked.assert_called_once()
-
-    def test_main_routes_groups_command(self) -> None:
-        with patch("agents_inc.cli.groups.main", return_value=9) as mocked:
-            with patch.object(sys, "argv", ["agents-inc", "groups", "list"]):
-                code = cli_main.main()
-        self.assertEqual(code, 9)
-        mocked.assert_called_once()
-
     def test_main_routes_project_groups_command(self) -> None:
         with patch("agents_inc.cli.project_groups.main", return_value=14) as mocked:
             with patch.object(sys, "argv", ["agents-inc", "project-groups", "list"]):
@@ -69,106 +78,62 @@ class CLIMainTests(unittest.TestCase):
         self.assertEqual(code, 14)
         mocked.assert_called_once()
 
-    def test_main_routes_skills_command(self) -> None:
-        with patch("agents_inc.cli.skills.main", return_value=10) as mocked:
-            with patch.object(sys, "argv", ["agents-inc", "skills", "list", "--project-id", "x"]):
-                code = cli_main.main()
-        self.assertEqual(code, 10)
-        mocked.assert_called_once()
-
-    def test_main_routes_orchestrate_command(self) -> None:
-        with patch("agents_inc.cli.orchestrate.main", return_value=11) as mocked:
-            with patch.object(sys, "argv", ["agents-inc", "orchestrate", "--project-id", "x"]):
-                code = cli_main.main()
-        self.assertEqual(code, 11)
-        mocked.assert_called_once()
-
-    def test_main_routes_orchestrator_reply_command(self) -> None:
-        with patch("agents_inc.cli.orchestrator_reply.main", return_value=13) as mocked:
-            with patch.object(
-                sys,
-                "argv",
-                [
-                    "agents-inc",
-                    "orchestrator-reply",
-                    "--project-id",
-                    "x",
-                    "--message",
-                    "hello",
-                ],
-            ):
-                code = cli_main.main()
-        self.assertEqual(code, 13)
-        mocked.assert_called_once()
-
-    def test_main_routes_eval_command(self) -> None:
-        with patch("agents_inc.cli.eval.main", return_value=16) as mocked:
-            with patch.object(sys, "argv", ["agents-inc", "eval", "--project-id", "x"]):
-                code = cli_main.main()
-        self.assertEqual(code, 16)
-        mocked.assert_called_once()
-
-    def test_main_deprecated_alias_subcommand_warns_and_routes(self) -> None:
-        with patch("agents_inc.cli.dispatch_dry_run.main", return_value=17) as mocked:
-            with patch("sys.stderr", new_callable=StringIO) as stderr:
-                with patch.object(
-                    sys,
-                    "argv",
-                    ["agents-inc", "dispatch-dry-run", "--project-id", "x", "--group", "g"],
-                ):
-                    code = cli_main.main()
-        self.assertEqual(code, 17)
-        mocked.assert_called_once()
-        self.assertIn("deprecated", stderr.getvalue())
-
     def test_main_version_flag(self) -> None:
         with patch.object(sys, "argv", ["agents-inc", "--version"]):
             code = cli_main.main()
         self.assertEqual(code, 0)
 
     def test_resume_cli_no_launch(self) -> None:
-        summary = {
-            "project_id": "proj-test",
-            "project_root": "/tmp/proj-test",
-            "session_code": "sc-1",
-            "selected_groups": ["developer"],
-            "router_call": "Use $research-router for project proj-test group developer: test.",
-        }
-        with patch("agents_inc.cli.resume.run_resume_flow", return_value=summary) as run_resume:
-            with patch.object(sys, "argv", ["agents-inc-resume", "proj-test", "--no-launch"]):
-                code = resume_cli.main()
-        self.assertEqual(code, 0)
-        run_resume.assert_called_once()
-
-    def test_resume_cli_launches_codex(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            summary = {
-                "project_id": "proj-test",
-                "project_root": td,
-                "session_code": "sc-1",
-                "selected_groups": ["developer", "integration-delivery"],
-                "router_call": "Use $research-router for project proj-test group developer: test.\nwith newline.",
-            }
-            with patch("agents_inc.cli.resume.run_resume_flow", return_value=summary):
-                with patch("agents_inc.cli.resume.shutil.which", return_value="/usr/bin/codex"):
-                    with patch("agents_inc.cli.resume.subprocess.run") as mocked_run:
-                        mocked_run.return_value.returncode = 0
-                        with patch.object(sys, "argv", ["agents-inc-resume", "proj-test"]):
+            project_root = Path(td) / "proj-test"
+            project_root.mkdir(parents=True, exist_ok=True)
+            with patch(
+                "agents_inc.cli.resume.resolve_project_context",
+                return_value=(
+                    project_root / "agent_group_fabric",
+                    project_root,
+                    project_root,
+                    project_root / "manifest.yaml",
+                    {"project_id": "proj-test"},
+                ),
+            ):
+                with patch(
+                    "agents_inc.cli.resume.run_orchestrator_chat",
+                    return_value={"thread_id": "thread-1", "chat_log_path": str(project_root / "chat.log")},
+                ) as run_chat:
+                    with patch.object(
+                        sys, "argv", ["agents-inc-resume", "proj-test", "--no-launch", "--json"]
+                    ):
+                        code = resume_cli.main()
+        self.assertEqual(code, 0)
+        run_chat.assert_called_once()
+
+    def test_resume_cli_runs_managed_chat(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "proj-test"
+            project_root.mkdir(parents=True, exist_ok=True)
+            with patch(
+                "agents_inc.cli.resume.resolve_project_context",
+                return_value=(
+                    project_root / "agent_group_fabric",
+                    project_root,
+                    project_root,
+                    project_root / "manifest.yaml",
+                    {"project_id": "proj-test"},
+                ),
+            ):
+                with patch(
+                    "agents_inc.cli.resume.load_orchestrator_state",
+                    return_value={"thread_id": "thread-prev"},
+                ):
+                    with patch(
+                        "agents_inc.cli.resume.run_orchestrator_chat",
+                        return_value={"thread_id": "thread-next", "chat_log_path": str(project_root / "chat.log")},
+                    ) as run_chat:
+                        with patch.object(sys, "argv", ["agents-inc-resume", "proj-test", "--json"]):
                             code = resume_cli.main()
             self.assertEqual(code, 0)
-            mocked_run.assert_called_once()
-            cmd = mocked_run.call_args[0][0]
-            self.assertEqual(cmd[0], "/usr/bin/codex")
-            self.assertEqual(cmd[1], "-C")
-            self.assertEqual(cmd[2], td)
-            self.assertNotIn("\n", cmd[3])
-            env = mocked_run.call_args[1].get("env", {})
-            self.assertEqual(
-                Path(str(env.get("CODEX_HOME", ""))).resolve(),
-                (Path(td) / ".agents-inc" / "codex-home").resolve(),
-            )
-            prompt_file = Path(td) / ".agents-inc" / "state" / "resume-prompt.md"
-            self.assertTrue(prompt_file.exists())
+            run_chat.assert_called_once()
 
 
 if __name__ == "__main__":

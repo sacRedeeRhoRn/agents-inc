@@ -51,34 +51,28 @@ def init_project(root_dir: Path, project_id: str, groups: str) -> dict:
 
     env = dict(os.environ)
     env["HOME"] = str(home_dir)
+    env["PYTHONPATH"] = "{0}{1}{2}".format(
+        str(ROOT / "src"),
+        os.pathsep,
+        env.get("PYTHONPATH", ""),
+    ).rstrip(os.pathsep)
 
     run_cmd(
         [
             "python3",
-            str(SCRIPTS / "init_session.py"),
+            "-m",
+            "agents_inc.cli.main",
+            "create",
+            project_id,
             "--fabric-root",
             str(ROOT),
-            "--project-root",
-            str(project_root),
-            "--project-id",
-            project_id,
-            "--groups",
-            groups,
-            "--task",
-            "Film thickness dependent polymorphism stability of metastable phase",
-            "--timeline",
-            "2 weeks",
-            "--compute",
-            "cpu",
-            "--remote-cluster",
-            "no",
-            "--output-target",
-            "technical report",
+            "--projects-root",
+            str(projects_root),
             "--project-index",
             str(project_index),
-            "--mode",
-            "new",
-            "--non-interactive",
+            "--groups",
+            groups,
+            "--no-launch",
         ],
         env=env,
     )
@@ -102,26 +96,19 @@ class SkillScopeTests(unittest.TestCase):
             codex_state_path = project_root / ".agents-inc" / "state" / "codex-home.yaml"
             activation_path = project_root / ".agents-inc" / "state" / "skill-activation.yaml"
             self.assertTrue(codex_state_path.exists())
-            self.assertTrue(activation_path.exists())
+            self.assertFalse(activation_path.exists())
 
             codex_state = yaml.safe_load(codex_state_path.read_text(encoding="utf-8"))
-            activation = yaml.safe_load(activation_path.read_text(encoding="utf-8"))
             self.assertEqual(codex_state["skill_scope"], "project-strict")
             self.assertEqual(codex_state["project_id"], "proj-scope-init")
             self.assertEqual(
                 Path(str(codex_state["codex_home"])).resolve(),
                 (project_root / ".agents-inc" / "codex-home").resolve(),
             )
-            self.assertEqual(activation["active_specialist_groups"], [])
-            self.assertEqual(
-                activation["active_head_groups"],
-                ["developer", "integration-delivery"],
-            )
 
             project_skill_dir = project_root / ".agents-inc" / "codex-home" / "skills" / "local"
             rows = managed_rows(project_skill_dir)
-            self.assertTrue(rows)
-            self.assertTrue(all(row.get("role") == "head" for row in rows))
+            self.assertEqual(rows, [])
 
             global_skill_dir = home_dir / ".codex" / "skills" / "local"
             self.assertFalse(global_skill_dir.exists())
@@ -166,7 +153,8 @@ class SkillScopeTests(unittest.TestCase):
             self.assertTrue(all(row.get("group_id") == "developer" for row in specialist_rows))
             self.assertFalse(
                 any(
-                    row.get("group_id") == "integration-delivery" and row.get("role") == "specialist"
+                    row.get("group_id") == "integration-delivery"
+                    and row.get("role") == "specialist"
                     for row in rows
                 )
             )

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from agents_inc.core.config_state import default_config_path, get_projects_root
 from agents_inc.core.fabric_lib import FabricError, ensure_json_serializable, slugify
+from agents_inc.core.orchestrator_state import load_orchestrator_state, save_orchestrator_state
 from agents_inc.core.session_state import (
     default_project_index_path,
     get_index_project,
@@ -47,11 +48,17 @@ def main() -> int:
             raise FabricError(f"project '{project_id}' not found")
 
         updated = set_index_project_status(project_index_path, project_id, "inactive")
+        project_root = Path(str(updated.get("project_root") or "")).expanduser().resolve()
+        if project_root.exists():
+            state = load_orchestrator_state(project_root, project_id=project_id)
+            state["status"] = "inactive"
+            save_orchestrator_state(project_root, state)
         payload = {
             "project_id": project_id,
             "status": str(updated.get("status") or ""),
             "root": str(updated.get("project_root") or ""),
             "updated_at": str(updated.get("updated_at") or ""),
+            "recommendation": f"Run 'agents-inc save {project_id}' before deactivation for explicit snapshot safety.",
         }
         if args.json:
             print(json.dumps(ensure_json_serializable(payload), indent=2, sort_keys=True))
@@ -59,6 +66,7 @@ def main() -> int:
             print(f"project_id: {payload['project_id']}")
             print(f"status: {payload['status']}")
             print(f"root: {payload['root']}")
+            print(payload["recommendation"])
         return 0
     except Exception as exc:  # noqa: BLE001
         print(f"error: {exc}")

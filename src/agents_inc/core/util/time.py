@@ -3,6 +3,7 @@
 No other module in agents_inc defines now_iso() or to_stamp().
 All callers import from here (or through the fabric_lib backward-compat shim).
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -13,12 +14,7 @@ def now_iso() -> str:
 
     Example: '2026-03-02T12:00:00Z'
     """
-    return (
-        datetime.now(timezone.utc)
-        .replace(microsecond=0)
-        .isoformat()
-        .replace("+00:00", "Z")
-    )
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def to_stamp(iso_value: str) -> str:
@@ -28,10 +24,4 @@ def to_stamp(iso_value: str) -> str:
 
     Was duplicated as _stamp() in session_state.py and session_compaction.py.
     """
-    return (
-        iso_value
-        .replace("-", "")
-        .replace(":", "")
-        .replace("+00:00", "Z")
-        .replace(".", "")
-    )
+    return iso_value.replace("-", "").replace(":", "").replace("+00:00", "Z").replace(".", "")
