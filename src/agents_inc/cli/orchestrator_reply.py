@@ -15,6 +15,13 @@ from agents_inc.core.fabric_lib import (
     slugify,
 )
 from agents_inc.core.orchestrator_reply import OrchestratorReplyConfig, run_orchestrator_reply
+from agents_inc.core.model_profiles import (
+    DEFAULT_HEAD_MODEL,
+    DEFAULT_HEAD_REASONING_EFFORT,
+    DEFAULT_SPECIALIST_MODEL,
+    normalize_model_slug,
+    normalize_reasoning_effort,
+)
 from agents_inc.core.session_state import default_project_index_path, find_resume_project
 
 
@@ -70,6 +77,26 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=None,
         help="timeout in seconds for each specialist/head session (omit or 0 = unlimited)",
+    )
+    parser.add_argument(
+        "--specialist-model",
+        default=None,
+        help=f"specialist model slug (default: {DEFAULT_SPECIALIST_MODEL})",
+    )
+    parser.add_argument(
+        "--head-model",
+        default=None,
+        help=f"group head model slug (default: {DEFAULT_HEAD_MODEL})",
+    )
+    parser.add_argument(
+        "--specialist-reasoning-effort",
+        default=None,
+        help="specialist reasoning effort override (for example: low|medium|high|xhigh)",
+    )
+    parser.add_argument(
+        "--head-reasoning-effort",
+        default=None,
+        help=f"group head reasoning effort override (default: {DEFAULT_HEAD_REASONING_EFFORT})",
     )
     parser.add_argument(
         "--live-profile",
@@ -256,6 +283,27 @@ def _resolve_runtime_settings(args: argparse.Namespace) -> dict:
     }
 
 
+def _resolve_model_settings(args: argparse.Namespace) -> dict:
+    return {
+        "specialist_model": normalize_model_slug(
+            args.specialist_model,
+            default=DEFAULT_SPECIALIST_MODEL,
+        ),
+        "head_model": normalize_model_slug(
+            args.head_model,
+            default=DEFAULT_HEAD_MODEL,
+        ),
+        "specialist_reasoning_effort": normalize_reasoning_effort(
+            args.specialist_reasoning_effort,
+            default=None,
+        ),
+        "head_reasoning_effort": normalize_reasoning_effort(
+            args.head_reasoning_effort,
+            default=DEFAULT_HEAD_REASONING_EFFORT,
+        ),
+    }
+
+
 _BLOCKED_RE = re.compile(
     r"BLOCKED\[(?P<status>[^\]]+)\]\s+blocked_report=(?P<report>\S+)\s+blocked_reasons=(?P<reasons>\S+)"
 )
@@ -305,6 +353,7 @@ def main() -> int:
         ensure_fabric_root_initialized(fabric_root)
         is_non_group = _is_non_group_message(str(args.message))
         runtime = _resolve_runtime_settings(args)
+        model_settings = _resolve_model_settings(args)
         require_negotiation = _parse_bool_text(
             args.require_negotiation,
             default=(not is_non_group),
@@ -337,6 +386,10 @@ def main() -> int:
             abort_file=Path(args.abort_file).expanduser().resolve() if args.abort_file else None,
             require_negotiation=bool(require_negotiation),
             audit=bool(args.audit),
+            specialist_model=str(model_settings["specialist_model"]),
+            specialist_reasoning_effort=model_settings["specialist_reasoning_effort"],
+            head_model=str(model_settings["head_model"]),
+            head_reasoning_effort=model_settings["head_reasoning_effort"],
         )
         result = run_orchestrator_reply(config)
         if args.json:

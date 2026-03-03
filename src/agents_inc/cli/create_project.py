@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
 from pathlib import Path
 from typing import Dict, List, Set
@@ -148,6 +149,20 @@ def _run_new_project_bundle(
         raise FabricError("failed to generate project bundle")
 
 
+def _sync_catalog_group_manifests(*, source_fabric_root: Path, target_fabric_root: Path) -> None:
+    src_catalog = source_fabric_root / "catalog" / "groups"
+    if not src_catalog.exists():
+        return
+    dst_catalog = target_fabric_root / "catalog" / "groups"
+    dst_catalog.mkdir(parents=True, exist_ok=True)
+    for src in sorted(src_catalog.glob("*.yaml")):
+        dst = dst_catalog / src.name
+        try:
+            shutil.copy2(src, dst)
+        except Exception as exc:  # noqa: BLE001
+            raise FabricError(f"failed to sync group manifest '{src}' -> '{dst}': {exc}") from exc
+
+
 def _checkpoint_payload(
     *,
     project_id: str,
@@ -191,6 +206,10 @@ def main() -> int:
         project_root.mkdir(parents=True, exist_ok=True)
         project_fabric_root = project_root / "agent_group_fabric"
         ensure_fabric_root_initialized(project_fabric_root)
+        _sync_catalog_group_manifests(
+            source_fabric_root=fabric_root,
+            target_fabric_root=project_fabric_root,
+        )
 
         catalog = load_group_catalog(project_fabric_root)
         rows = _group_rows(catalog)

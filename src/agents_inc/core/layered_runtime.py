@@ -21,6 +21,11 @@ from agents_inc.core.escalation import (
     resolve_escalation_state,
 )
 from agents_inc.core.fabric_lib import build_dispatch_plan, now_iso, stable_json, write_text
+from agents_inc.core.model_profiles import (
+    DEFAULT_HEAD_MODEL,
+    DEFAULT_HEAD_REASONING_EFFORT,
+    DEFAULT_SPECIALIST_MODEL,
+)
 from agents_inc.core.util.dispatch import gate_specialist_output
 from agents_inc.core.util.edges import resolve_handoff_edges
 
@@ -43,6 +48,10 @@ class LayeredRuntimeConfig:
     abort_file: Optional[Path] = None
     audit: bool = False
     handoff_edges: List[Tuple[str, str]] = field(default_factory=list)
+    specialist_model: str = DEFAULT_SPECIALIST_MODEL
+    specialist_reasoning_effort: str | None = None
+    head_model: str = DEFAULT_HEAD_MODEL
+    head_reasoning_effort: str | None = DEFAULT_HEAD_REASONING_EFFORT
 
 
 @dataclass
@@ -106,6 +115,10 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
             "abort_file": str(config.abort_file) if config.abort_file else "",
             "audit": config.audit,
             "runner_backend": runner.backend,
+            "specialist_model": config.specialist_model,
+            "specialist_reasoning_effort": config.specialist_reasoning_effort,
+            "head_model": config.head_model,
+            "head_reasoning_effort": config.head_reasoning_effort,
         },
         "created_at": now_iso(),
     }
@@ -670,6 +683,8 @@ def _run_specialist_with_retries(
                 codex_home=codex_home,
                 thread_id=get_specialist_thread(config.project_root, group_id, specialist_id),
                 session_label=f"{group_id}/{specialist_id}",
+                model=config.specialist_model,
+                model_reasoning_effort=config.specialist_reasoning_effort,
             )
         )
 
@@ -1015,6 +1030,8 @@ def _run_head_with_retries(
                 codex_home=codex_home,
                 thread_id=get_head_thread(config.project_root, group_id),
                 session_label=f"{group_id}/head",
+                model=config.head_model,
+                model_reasoning_effort=config.head_reasoning_effort,
             )
         )
 

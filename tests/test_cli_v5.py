@@ -85,6 +85,87 @@ class CLIV5Tests(unittest.TestCase):
             self.assertIn("developer", selected)
             self.assertIn("quality-assurance", selected)
 
+    def test_create_project_respects_custom_group_from_source_fabric(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fabric_root = Path(td) / "fabric"
+            projects_root = Path(td) / "projects"
+            config_path = Path(td) / ".agents-inc" / "config.yaml"
+            ensure_fabric_root_initialized(fabric_root)
+            with patch.object(
+                sys,
+                "argv",
+                [
+                    "agents-inc-new-group",
+                    "--fabric-root",
+                    str(fabric_root),
+                    "--group-id",
+                    "material-scientist",
+                    "--display-name",
+                    "Material Scientist",
+                    "--domain",
+                    "materials",
+                    "--purpose",
+                    "Identify candidate topological semimetal materials feasible for local compute workflows",
+                    "--success-criteria",
+                    "candidate shortlist with citations,reproducible local workflow",
+                    "--extra-roles",
+                    "crystallography-expert,solid-state-physics-expert",
+                    "--no-codex",
+                    "--force",
+                ],
+            ):
+                self.assertEqual(new_group_cli.main(), 0)
+
+            with patch(
+                "agents_inc.cli.create_project.run_orchestrator_chat",
+                return_value={"thread_id": "thread-123", "chat_log_path": str(Path(td) / "chat.log")},
+            ):
+                with patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "agents-inc-create",
+                        "proj-custom",
+                        "--fabric-root",
+                        str(fabric_root),
+                        "--projects-root",
+                        str(projects_root),
+                        "--config-path",
+                        str(config_path),
+                        "--groups",
+                        "developer,material-scientist",
+                        "--no-launch",
+                        "--json",
+                    ],
+                ):
+                    code = create_cli.main()
+            self.assertEqual(code, 0)
+
+            manifest_path = (
+                projects_root
+                / "proj-custom"
+                / "agent_group_fabric"
+                / "generated"
+                / "projects"
+                / "proj-custom"
+                / "manifest.yaml"
+            )
+            self.assertTrue(manifest_path.exists())
+            manifest = load_yaml(manifest_path)
+            self.assertIsInstance(manifest, dict)
+            selected = manifest.get("selected_groups", [])
+            self.assertEqual(selected, ["developer", "material-scientist"])
+
+            synced_group = (
+                projects_root
+                / "proj-custom"
+                / "agent_group_fabric"
+                / "catalog"
+                / "groups"
+                / "material-scientist.yaml"
+            )
+            self.assertTrue(synced_group.exists())
+
     def test_save_project_creates_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             fabric_root = Path(td) / "fabric"

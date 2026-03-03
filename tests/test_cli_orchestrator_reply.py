@@ -14,6 +14,11 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from agents_inc.cli import orchestrator_reply as orchestrator_reply_cli  # noqa: E402
+from agents_inc.core.model_profiles import (  # noqa: E402
+    DEFAULT_HEAD_MODEL,
+    DEFAULT_HEAD_REASONING_EFFORT,
+    DEFAULT_SPECIALIST_MODEL,
+)
 
 
 class CLIOrchestratorReplyTests(unittest.TestCase):
@@ -110,6 +115,79 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
                             code = orchestrator_reply_cli.main()
             self.assertEqual(code, 1)
             runner.assert_not_called()
+
+    def test_model_settings_defaults(self) -> None:
+        args = SimpleNamespace(
+            specialist_model=None,
+            head_model=None,
+            specialist_reasoning_effort=None,
+            head_reasoning_effort=None,
+        )
+        settings = orchestrator_reply_cli._resolve_model_settings(args)
+        self.assertEqual(settings["specialist_model"], DEFAULT_SPECIALIST_MODEL)
+        self.assertEqual(settings["head_model"], DEFAULT_HEAD_MODEL)
+        self.assertIsNone(settings["specialist_reasoning_effort"])
+        self.assertEqual(settings["head_reasoning_effort"], DEFAULT_HEAD_REASONING_EFFORT)
+
+    def test_model_settings_normalize_aliases(self) -> None:
+        args = SimpleNamespace(
+            specialist_model="codex-5.3-spark",
+            head_model="codex-5.3",
+            specialist_reasoning_effort=None,
+            head_reasoning_effort="extra",
+        )
+        settings = orchestrator_reply_cli._resolve_model_settings(args)
+        self.assertEqual(settings["specialist_model"], "gpt-5.3-codex-spark")
+        self.assertEqual(settings["head_model"], "gpt-5.3-codex")
+        self.assertEqual(settings["head_reasoning_effort"], "xhigh")
+
+    def test_main_passes_model_overrides(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fake_root = Path(td)
+            captured = {}
+
+            def _fake_run(config):  # type: ignore[no-untyped-def]
+                captured["config"] = config
+                return {
+                    "project_id": "proj-a",
+                    "turn_dir": str(fake_root / "turn"),
+                    "full_report_path": str(fake_root / "full-report.md"),
+                }
+
+            with patch(
+                "agents_inc.cli.orchestrator_reply._resolve_project_fabric_root",
+                return_value=fake_root,
+            ):
+                with patch("agents_inc.cli.orchestrator_reply.ensure_fabric_root_initialized"):
+                    with patch(
+                        "agents_inc.cli.orchestrator_reply.run_orchestrator_reply",
+                        side_effect=_fake_run,
+                    ):
+                        with patch.object(
+                            sys,
+                            "argv",
+                            [
+                                "agents-inc-orchestrator-reply",
+                                "--project-id",
+                                "proj-a",
+                                "--message",
+                                "delegate objective",
+                                "--specialist-model",
+                                "codex-5.3-spark",
+                                "--head-model",
+                                "codex-5.3",
+                                "--head-reasoning-effort",
+                                "xhigh",
+                                "--json",
+                            ],
+                        ):
+                            code = orchestrator_reply_cli.main()
+            self.assertEqual(code, 0)
+            config = captured.get("config")
+            self.assertIsNotNone(config)
+            self.assertEqual(config.specialist_model, "gpt-5.3-codex-spark")
+            self.assertEqual(config.head_model, "gpt-5.3-codex")
+            self.assertEqual(config.head_reasoning_effort, "xhigh")
 
 
 if __name__ == "__main__":

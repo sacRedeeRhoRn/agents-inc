@@ -57,6 +57,35 @@ class AgentSessionRunnerTimeoutTests(unittest.TestCase):
             runner = AgentSessionRunner()
         self.assertEqual(runner.backend, "mock")
 
+    def test_build_codex_cmd_includes_model_and_effort(self) -> None:
+        cmd = AgentSessionRunner._build_codex_cmd(
+            codex_bin="codex",
+            prompt="hello",
+            thread_id=None,
+            model="gpt-5.3-codex-spark",
+            model_reasoning_effort="xhigh",
+        )
+        self.assertIn("--model", cmd)
+        self.assertIn("gpt-5.3-codex-spark", cmd)
+        self.assertIn("-c", cmd)
+        self.assertIn('model_reasoning_effort="xhigh"', cmd)
+        self.assertEqual(cmd[-1], "hello")
+
+    def test_build_codex_resume_cmd_includes_model_and_effort(self) -> None:
+        cmd = AgentSessionRunner._build_codex_cmd(
+            codex_bin="codex",
+            prompt="next turn",
+            thread_id="thread-abc",
+            model="gpt-5.3-codex",
+            model_reasoning_effort="xhigh",
+        )
+        self.assertIn("resume", cmd)
+        self.assertIn("--model", cmd)
+        self.assertIn("gpt-5.3-codex", cmd)
+        self.assertIn('model_reasoning_effort="xhigh"', cmd)
+        self.assertEqual(cmd[-2], "thread-abc")
+        self.assertEqual(cmd[-1], "next turn")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

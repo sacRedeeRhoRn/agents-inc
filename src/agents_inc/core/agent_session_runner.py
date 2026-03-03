@@ -33,6 +33,8 @@ class AgentRunConfig:
     timeout_sec: int = 0
     web_search: bool = True
     session_label: str = ""
+    model: str | None = None
+    model_reasoning_effort: str | None = None
 
 
 @dataclass
@@ -101,6 +103,8 @@ class AgentSessionRunner:
             codex_bin=codex_bin,
             prompt=self._prompt_with_web_mode(config.prompt, config.web_search),
             thread_id=(str(config.thread_id or "").strip() or None),
+            model=config.model,
+            model_reasoning_effort=config.model_reasoning_effort,
         )
 
         try:
@@ -122,6 +126,8 @@ class AgentSessionRunner:
                     codex_bin=codex_bin,
                     prompt=self._prompt_with_web_mode(config.prompt, config.web_search),
                     thread_id=None,
+                    model=config.model,
+                    model_reasoning_effort=config.model_reasoning_effort,
                 )
                 rotate_proc = self._run_process(config=config, cmd=rotate_cmd)
                 rotate_raw = (rotate_proc.stdout or "") + "\n" + (rotate_proc.stderr or "")
@@ -301,24 +307,29 @@ class AgentSessionRunner:
         return env
 
     @staticmethod
-    def _build_codex_cmd(*, codex_bin: str, prompt: str, thread_id: str | None) -> list[str]:
+    def _build_codex_cmd(
+        *,
+        codex_bin: str,
+        prompt: str,
+        thread_id: str | None,
+        model: str | None = None,
+        model_reasoning_effort: str | None = None,
+    ) -> list[str]:
+        cmd: list[str] = [codex_bin, "exec"]
         if thread_id:
-            return [
-                codex_bin,
-                "exec",
-                "resume",
-                "--json",
-                "--skip-git-repo-check",
-                thread_id,
-                prompt,
-            ]
-        return [
-            codex_bin,
-            "exec",
-            "--json",
-            "--skip-git-repo-check",
-            prompt,
-        ]
+            cmd.append("resume")
+        cmd.extend(["--json", "--skip-git-repo-check"])
+        model_name = str(model or "").strip()
+        if model_name:
+            cmd.extend(["--model", model_name])
+        effort = str(model_reasoning_effort or "").strip()
+        if effort:
+            cmd.extend(["-c", f'model_reasoning_effort="{effort}"'])
+        if thread_id:
+            cmd.extend([thread_id, prompt])
+        else:
+            cmd.append(prompt)
+        return cmd
 
     def _run_process(
         self, *, config: AgentRunConfig, cmd: list[str]

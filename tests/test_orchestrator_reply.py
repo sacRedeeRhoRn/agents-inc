@@ -477,6 +477,81 @@ class OrchestratorReplyTests(unittest.TestCase):
             self.assertEqual(len(escalations), 1)
             self.assertTrue((blocked_turn / "escalations.json").exists())
 
+    def test_runtime_model_profile_overrides_propagate(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fabric_root = Path(td) / "agent_group_fabric"
+            ensure_fabric_root_initialized(fabric_root)
+            project_id = "proj-model-overrides"
+            with patch.object(
+                sys,
+                "argv",
+                [
+                    "agents-inc new-project",
+                    "--fabric-root",
+                    str(fabric_root),
+                    "--project-id",
+                    project_id,
+                    "--groups",
+                    "developer,quality-assurance",
+                    "--force",
+                ],
+            ):
+                code = new_project_cli.main()
+            self.assertEqual(code, 0)
+
+            captured = {}
+
+            def _fake_runtime(runtime_config):  # type: ignore[no-untyped-def]
+                captured["runtime_config"] = runtime_config
+                wait_state = runtime_config.turn_dir / "wait-state.json"
+                ledger = runtime_config.turn_dir / "cooperation-ledger.ndjson"
+                head_sessions = runtime_config.turn_dir / "layer3" / "group-head-sessions.json"
+                specialist_sessions = (
+                    runtime_config.turn_dir / "layer4" / "specialist-sessions.json"
+                )
+                wait_state.parent.mkdir(parents=True, exist_ok=True)
+                head_sessions.parent.mkdir(parents=True, exist_ok=True)
+                specialist_sessions.parent.mkdir(parents=True, exist_ok=True)
+                wait_state.write_text(
+                    json.dumps({"all_groups_complete": False}, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                ledger.write_text("", encoding="utf-8")
+                head_sessions.write_text("{}\n", encoding="utf-8")
+                specialist_sessions.write_text("{}\n", encoding="utf-8")
+                return {
+                    "blocked": True,
+                    "blocked_groups": ["developer"],
+                    "reasons": ["model override propagation probe"],
+                    "timed_out_specialists": [],
+                    "wait_state_path": str(wait_state),
+                    "cooperation_ledger_path": str(ledger),
+                    "group_head_sessions_path": str(head_sessions),
+                    "specialist_sessions_path": str(specialist_sessions),
+                }
+
+            blocked_turn = Path(td) / "blocked-model-overrides-turn"
+            with patch("agents_inc.core.orchestrator_reply.run_layered_runtime", _fake_runtime):
+                with self.assertRaises(FabricError):
+                    run_orchestrator_reply(
+                        OrchestratorReplyConfig(
+                            fabric_root=fabric_root,
+                            project_id=project_id,
+                            message="delegate with role-specific model routing",
+                            group="auto",
+                            output_dir=blocked_turn,
+                            specialist_model="codex-5.3-spark",
+                            head_model="codex-5.3",
+                            head_reasoning_effort="extra",
+                        )
+                    )
+
+            runtime_config = captured.get("runtime_config")
+            self.assertIsNotNone(runtime_config)
+            self.assertEqual(runtime_config.specialist_model, "gpt-5.3-codex-spark")
+            self.assertEqual(runtime_config.head_model, "gpt-5.3-codex")
+            self.assertEqual(runtime_config.head_reasoning_effort, "xhigh")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

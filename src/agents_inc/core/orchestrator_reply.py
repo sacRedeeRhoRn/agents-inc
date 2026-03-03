@@ -17,6 +17,13 @@ from agents_inc.core.fabric_lib import (
 )
 from agents_inc.core.head_meeting import HeadMeetingConfig, run_head_meeting
 from agents_inc.core.layered_runtime import LayeredRuntimeConfig, run_layered_runtime
+from agents_inc.core.model_profiles import (
+    DEFAULT_HEAD_MODEL,
+    DEFAULT_HEAD_REASONING_EFFORT,
+    DEFAULT_SPECIALIST_MODEL,
+    normalize_model_slug,
+    normalize_reasoning_effort,
+)
 from agents_inc.core.negotiation_monitor import NegotiationCycleRecord
 from agents_inc.core.orchestration import report as orchestration_report
 from agents_inc.core.orchestration.cycle_engine import build_cycle_summary
@@ -58,6 +65,10 @@ class OrchestratorReplyConfig:
     abort_file: Optional[Path] = None
     require_negotiation: bool = True
     audit: bool = False
+    specialist_model: str = DEFAULT_SPECIALIST_MODEL
+    specialist_reasoning_effort: str | None = None
+    head_model: str = DEFAULT_HEAD_MODEL
+    head_reasoning_effort: str | None = DEFAULT_HEAD_REASONING_EFFORT
 
 
 def _turn_id() -> str:
@@ -1166,6 +1177,22 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         abort_file=config.abort_file,
         require_negotiation=bool(config.require_negotiation),
         audit=bool(config.audit),
+        specialist_model=normalize_model_slug(
+            config.specialist_model,
+            default=DEFAULT_SPECIALIST_MODEL,
+        ),
+        specialist_reasoning_effort=normalize_reasoning_effort(
+            config.specialist_reasoning_effort,
+            default=None,
+        ),
+        head_model=normalize_model_slug(
+            config.head_model,
+            default=DEFAULT_HEAD_MODEL,
+        ),
+        head_reasoning_effort=normalize_reasoning_effort(
+            config.head_reasoning_effort,
+            default=DEFAULT_HEAD_REASONING_EFFORT,
+        ),
     )
     project_root, project_dir, manifest = _load_project_bundle(config)
     policy = ensure_response_policy(project_root)
@@ -1309,6 +1336,10 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 abort_file=config.abort_file,
                 audit=config.audit,
                 handoff_edges=active_handoff_edges,
+                specialist_model=config.specialist_model,
+                specialist_reasoning_effort=config.specialist_reasoning_effort,
+                head_model=config.head_model,
+                head_reasoning_effort=config.head_reasoning_effort,
             )
         )
         latest_artifacts = _write_turn_latest_artifacts(turn_dir, runtime_result)
