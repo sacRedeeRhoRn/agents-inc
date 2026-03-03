@@ -300,18 +300,6 @@ def gate_specialist_output(
             reasons.append("integration dependencies_consumed must be a list")
         if not isinstance(output.get("integration_risks"), list):
             reasons.append("integration integration_risks must be a list")
-    elif role_name in {"domain-core", "domain_core", "domain"}:
-        has_local_reference = False
-        for claim in normalized_claims:
-            if not isinstance(claim, dict):
-                continue
-            citation = str(claim.get("citation") or "").strip()
-            if citation.startswith(("local:", "references/", "agent-groups/")):
-                has_local_reference = True
-                break
-        if not has_local_reference:
-            reasons.append("domain-core requires at least one local reference citation")
-
     if reasons:
         blocked_status = (
             "BLOCKED_UNCITED" if any("citation" in r for r in reasons) else "BLOCKED_REVIEW"

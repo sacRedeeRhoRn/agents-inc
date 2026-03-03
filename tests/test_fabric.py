@@ -133,6 +133,20 @@ class FabricUnitTests(unittest.TestCase):
         gate = gate_specialist_output(out, citation_required=True, web_available=True)
         self.assertEqual(gate["status"], "PASS")
 
+    def test_quality_gate_domain_core_allows_non_local_citation(self) -> None:
+        out = {
+            "claims_with_citations": [{"claim": "x", "citation": "https://example.org/paper"}],
+            "repro_steps": ["step1"],
+            "execution_status": "COMPLETE",
+            "dependencies_satisfied": True,
+            "produced_artifacts": [],
+            "citations_summary": {"count": 1, "has_web_url": True},
+        }
+        gate = gate_specialist_output(
+            out, role="domain-core", citation_required=True, web_available=True
+        )
+        self.assertEqual(gate["status"], "PASS")
+
     def test_quality_gate_web_research_requires_three_web_citations(self) -> None:
         out = {
             "claims_with_citations": [
