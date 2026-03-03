@@ -117,6 +117,7 @@ usage: agents-inc init [--fabric-root] [--project-root] [--projects-root]
                        [--resume-checkpoint]
                        [--resume-mode {auto,compact,rehydrate}]
                        [--project-index] [--no-launch] [--overwrite-existing]
+                       [--json]
 ```
 
 Use cases:
@@ -124,6 +125,11 @@ Use cases:
 - force new flow: `agents-inc init --mode new`
 - force resume flow: `agents-inc init --mode resume`
 - non-launch prep: `agents-inc init --no-launch`
+- machine output for scripts: `agents-inc init --json`
+
+Output behavior:
+- default: human-readable setup guidance + next commands
+- `--json`: machine-readable payload (automation-friendly)
 
 ## 6.2 `agents-inc group-list`
 

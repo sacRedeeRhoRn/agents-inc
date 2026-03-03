@@ -7,7 +7,12 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Set
 
-from agents_inc.core.codex_home import ensure_project_codex_home
+from agents_inc.cli.install_skills import install_project_skills
+from agents_inc.core.codex_home import (
+    ensure_project_codex_home,
+    save_skill_activation_state,
+    skill_activation_state_path,
+)
 from agents_inc.core.config_state import default_config_path, get_projects_root, set_projects_root
 from agents_inc.core.fabric_lib import (
     FabricError,
@@ -264,6 +269,28 @@ def main() -> int:
             project_id=project_id,
             selected_groups=selected_groups,
         )
+        activation = save_skill_activation_state(
+            project_root,
+            active_head_groups=selected_groups,
+            active_specialist_groups=selected_groups,
+        )
+        install_result = install_project_skills(
+            fabric_root=project_fabric_root,
+            project_id=project_id,
+            target=Path(str(codex_home_state["skills_dir"])),
+            sync=True,
+            head_groups=activation["active_head_groups"],
+            specialist_groups=activation["active_specialist_groups"],
+            include_specialists=True,
+        )
+        if not args.json:
+            print(
+                "installed managed skills: {0} (head groups: {1}; specialist groups: {2})".format(
+                    len(install_result.get("installed", [])),
+                    ",".join(activation["active_head_groups"]),
+                    ",".join(activation["active_specialist_groups"]),
+                )
+            )
 
         payload = _checkpoint_payload(
             project_id=project_id,
@@ -299,6 +326,17 @@ def main() -> int:
             "compact_id": str(compact["compact_id"]),
             "thread_id": str(chat.get("thread_id") or ""),
             "chat_log_path": str(chat.get("chat_log_path") or ""),
+            "skill_refresh": {
+                "target": install_result.get("target", ""),
+                "router_version": install_result.get("router_version", ""),
+                "router_template_source": install_result.get("router_template_source", ""),
+                "installed_skill_count": len(install_result.get("installed", [])),
+            },
+            "skill_activation": {
+                "path": str(skill_activation_state_path(project_root)),
+                "active_head_groups": activation["active_head_groups"],
+                "active_specialist_groups": activation["active_specialist_groups"],
+            },
         }
         if args.json:
             print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))

@@ -275,6 +275,8 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             self.assertIn("Do not perform web searches", prompt)
             self.assertIn("Specialist summaries (canonical)", prompt)
             self.assertIn("web-research-specialist", prompt)
+            self.assertIn('"response_status": "ANSWERED"', prompt)
+            self.assertIn('"objective_coverage": 0.9', prompt)
 
 
 if __name__ == "__main__":

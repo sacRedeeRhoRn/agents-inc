@@ -64,7 +64,7 @@ class CodexAppClient:
                 "protocolVersion": "2",
                 "clientInfo": {"name": "agents-inc", "version": "5.0.0"},
             },
-            timeout_sec=20.0,
+            timeout_sec=0.0,
         )
         self._send_notification("initialized", {})
 
@@ -82,7 +82,7 @@ class CodexAppClient:
         result = self._request(
             "thread/start",
             {"cwd": str(self.cwd), "approvalPolicy": self.approval_policy},
-            timeout_sec=30.0,
+            timeout_sec=0.0,
         )
         thread = result.get("thread")
         if not isinstance(thread, dict):
@@ -100,7 +100,7 @@ class CodexAppClient:
                 "cwd": str(self.cwd),
                 "approvalPolicy": self.approval_policy,
             },
-            timeout_sec=30.0,
+            timeout_sec=0.0,
         )
         thread = result.get("thread")
         if not isinstance(thread, dict):
@@ -110,11 +110,11 @@ class CodexAppClient:
             raise CodexAppServerError("thread/resume response missing thread id")
         return resumed
 
-    def run_turn(self, *, thread_id: str, text: str, timeout_sec: float = 300.0) -> TurnResult:
+    def run_turn(self, *, thread_id: str, text: str, timeout_sec: float = 0.0) -> TurnResult:
         result = self._request(
             "turn/start",
             {"threadId": str(thread_id), "input": [{"type": "text", "text": str(text)}]},
-            timeout_sec=30.0,
+            timeout_sec=0.0,
         )
         turn = result.get("turn")
         if not isinstance(turn, dict):
@@ -126,10 +126,22 @@ class CodexAppClient:
         full_text = ""
         delta_text = ""
         task_complete_text = ""
-        deadline = time.monotonic() + timeout_sec
-        while time.monotonic() < deadline:
-            remaining = max(0.0, deadline - time.monotonic())
-            poll_timeout = min(0.5, remaining)
+        deadline: float | None = None
+        try:
+            parsed_timeout = float(timeout_sec)
+        except (TypeError, ValueError):
+            parsed_timeout = 0.0
+        if parsed_timeout > 0:
+            deadline = time.monotonic() + parsed_timeout
+
+        while True:
+            if deadline is None:
+                poll_timeout = 0.5
+            else:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                poll_timeout = min(0.5, max(0.0, remaining))
             event = self._next_event(timeout_sec=poll_timeout)
             if event is None:
                 continue
@@ -173,7 +185,9 @@ class CodexAppClient:
                 text_out = full_text or task_complete_text or delta_text
                 return TurnResult(thread_id=str(thread_id), turn_id=turn_id, text=text_out.strip())
 
-        raise CodexAppServerError(self._timeout_message(f"turn timed out after {timeout_sec:.0f}s"))
+        raise CodexAppServerError(
+            self._timeout_message(f"turn timed out after {parsed_timeout:.0f}s")
+        )
 
     def _start_reader(self, stream: subprocess.PIPE, kind: str) -> None:  # type: ignore[type-arg]
         def _worker() -> None:
@@ -206,13 +220,25 @@ class CodexAppClient:
         self.proc.stdin.flush()
 
     def _wait_response(self, req_id: int, *, timeout_sec: float) -> dict:
-        deadline = time.monotonic() + timeout_sec
-        while time.monotonic() < deadline:
+        deadline: float | None = None
+        try:
+            parsed_timeout = float(timeout_sec)
+        except (TypeError, ValueError):
+            parsed_timeout = 0.0
+        if parsed_timeout > 0:
+            deadline = time.monotonic() + parsed_timeout
+
+        while True:
+            if deadline is None:
+                poll_timeout = 0.5
+            else:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                poll_timeout = min(0.5, max(0.0, remaining))
             buffered_response = self._find_buffered_response(req_id)
             if buffered_response is not None:
                 return buffered_response
-            remaining = max(0.0, deadline - time.monotonic())
-            poll_timeout = min(0.5, remaining)
             event = self._poll_event(timeout_sec=poll_timeout)
             if event is None:
                 continue
@@ -244,7 +270,7 @@ class CodexAppClient:
                 return {}
             return result
         raise CodexAppServerError(
-            self._timeout_message(f"request id={req_id} timed out after {timeout_sec:.0f}s")
+            self._timeout_message(f"request id={req_id} timed out after {parsed_timeout:.0f}s")
         )
 
     def _next_event(self, *, timeout_sec: float) -> Optional[Tuple[str, str]]:

@@ -213,6 +213,16 @@ class OrchestratorReplyTests(unittest.TestCase):
             self.assertTrue((group_turn_dir / "specialist-sessions.latest.json").exists())
             self.assertTrue(bool(group_result["quality"]["passed"]))
             self.assertTrue(bool(group_result["negotiation_monitor"]["passed"]))
+            final_answer_text = (group_turn_dir / "final-exposed-answer.md").read_text(
+                encoding="utf-8"
+            )
+            full_report_text = (group_turn_dir / "final" / "full-report.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("## Short Trace", final_answer_text)
+            self.assertIn("full_report:", final_answer_text)
+            self.assertNotIn("## Delegation Summary", final_answer_text)
+            self.assertIn("## Delegation Summary", full_report_text)
 
             non_group_result = run_orchestrator_reply(
                 OrchestratorReplyConfig(

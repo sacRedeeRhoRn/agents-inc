@@ -1,6 +1,6 @@
 # Full Template and Skill Reference
 
-Generated at: `2026-03-03T11:13:00Z`
+Generated at: `2026-03-03T16:17:35Z`
 Fabric root: `/home/msj/Desktop/playground/agents-inc_dev/agents-inc`
 Include generated projects: `True`
 
@@ -3023,12 +3023,12 @@ projects:
     manifest_path: generated/projects/proj-test-alpha/manifest.yaml
     selected_groups:
     - integration-delivery
-    updated_at: '2026-03-03T11:12:59Z'
+    updated_at: '2026-03-03T16:17:35Z'
   proj-test-hpc:
     manifest_path: generated/projects/proj-test-hpc/manifest.yaml
     selected_groups:
     - integration-delivery
-    updated_at: '2026-03-03T11:13:00Z'
+    updated_at: '2026-03-03T16:17:35Z'
 ```
 
 ## 35. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/AGENTS.md`

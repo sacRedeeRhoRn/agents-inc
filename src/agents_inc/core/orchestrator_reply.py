@@ -21,6 +21,7 @@ from agents_inc.core.model_profiles import (
     DEFAULT_HEAD_MODEL,
     DEFAULT_HEAD_REASONING_EFFORT,
     DEFAULT_SPECIALIST_MODEL,
+    DEFAULT_SPECIALIST_REASONING_EFFORT,
     normalize_model_slug,
     normalize_reasoning_effort,
 )
@@ -45,6 +46,9 @@ from agents_inc.core.response_policy import (
 from agents_inc.core.session_state import load_checkpoint, now_iso, resolve_state_project_root
 from agents_inc.core.util.edges import resolve_handoff_edges
 
+OBJECTIVE_COVERAGE_THRESHOLD = 0.8
+OBJECTIVE_RESPONSE_STATUS_VALUES = {"ANSWERED", "PARTIAL", "BLOCKED"}
+
 
 @dataclass
 class OrchestratorReplyConfig:
@@ -60,13 +64,13 @@ class OrchestratorReplyConfig:
     loop_mode: str = "cooperative"
     meeting_enabled: bool = True
     stop_rule: str = "unanimous-head-satisfied"
-    max_cycles: int = 4
+    max_cycles: int = 0
     heartbeat_sec: int = 30
     abort_file: Optional[Path] = None
     require_negotiation: bool = True
     audit: bool = False
     specialist_model: str = DEFAULT_SPECIALIST_MODEL
-    specialist_reasoning_effort: str | None = None
+    specialist_reasoning_effort: str | None = DEFAULT_SPECIALIST_REASONING_EFFORT
     head_model: str = DEFAULT_HEAD_MODEL
     head_reasoning_effort: str | None = DEFAULT_HEAD_REASONING_EFFORT
     progress_callback: Callable[[dict], None] | None = None
@@ -394,7 +398,167 @@ def _parse_artifact_preview(item: object) -> str:
     return ""
 
 
-def _collect_group_contributions(project_dir: Path, groups: List[str]) -> List[dict]:
+def _normalize_response_status(value: object) -> str:
+    text = str(value or "").strip().upper().replace("-", "_").replace(" ", "_")
+    if not text:
+        return ""
+    if text in OBJECTIVE_RESPONSE_STATUS_VALUES:
+        return text
+    if text in {"COMPLETE", "PASS", "RESOLVED", "SATISFIED", "DONE"}:
+        return "ANSWERED"
+    if text in {"PARTIALLY_RESOLVED", "INCOMPLETE", "UNRESOLVED", "CONDITIONAL"}:
+        return "PARTIAL"
+    if text.startswith("BLOCKED") or text in {"FAILED", "REJECTED", "NEEDS_EVIDENCE"}:
+        return "BLOCKED"
+    return ""
+
+
+def _parse_objective_coverage(value: object) -> float | None:
+    if isinstance(value, (int, float)):
+        raw = float(value)
+        if raw > 1.0:
+            raw = raw / 100.0
+        return max(0.0, min(1.0, raw))
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if text.endswith("%"):
+        text = text[:-1].strip()
+        try:
+            return max(0.0, min(1.0, float(text) / 100.0))
+        except Exception:
+            return None
+    try:
+        raw = float(text)
+    except Exception:
+        return None
+    if raw > 1.0:
+        raw = raw / 100.0
+    return max(0.0, min(1.0, raw))
+
+
+def _response_status_from_text(*, status: str, summary_text: str, notes_text: str) -> str:
+    normalized = _normalize_response_status(status)
+    if normalized:
+        return normalized
+    combined = f"{summary_text}\n{notes_text}".lower()
+    if any(
+        hint in combined
+        for hint in (
+            "blocked",
+            "needs evidence",
+            "insufficient evidence",
+            "cannot conclude",
+            "unable to conclude",
+            "not enough evidence",
+        )
+    ):
+        return "BLOCKED"
+    if any(
+        hint in combined
+        for hint in (
+            "partial",
+            "incomplete",
+            "conditional",
+            "unresolved",
+            "next cycle",
+            "assumption",
+        )
+    ):
+        return "PARTIAL"
+    return "PARTIAL"
+
+
+def _extract_recommended_actions(payload: dict) -> List[str]:
+    rows: List[str] = []
+    for key in ("recommended_actions", "next_actions", "actions", "new_actions"):
+        value = payload.get(key)
+        if not isinstance(value, list):
+            continue
+        for item in value:
+            text = str(item or "").strip()
+            if text and text not in rows:
+                rows.append(text)
+    return rows
+
+
+def _objective_tokens(text: str) -> List[str]:
+    out: List[str] = []
+    for token in re.findall(r"[a-z0-9]+", str(text or "").lower()):
+        if len(token) < 4:
+            continue
+        if token in {
+            "with",
+            "from",
+            "that",
+            "this",
+            "your",
+            "what",
+            "when",
+            "where",
+            "which",
+            "have",
+            "will",
+            "would",
+            "should",
+            "could",
+            "into",
+            "over",
+            "under",
+            "using",
+            "based",
+            "only",
+            "hours",
+            "time",
+            "give",
+            "want",
+            "make",
+            "include",
+            "criteria",
+        }:
+            continue
+        if token not in out:
+            out.append(token)
+    return out
+
+
+def _estimate_objective_coverage(objective: str, response_text: str) -> float:
+    objective_terms = _objective_tokens(objective)
+    if not objective_terms:
+        return 1.0 if response_text.strip() else 0.0
+    response_terms = set(_objective_tokens(response_text))
+    if not response_terms:
+        return 0.0
+    overlap = sum(1 for token in objective_terms if token in response_terms)
+    return round(overlap / len(objective_terms), 3)
+
+
+def _truncate(value: str, max_chars: int = 320) -> str:
+    text = str(value or "").strip().replace("\n", " ")
+    if not text:
+        return ""
+    if len(text) <= max_chars:
+        return text
+    cut = text[:max_chars].rstrip()
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.rstrip(".,;:") + "..."
+
+
+def _fallback_objective_response(*, summary_text: str, claims: List[dict], group_id: str) -> str:
+    candidate = _truncate(summary_text, max_chars=300)
+    if candidate:
+        return candidate
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        text = _truncate(str(claim.get("claim") or ""), max_chars=300)
+        if text:
+            return text
+    return f"{group_id} did not publish an explicit objective response."
+
+
+def _collect_group_contributions(project_dir: Path, groups: List[str], objective: str) -> List[dict]:
     rows: List[dict] = []
     for group_id in groups:
         exposed_dir = project_dir / "agent-groups" / group_id / "exposed"
@@ -460,6 +624,74 @@ def _collect_group_contributions(project_dir: Path, groups: List[str]) -> List[d
         if not has_substance:
             reasons.append("no published artifacts/claims in exposed handoff")
 
+        response_status = _normalize_response_status(
+            handoff_payload.get("response_status")
+            or handoff_payload.get("objective_status")
+            or handoff_payload.get("result_status")
+        )
+        if not response_status:
+            response_status = _response_status_from_text(
+                status=status,
+                summary_text=summary_text,
+                notes_text=notes_text,
+            )
+
+        objective_response = str(
+            handoff_payload.get("objective_response")
+            or handoff_payload.get("response_to_objective")
+            or handoff_payload.get("decision_summary")
+            or ""
+        ).strip()
+        if not objective_response:
+            objective_response = _fallback_objective_response(
+                summary_text=summary_text,
+                claims=claims,
+                group_id=group_id,
+            )
+        objective_response = _truncate(objective_response, max_chars=320)
+
+        decision_summary = str(handoff_payload.get("decision_summary") or "").strip()
+        if not decision_summary:
+            decision_summary = objective_response
+        decision_summary = _truncate(decision_summary, max_chars=320)
+
+        recommended_actions = _extract_recommended_actions(handoff_payload)
+        if not recommended_actions:
+            recommended_actions = [
+                "Tighten objective-specific evidence and rerun the next cycle."
+            ]
+
+        objective_coverage = _parse_objective_coverage(handoff_payload.get("objective_coverage"))
+        if objective_coverage is None:
+            coverage_text = " ".join(
+                [
+                    objective_response,
+                    decision_summary,
+                    summary_text,
+                    notes_text,
+                    " ".join(
+                        str(claim.get("claim") or "") for claim in claims if isinstance(claim, dict)
+                    ),
+                ]
+            )
+            objective_coverage = _estimate_objective_coverage(objective, coverage_text)
+
+        if response_status == "ANSWERED":
+            objective_coverage = max(objective_coverage, OBJECTIVE_COVERAGE_THRESHOLD)
+        elif response_status == "BLOCKED":
+            objective_coverage = min(objective_coverage, 0.49)
+        elif response_status == "PARTIAL":
+            objective_coverage = min(objective_coverage, 0.79)
+
+        if response_status != "ANSWERED":
+            reasons.append(f"objective not fully satisfied ({response_status})")
+        if objective_coverage < OBJECTIVE_COVERAGE_THRESHOLD:
+            reasons.append(
+                "objective coverage below threshold ({0:.2f} < {1:.2f})".format(
+                    objective_coverage, OBJECTIVE_COVERAGE_THRESHOLD
+                )
+            )
+
         rows.append(
             {
                 "group_id": group_id,
@@ -477,6 +709,11 @@ def _collect_group_contributions(project_dir: Path, groups: List[str]) -> List[d
                 "claim_count": len(claim_preview_rows),
                 "citation_refs": citation_refs,
                 "citation_count": len(citation_refs),
+                "response_status": response_status,
+                "objective_response": objective_response,
+                "decision_summary": decision_summary,
+                "recommended_actions": recommended_actions[:8],
+                "objective_coverage": round(max(0.0, min(1.0, float(objective_coverage))), 3),
             }
         )
     return rows
@@ -562,6 +799,20 @@ def _render_group_findings(contributions: List[dict]) -> str:
                 row.get("citation_count", 0),
             )
         )
+        lines.append(
+            "- objective_status: `{0}` | objective_coverage: `{1}`".format(
+                row.get("response_status", "UNKNOWN"),
+                row.get("objective_coverage", 0.0),
+            )
+        )
+        objective_response = str(row.get("objective_response") or "").strip()
+        if objective_response:
+            lines.append("- objective_response:")
+            lines.append(f"  {objective_response}")
+        decision_summary = str(row.get("decision_summary") or "").strip()
+        if decision_summary and decision_summary != objective_response:
+            lines.append("- decision_summary:")
+            lines.append(f"  {decision_summary}")
 
         reasons = row.get("reasons", [])
         if isinstance(reasons, list) and reasons:
@@ -808,6 +1059,127 @@ def _render_group_mode_answer(
         f"- negotiation sequence: `{turn_dir / 'negotiation-sequence.md'}`",
         f"- group evidence index: `{turn_dir / 'group-evidence-index.json'}`",
     ]
+    return "\n".join(lines).strip() + "\n"
+
+
+def _overall_objective_status(contributions: List[dict]) -> str:
+    statuses = [str(row.get("response_status") or "") for row in contributions if isinstance(row, dict)]
+    normalized = [status for status in statuses if status in OBJECTIVE_RESPONSE_STATUS_VALUES]
+    if not normalized:
+        return "PARTIAL"
+    if any(status == "BLOCKED" for status in normalized):
+        return "BLOCKED"
+    if any(status == "PARTIAL" for status in normalized):
+        return "PARTIAL"
+    return "ANSWERED"
+
+
+def _collect_next_actions(contributions: List[dict], *, limit: int = 5) -> List[str]:
+    rows: List[str] = []
+    for row in contributions:
+        actions = row.get("recommended_actions", [])
+        if not isinstance(actions, list):
+            continue
+        for action in actions:
+            text = str(action or "").strip()
+            if text and text not in rows:
+                rows.append(text)
+            if len(rows) >= limit:
+                return rows
+    return rows
+
+
+def _render_group_mode_chat_answer(
+    *,
+    project_id: str,
+    message: str,
+    contributions: List[dict],
+    cycle_summaries: List[dict],
+    meeting_outputs: List[dict],
+    turn_dir: Path,
+    full_report_path: Path,
+) -> str:
+    overall_status = _overall_objective_status(contributions)
+    blocking = [
+        str(row.get("group_id") or "")
+        for row in contributions
+        if not bool(row.get("valid"))
+        or str(row.get("response_status") or "") != "ANSWERED"
+        or float(row.get("objective_coverage") or 0.0) < OBJECTIVE_COVERAGE_THRESHOLD
+    ]
+    blocking = [group for group in blocking if group]
+
+    if overall_status == "ANSWERED":
+        headline = "objective answered across all active groups."
+    elif overall_status == "PARTIAL":
+        headline = "objective only partially addressed; additional cycle or tighter constraints needed."
+    else:
+        headline = "objective blocked; at least one group did not produce an answer-ready handoff."
+
+    lines = [
+        f"# Orchestrator Reply - {project_id}",
+        "",
+        "## Outcome",
+        f"- objective: {message}",
+        f"- overall_status: `{overall_status}`",
+        f"- decision: {headline}",
+        f"- blocking_groups: {', '.join(blocking) if blocking else 'none'}",
+        "",
+        "## Group Snapshot",
+    ]
+    for row in contributions:
+        lines.append(
+            "- {0}: status=`{1}` coverage=`{2}` valid=`{3}`".format(
+                row.get("group_id", ""),
+                row.get("response_status", "UNKNOWN"),
+                row.get("objective_coverage", 0.0),
+                bool(row.get("valid")),
+            )
+        )
+
+    lines.extend(["", "## Short Trace"])
+    if cycle_summaries:
+        for summary in cycle_summaries[-3:]:
+            cycle_id = summary.get("cycle_id", "?")
+            blocked = bool(summary.get("runtime_blocked"))
+            escalation_count = int(summary.get("escalation_count", 0))
+            lines.append(
+                "- cycle {0}: runtime_blocked=`{1}` escalations=`{2}`".format(
+                    cycle_id,
+                    blocked,
+                    escalation_count,
+                )
+            )
+    if meeting_outputs:
+        for meeting in meeting_outputs[-3:]:
+            matrix = meeting.get("matrix", {})
+            cycle_id = matrix.get("cycle_id", "?") if isinstance(matrix, dict) else "?"
+            unsatisfied = matrix.get("unsatisfied_groups", []) if isinstance(matrix, dict) else []
+            if not isinstance(unsatisfied, list):
+                unsatisfied = []
+            lines.append(
+                "- meeting cycle {0}: unsatisfied={1}".format(
+                    cycle_id,
+                    ", ".join(str(item) for item in unsatisfied) if unsatisfied else "none",
+                )
+            )
+
+    actions = _collect_next_actions(contributions, limit=5)
+    lines.extend(["", "## Next Actions"])
+    if actions:
+        for index, action in enumerate(actions, start=1):
+            lines.append(f"{index}. {action}")
+    else:
+        lines.append("1. Continue with published artifacts and validation steps.")
+
+    lines.extend(
+        [
+            "",
+            "## Artifacts",
+            f"- full_report: `{full_report_path}`",
+            f"- turn_dir: `{turn_dir}`",
+        ]
+    )
     return "\n".join(lines).strip() + "\n"
 
 
@@ -1198,7 +1570,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         ),
         specialist_reasoning_effort=normalize_reasoning_effort(
             config.specialist_reasoning_effort,
-            default=None,
+            default=DEFAULT_SPECIALIST_REASONING_EFFORT,
         ),
         head_model=normalize_model_slug(
             config.head_model,
@@ -1304,7 +1676,6 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     blocked_reasons: List[str] = []
     block_status = ""
     cycle = 0
-    watchdog_limit = 100 if config.max_cycles == 0 else max(1, int(config.max_cycles))
     cycle_summaries: List[dict] = []
     meeting_outputs: List[dict] = []
     cycle_records: List[NegotiationCycleRecord] = []
@@ -1320,10 +1691,6 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             blocked_reasons.append(
                 f"max cycle limit reached before unanimous satisfaction: {config.max_cycles}"
             )
-            break
-        if cycle > watchdog_limit:
-            block_status = "BLOCKED_WATCHDOG"
-            blocked_reasons.append("watchdog cycle limit reached before unanimous satisfaction")
             break
 
         _emit_progress(
@@ -1516,6 +1883,15 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             )
             break
 
+        _emit_progress(
+            config,
+            {
+                "event": "meeting_started",
+                "project_id": config.project_id,
+                "cycle": cycle,
+                "selected_groups": selected_groups,
+            },
+        )
         meeting = run_head_meeting(
             HeadMeetingConfig(
                 project_id=config.project_id,
@@ -1600,7 +1976,11 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     write_text(turn_dir / "escalations.json", stable_json(unresolved_escalations) + "\n")
 
     evidence_rows: List[dict] = []
-    contributions = _collect_group_contributions(project_dir, selected_groups)
+    contributions = _collect_group_contributions(
+        project_dir,
+        selected_groups,
+        objective=config.message,
+    )
     artifact_citations = _collect_artifact_citations(contributions)
     delegation = _apply_contribution_status(delegation, contributions)
     write_text(turn_dir / "delegation-ledger.json", stable_json(delegation) + "\n")
@@ -1710,7 +2090,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         )
 
     constraints = _load_constraints(project_root)
-    answer = _render_group_mode_answer(
+    full_report = _render_group_mode_answer(
         project_id=config.project_id,
         message=config.message,
         constraints=constraints,
@@ -1723,9 +2103,26 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         project_root=project_root,
     )
 
+    final_dir = turn_dir / "final"
+    final_dir.mkdir(parents=True, exist_ok=True)
+    final_path = turn_dir / "final-exposed-answer.md"
+    full_report_path = final_dir / "full-report.md"
+    full_report_json_path = final_dir / "full-report.json"
+    key_points_path = final_dir / "key-points.txt"
+
+    final_answer = _render_group_mode_chat_answer(
+        project_id=config.project_id,
+        message=config.message,
+        contributions=contributions,
+        cycle_summaries=cycle_summaries,
+        meeting_outputs=meeting_outputs,
+        turn_dir=turn_dir,
+        full_report_path=full_report_path,
+    )
+
     quality = _quality_gate(
         mode=mode,
-        answer_text=answer,
+        answer_text=full_report,
         detail_profile=str(policy.get("detail_profile") or "publication-grade"),
         evidence_rows=evidence_rows,
         artifact_citations=artifact_citations,
@@ -1794,15 +2191,8 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             )
         )
 
-    final_dir = turn_dir / "final"
-    final_dir.mkdir(parents=True, exist_ok=True)
-    final_path = turn_dir / "final-exposed-answer.md"
-    full_report_path = final_dir / "full-report.md"
-    full_report_json_path = final_dir / "full-report.json"
-    key_points_path = final_dir / "key-points.txt"
-
-    write_text(final_path, answer)
-    write_text(full_report_path, answer)
+    write_text(final_path, final_answer)
+    write_text(full_report_path, full_report)
     write_text(
         full_report_json_path,
         stable_json(

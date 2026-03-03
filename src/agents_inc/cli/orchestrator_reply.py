@@ -18,6 +18,7 @@ from agents_inc.core.model_profiles import (
     DEFAULT_HEAD_MODEL,
     DEFAULT_HEAD_REASONING_EFFORT,
     DEFAULT_SPECIALIST_MODEL,
+    DEFAULT_SPECIALIST_REASONING_EFFORT,
     normalize_model_slug,
     normalize_reasoning_effort,
 )
@@ -92,7 +93,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--specialist-reasoning-effort",
         default=None,
-        help="specialist reasoning effort override (for example: low|medium|high|xhigh)",
+        help=(
+            "specialist reasoning effort override "
+            f"(default: {DEFAULT_SPECIALIST_REASONING_EFFORT}; low|medium|high|xhigh)"
+        ),
     )
     parser.add_argument(
         "--head-reasoning-effort",
@@ -139,7 +143,7 @@ def parse_args() -> argparse.Namespace:
         "--max-cycles",
         type=int,
         default=None,
-        help="max cycles before hard block",
+        help="max cycles before hard block (omit or 0 = unlimited)",
     )
     parser.add_argument(
         "--heartbeat-sec",
@@ -238,7 +242,7 @@ def _resolve_runtime_settings(args: argparse.Namespace) -> dict:
             "retry_attempts": 1,
             "retry_backoff_sec": 3,
             "agent_timeout_sec": 0,
-            "max_cycles": 4,
+            "max_cycles": 0,
             "heartbeat_sec": 30,
         }
     else:
@@ -247,7 +251,7 @@ def _resolve_runtime_settings(args: argparse.Namespace) -> dict:
             "retry_attempts": 2,
             "retry_backoff_sec": 5,
             "agent_timeout_sec": 0,
-            "max_cycles": 4,
+            "max_cycles": 0,
             "heartbeat_sec": 30,
         }
 
@@ -296,7 +300,7 @@ def _resolve_model_settings(args: argparse.Namespace) -> dict:
         ),
         "specialist_reasoning_effort": normalize_reasoning_effort(
             args.specialist_reasoning_effort,
-            default=None,
+            default=DEFAULT_SPECIALIST_REASONING_EFFORT,
         ),
         "head_reasoning_effort": normalize_reasoning_effort(
             args.head_reasoning_effort,
@@ -365,10 +369,15 @@ def main() -> int:
                     "group mode requires meeting loop. Remove --no-meeting or use [non-group] prefix."
                 )
 
-        def _print_live_event(event: dict) -> None:
+        def _print_live_event_stdout(event: dict) -> None:
             line = format_progress_event(event)
             if line:
-                print(line)
+                print(line, flush=True)
+
+        def _print_live_event_stderr(event: dict) -> None:
+            line = format_progress_event(event)
+            if line:
+                print(line, file=sys.stderr, flush=True)
 
         config = OrchestratorReplyConfig(
             fabric_root=fabric_root,
@@ -394,7 +403,7 @@ def main() -> int:
             specialist_reasoning_effort=model_settings["specialist_reasoning_effort"],
             head_model=str(model_settings["head_model"]),
             head_reasoning_effort=model_settings["head_reasoning_effort"],
-            progress_callback=(None if args.json else _print_live_event),
+            progress_callback=(_print_live_event_stderr if args.json else _print_live_event_stdout),
         )
         result = run_orchestrator_reply(config)
         if args.json:

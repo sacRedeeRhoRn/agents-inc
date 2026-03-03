@@ -88,6 +88,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="allow destructive re-generation when project already exists",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="emit machine-readable JSON output",
+    )
     return parser.parse_args()
 
 
@@ -145,6 +150,32 @@ def _build_bootstrap_prompt(*, fabric_root: Path, projects_root: Path, config_pa
             "When the user starts input with `/agents-inc`, route through agents-inc orchestration workflow.",
         ]
     )
+
+
+def _print_bootstrap_human(summary: dict, *, launch: str) -> None:
+    print("agents-inc init complete.")
+    print("")
+    print("workspace:")
+    print(f"- fabric root: {summary['fabric_root']}")
+    print(f"- projects root: {summary['projects_root']}")
+    print(f"- config: {summary['config_path']}")
+    print(f"- bootstrap state: {summary['bootstrap_state']}")
+    print("")
+    print("next:")
+    print("1. agents-inc group-list")
+    print("2. agents-inc create <project-id>")
+    print("3. agents-inc list")
+    print("4. agents-inc deactivate <project-id>")
+    print("5. agents-inc resume <project-id>")
+    print("")
+    if launch == "no-launch":
+        print("codex launch skipped (--no-launch).")
+    elif launch == "missing-codex":
+        print("codex was not found on PATH. bootstrap is ready; launch codex manually when ready.")
+    elif launch == "launching":
+        print("launching codex now with the bootstrap prompt.")
+    print("")
+    print("tip: use `agents-inc init --json` for machine-readable output.")
 
 
 def _build_long_run_command(fabric_root: Path, project_id: str, task: str) -> str:
@@ -767,19 +798,25 @@ def main() -> int:
         }
 
         if args.no_launch:
-            print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+            if args.json:
+                print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+            else:
+                _print_bootstrap_human(summary, launch="no-launch")
             return 0
 
         codex_bin = shutil.which("codex")
         if not codex_bin:
-            print(
-                "warning: 'codex' command not found on PATH. Bootstrap is initialized; launch manually with the prompt below."
-            )
-            print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+            if args.json:
+                print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+            else:
+                _print_bootstrap_human(summary, launch="missing-codex")
             return 0
 
-        print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
-        print("\n---\n")
+        if args.json:
+            print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))
+            print("\n---\n")
+        else:
+            _print_bootstrap_human(summary, launch="launching")
         cmd = [codex_bin, "-C", str(fabric_root), prompt]
         print(f"launching: {' '.join(cmd[:3])} <prompt>")
         proc = subprocess.run(cmd)

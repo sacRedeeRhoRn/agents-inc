@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import time
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed, wait
@@ -23,6 +24,7 @@ from agents_inc.core.model_profiles import (
     DEFAULT_HEAD_MODEL,
     DEFAULT_HEAD_REASONING_EFFORT,
     DEFAULT_SPECIALIST_MODEL,
+    DEFAULT_SPECIALIST_REASONING_EFFORT,
 )
 from agents_inc.core.util.dispatch import gate_specialist_output
 from agents_inc.core.util.edges import resolve_handoff_edges
@@ -35,6 +37,24 @@ HEAD_PROMPT_MAX_CLAIMS_PER_SPECIALIST = 2
 HEAD_PROMPT_MAX_ARTIFACTS_PER_SPECIALIST = 3
 HEAD_PROMPT_CLAIM_PREVIEW_CHARS = 180
 HEAD_PROMPT_CITATION_PREVIEW_CHARS = 180
+OBJECTIVE_RESPONSE_STATUS_VALUES = {"ANSWERED", "PARTIAL", "BLOCKED"}
+OBJECTIVE_COVERAGE_MIN_FOR_ANSWERED = 0.8
+OBJECTIVE_BLOCKED_HINTS = (
+    "blocked",
+    "needs evidence",
+    "insufficient evidence",
+    "cannot conclude",
+    "unable to conclude",
+    "not enough evidence",
+)
+OBJECTIVE_PARTIAL_HINTS = (
+    "partial",
+    "incomplete",
+    "conditional",
+    "unresolved",
+    "next cycle",
+    "assumption",
+)
 
 
 @dataclass
@@ -56,7 +76,7 @@ class LayeredRuntimeConfig:
     audit: bool = False
     handoff_edges: List[Tuple[str, str]] = field(default_factory=list)
     specialist_model: str = DEFAULT_SPECIALIST_MODEL
-    specialist_reasoning_effort: str | None = None
+    specialist_reasoning_effort: str | None = DEFAULT_SPECIALIST_REASONING_EFFORT
     head_model: str = DEFAULT_HEAD_MODEL
     head_reasoning_effort: str | None = DEFAULT_HEAD_REASONING_EFFORT
     progress_callback: Callable[[dict], None] | None = None
@@ -227,8 +247,18 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
     timed_out_specialists: List[dict] = []
     specialist_failures: List[dict] = []
     with ThreadPoolExecutor(max_workers=max_group_workers) as pool:
-        future_map = {
-            pool.submit(
+        future_map = {}
+        for group_id in config.selected_groups:
+            _emit_progress(
+                config,
+                {
+                    "event": "runtime_group_started",
+                    "project_id": config.project_id,
+                    "cycle": int(config.cycle_id),
+                    "group_id": group_id,
+                },
+            )
+            future = pool.submit(
                 _run_group,
                 config,
                 group_id,
@@ -238,9 +268,8 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
                 layer3_dir,
                 layer4_dir,
                 ledger_rows,
-            ): group_id
-            for group_id in config.selected_groups
-        }
+            )
+            future_map[future] = group_id
         heartbeat_every = max(1, int(config.heartbeat_sec))
         next_heartbeat = time.monotonic() + heartbeat_every
         pending = set(future_map.keys())
@@ -637,6 +666,20 @@ def _run_group(
             "- dependencies_resolved: true\n"
             "- source: layered head session merge\n"
         )
+
+    objective_contract = _normalize_head_objective_contract(
+        objective=group_objective,
+        group_id=group_id,
+        payload=handoff_payload,
+        summary_text=summary_text,
+        integration_notes=integration_notes,
+        claims=claims,
+    )
+    handoff_payload["response_status"] = objective_contract["response_status"]
+    handoff_payload["objective_response"] = objective_contract["objective_response"]
+    handoff_payload["decision_summary"] = objective_contract["decision_summary"]
+    handoff_payload["recommended_actions"] = objective_contract["recommended_actions"]
+    handoff_payload["objective_coverage"] = objective_contract["objective_coverage"]
 
     write_text(exposed / "summary.md", summary_text.rstrip() + "\n")
     write_text(
@@ -1418,6 +1461,9 @@ def _build_head_prompt(
         "2. Avoid broad filesystem crawling; read at most one specialist handoff file only if a required field is missing.\n"
         "3. Resolve conflicts and report unresolved assumptions explicitly.\n"
         "4. Publish only group-level artifacts and citations.\n"
+        "5. Set response_status to ANSWERED only when this group directly answers the objective.\n"
+        "6. If evidence is insufficient, set response_status to BLOCKED and explain why.\n"
+        "7. objective_coverage is a 0..1 score for how fully this group addressed the objective.\n"
         "Return ONLY these exact blocks:\n"
         "BEGIN_WORK\n"
         "<group summary markdown>\n"
@@ -1425,6 +1471,11 @@ def _build_head_prompt(
         "BEGIN_HANDOFF_JSON\n"
         "{\n"
         '  "status": "COMPLETE",\n'
+        '  "response_status": "ANSWERED",\n'
+        '  "objective_response": "direct answer for this group",\n'
+        '  "decision_summary": "merge decision in one to two sentences",\n'
+        '  "recommended_actions": ["next action 1"],\n'
+        '  "objective_coverage": 0.9,\n'
         '  "claims_with_citations": [{"claim": "...", "citation": "..."}],\n'
         '  "artifacts": [{"path": "...", "title": "..."}],\n'
         '  "produced_artifacts": ["..."],\n'
@@ -1701,6 +1752,239 @@ def _claims_have_web_url(claims: List[dict]) -> bool:
             if any(str(ref).startswith("http") for ref in refs):
                 return True
     return False
+
+
+def _normalize_response_status(value: object) -> str:
+    text = str(value or "").strip().upper().replace("-", "_").replace(" ", "_")
+    if not text:
+        return ""
+    if text in OBJECTIVE_RESPONSE_STATUS_VALUES:
+        return text
+    if text in {"COMPLETE", "PASS", "RESOLVED", "SATISFIED", "DONE"}:
+        return "ANSWERED"
+    if text in {"PARTIALLY_RESOLVED", "INCOMPLETE", "UNRESOLVED", "CONDITIONAL"}:
+        return "PARTIAL"
+    if text.startswith("BLOCKED") or text in {
+        "FAILED",
+        "REJECTED",
+        "NEEDS_EVIDENCE",
+        "BLOCKER",
+    }:
+        return "BLOCKED"
+    return ""
+
+
+def _parse_objective_coverage(value: object) -> float | None:
+    if isinstance(value, (int, float)):
+        raw = float(value)
+        if raw > 1.0:
+            raw = raw / 100.0
+        return max(0.0, min(1.0, raw))
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if text.endswith("%"):
+        text = text[:-1].strip()
+        try:
+            return max(0.0, min(1.0, float(text) / 100.0))
+        except Exception:
+            return None
+    try:
+        raw = float(text)
+    except Exception:
+        return None
+    if raw > 1.0:
+        raw = raw / 100.0
+    return max(0.0, min(1.0, raw))
+
+
+def _extract_response_actions(payload: dict) -> List[str]:
+    candidates = [
+        payload.get("recommended_actions"),
+        payload.get("next_actions"),
+        payload.get("actions"),
+        payload.get("new_actions"),
+    ]
+    actions: List[str] = []
+    for value in candidates:
+        if not isinstance(value, list):
+            continue
+        for item in value:
+            text = str(item or "").strip()
+            if text and text not in actions:
+                actions.append(text)
+    return actions
+
+
+def _truncate_sentence(value: str, *, max_chars: int = 280) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    if len(text) <= max_chars:
+        return text
+    cut = text[:max_chars].rstrip()
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.rstrip(".,;:") + "..."
+
+
+def _objective_tokens(value: str) -> List[str]:
+    words = re.findall(r"[a-z0-9]+", str(value or "").lower())
+    out: List[str] = []
+    for token in words:
+        if len(token) < 4:
+            continue
+        if token in {
+            "with",
+            "from",
+            "that",
+            "this",
+            "your",
+            "what",
+            "when",
+            "where",
+            "which",
+            "have",
+            "will",
+            "would",
+            "should",
+            "could",
+            "into",
+            "over",
+            "under",
+            "using",
+            "based",
+            "only",
+            "hours",
+            "time",
+            "give",
+            "want",
+            "make",
+            "include",
+            "criteria",
+        }:
+            continue
+        if token not in out:
+            out.append(token)
+    return out
+
+
+def _estimate_objective_coverage(objective: str, text: str) -> float:
+    objective_terms = _objective_tokens(objective)
+    if not objective_terms:
+        return 1.0 if str(text).strip() else 0.0
+    hay = set(_objective_tokens(text))
+    if not hay:
+        return 0.0
+    overlap = sum(1 for token in objective_terms if token in hay)
+    return round(overlap / len(objective_terms), 3)
+
+
+def _infer_response_status(*, status: str, summary_text: str, integration_notes: str) -> str:
+    normalized_status = _normalize_response_status(status)
+    if normalized_status in {"ANSWERED", "PARTIAL", "BLOCKED"}:
+        return normalized_status
+
+    combined = " ".join([summary_text, integration_notes]).lower()
+    if any(hint in combined for hint in OBJECTIVE_BLOCKED_HINTS):
+        return "BLOCKED"
+    if any(hint in combined for hint in OBJECTIVE_PARTIAL_HINTS):
+        return "PARTIAL"
+    if str(status or "").strip().upper() in {"COMPLETE", "PASS"}:
+        return "ANSWERED"
+    return "PARTIAL"
+
+
+def _default_objective_response(*, group_id: str, summary_text: str, claims: List[dict]) -> str:
+    if summary_text:
+        summary = _truncate_sentence(summary_text.replace("\n", " "), max_chars=260)
+        if summary:
+            return summary
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        text = _truncate_sentence(str(claim.get("claim") or ""), max_chars=260)
+        if text:
+            return text
+    return f"{group_id} completed execution but did not provide an explicit objective response."
+
+
+def _normalize_head_objective_contract(
+    *,
+    objective: str,
+    group_id: str,
+    payload: dict,
+    summary_text: str,
+    integration_notes: str,
+    claims: List[dict],
+) -> dict:
+    response_status = _normalize_response_status(
+        payload.get("response_status") or payload.get("objective_status") or payload.get("result_status")
+    )
+    if not response_status:
+        response_status = _infer_response_status(
+            status=str(payload.get("status") or ""),
+            summary_text=summary_text,
+            integration_notes=integration_notes,
+        )
+
+    objective_response = str(
+        payload.get("objective_response")
+        or payload.get("response_to_objective")
+        or payload.get("decision_summary")
+        or ""
+    ).strip()
+    if not objective_response:
+        objective_response = _default_objective_response(
+            group_id=group_id,
+            summary_text=summary_text,
+            claims=claims,
+        )
+    objective_response = _truncate_sentence(objective_response, max_chars=320)
+
+    decision_summary = str(payload.get("decision_summary") or "").strip()
+    if not decision_summary:
+        decision_summary = objective_response
+    decision_summary = _truncate_sentence(decision_summary, max_chars=320)
+
+    recommended_actions = _extract_response_actions(payload)
+    if not recommended_actions:
+        if response_status == "ANSWERED":
+            recommended_actions = [
+                "Execute downstream validation steps against published artifacts."
+            ]
+        else:
+            recommended_actions = [
+                "Refine objective constraints and collect missing evidence before next cycle."
+            ]
+
+    objective_coverage = _parse_objective_coverage(payload.get("objective_coverage"))
+    if objective_coverage is None:
+        coverage_text = " ".join(
+            [
+                objective_response,
+                decision_summary,
+                summary_text,
+                integration_notes,
+                " ".join(str(claim.get("claim") or "") for claim in claims if isinstance(claim, dict)),
+            ]
+        )
+        objective_coverage = _estimate_objective_coverage(objective, coverage_text)
+
+    if response_status == "ANSWERED":
+        objective_coverage = max(objective_coverage, OBJECTIVE_COVERAGE_MIN_FOR_ANSWERED)
+    elif response_status == "BLOCKED":
+        objective_coverage = min(objective_coverage, 0.49)
+    elif response_status == "PARTIAL":
+        objective_coverage = min(objective_coverage, 0.79)
+
+    return {
+        "response_status": response_status,
+        "objective_response": objective_response,
+        "decision_summary": decision_summary,
+        "recommended_actions": recommended_actions[:8],
+        "objective_coverage": round(max(0.0, min(1.0, float(objective_coverage))), 3),
+    }
 
 
 def _timeout_mode(timeout_sec: int) -> str:

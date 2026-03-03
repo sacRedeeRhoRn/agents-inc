@@ -6,7 +6,7 @@ import json
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -21,6 +21,7 @@ from agents_inc.core.model_profiles import (  # noqa: E402
     DEFAULT_HEAD_MODEL,
     DEFAULT_HEAD_REASONING_EFFORT,
     DEFAULT_SPECIALIST_MODEL,
+    DEFAULT_SPECIALIST_REASONING_EFFORT,
 )
 
 
@@ -37,6 +38,7 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
         )
         runtime = orchestrator_reply_cli._resolve_runtime_settings(args)
         self.assertEqual(runtime["agent_timeout_sec"], 0)
+        self.assertEqual(runtime["max_cycles"], 0)
 
     def test_runtime_timeout_zero_means_unlimited(self) -> None:
         args = SimpleNamespace(
@@ -50,6 +52,7 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
         )
         runtime = orchestrator_reply_cli._resolve_runtime_settings(args)
         self.assertEqual(runtime["agent_timeout_sec"], 0)
+        self.assertEqual(runtime["max_cycles"], 0)
 
     def test_runtime_timeout_positive_is_preserved(self) -> None:
         args = SimpleNamespace(
@@ -144,7 +147,9 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
         settings = orchestrator_reply_cli._resolve_model_settings(args)
         self.assertEqual(settings["specialist_model"], DEFAULT_SPECIALIST_MODEL)
         self.assertEqual(settings["head_model"], DEFAULT_HEAD_MODEL)
-        self.assertIsNone(settings["specialist_reasoning_effort"])
+        self.assertEqual(
+            settings["specialist_reasoning_effort"], DEFAULT_SPECIALIST_REASONING_EFFORT
+        )
         self.assertEqual(settings["head_reasoning_effort"], DEFAULT_HEAD_REASONING_EFFORT)
 
     def test_model_settings_normalize_aliases(self) -> None:
@@ -157,6 +162,9 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
         settings = orchestrator_reply_cli._resolve_model_settings(args)
         self.assertEqual(settings["specialist_model"], "gpt-5.3-codex-spark")
         self.assertEqual(settings["head_model"], "gpt-5.3-codex")
+        self.assertEqual(
+            settings["specialist_reasoning_effort"], DEFAULT_SPECIALIST_REASONING_EFFORT
+        )
         self.assertEqual(settings["head_reasoning_effort"], "xhigh")
 
     def test_main_passes_model_overrides(self) -> None:
@@ -223,6 +231,7 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
                     }
                 )
                 callback({"event": "cycle_started", "cycle": 1})
+                callback({"event": "meeting_started", "cycle": 1})
                 return {
                     "project_id": "proj-a",
                     "turn_dir": str(fake_root / "turn"),
@@ -256,13 +265,17 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
             text = out.getvalue()
             self.assertIn("live: turn started", text)
             self.assertIn("live: cycle 1 started", text)
+            self.assertIn("live: cycle 1 head meeting started", text)
 
-    def test_main_json_mode_suppresses_live_notes(self) -> None:
+    def test_main_json_mode_streams_live_notes_to_stderr(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             fake_root = Path(td)
 
             def _fake_run(config):  # type: ignore[no-untyped-def]
-                self.assertIsNone(config.progress_callback)
+                callback = config.progress_callback
+                self.assertTrue(callable(callback))
+                assert callback is not None
+                callback({"event": "cycle_started", "cycle": 1})
                 return {
                     "project_id": "proj-a",
                     "turn_dir": str(fake_root / "turn"),
@@ -270,32 +283,37 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
                 }
 
             out = io.StringIO()
+            err = io.StringIO()
             with redirect_stdout(out):
-                with patch(
-                    "agents_inc.cli.orchestrator_reply._resolve_project_fabric_root",
-                    return_value=fake_root,
-                ):
-                    with patch("agents_inc.cli.orchestrator_reply.ensure_fabric_root_initialized"):
+                with redirect_stderr(err):
+                    with patch(
+                        "agents_inc.cli.orchestrator_reply._resolve_project_fabric_root",
+                        return_value=fake_root,
+                    ):
                         with patch(
-                            "agents_inc.cli.orchestrator_reply.run_orchestrator_reply",
-                            side_effect=_fake_run,
+                            "agents_inc.cli.orchestrator_reply.ensure_fabric_root_initialized"
                         ):
-                            with patch.object(
-                                sys,
-                                "argv",
-                                [
-                                    "agents-inc-orchestrator-reply",
-                                    "--project-id",
-                                    "proj-a",
-                                    "--message",
-                                    "delegate objective",
-                                    "--json",
-                                ],
+                            with patch(
+                                "agents_inc.cli.orchestrator_reply.run_orchestrator_reply",
+                                side_effect=_fake_run,
                             ):
-                                code = orchestrator_reply_cli.main()
+                                with patch.object(
+                                    sys,
+                                    "argv",
+                                    [
+                                        "agents-inc-orchestrator-reply",
+                                        "--project-id",
+                                        "proj-a",
+                                        "--message",
+                                        "delegate objective",
+                                        "--json",
+                                    ],
+                                ):
+                                    code = orchestrator_reply_cli.main()
             self.assertEqual(code, 0)
             payload = json.loads(out.getvalue())
             self.assertEqual(payload.get("project_id"), "proj-a")
+            self.assertIn("live: cycle 1 started", err.getvalue())
 
 
 if __name__ == "__main__":

@@ -82,7 +82,7 @@ def _suggest_extra_roles_with_codex(
     client.start()
     try:
         thread_id = client.start_thread()
-        turn = client.run_turn(thread_id=thread_id, text=prompt, timeout_sec=180.0)
+        turn = client.run_turn(thread_id=thread_id, text=prompt, timeout_sec=0.0)
     finally:
         client.close()
     payload = _extract_json_object(turn.text)

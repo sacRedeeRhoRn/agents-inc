@@ -20,10 +20,9 @@ def format_progress_event(event: dict) -> str:
 
     if kind == "turn_started":
         groups = _join_groups(event.get("selected_groups", []))
-        return "live: turn started | groups={0} | max_cycles={1}".format(
-            groups,
-            int(event.get("max_cycles", 0) or 0),
-        )
+        max_cycles = int(event.get("max_cycles", 0) or 0)
+        cap = "unlimited" if max_cycles <= 0 else str(max_cycles)
+        return "live: turn started | groups={0} | max_cycles={1}".format(groups, cap)
     if kind == "cycle_started":
         cycle = int(event.get("cycle", 0) or 0)
         return f"live: cycle {cycle} started"
@@ -38,11 +37,18 @@ def format_progress_event(event: dict) -> str:
             total,
             pending,
         )
+    if kind == "runtime_group_started":
+        cycle = int(event.get("cycle", 0) or 0)
+        group_id = str(event.get("group_id") or "").strip() or "unknown"
+        return f"live: cycle {cycle} group {group_id} started"
     if kind == "runtime_group_done":
         cycle = int(event.get("cycle", 0) or 0)
         group_id = str(event.get("group_id") or "").strip() or "unknown"
         status = str(event.get("status") or "").strip() or "UNKNOWN"
         return f"live: cycle {cycle} group {group_id} -> {status}"
+    if kind == "meeting_started":
+        cycle = int(event.get("cycle", 0) or 0)
+        return f"live: cycle {cycle} head meeting started"
     if kind == "meeting_result":
         cycle = int(event.get("cycle", 0) or 0)
         if bool(event.get("all_satisfied")):

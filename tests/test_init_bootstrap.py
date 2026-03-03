@@ -33,6 +33,7 @@ class InitBootstrapTests(unittest.TestCase):
                 "--projects-root",
                 str(projects_root),
                 "--no-launch",
+                "--json",
             ]
             with patch.object(sys, "argv", argv):
                 with patch("sys.stdout", new=buf):
@@ -44,6 +45,28 @@ class InitBootstrapTests(unittest.TestCase):
             self.assertEqual(Path(payload["projects_root"]).resolve(), projects_root.resolve())
             state_path = Path(payload["bootstrap_state"])
             self.assertTrue(state_path.exists())
+
+    def test_init_bootstrap_no_launch_human_output(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fabric_root = Path(td) / "fabric"
+            config_path = Path(td) / ".agents-inc" / "config.yaml"
+            argv = [
+                "agents-inc-init",
+                "--fabric-root",
+                str(fabric_root),
+                "--config-path",
+                str(config_path),
+                "--no-launch",
+            ]
+            buf = StringIO()
+            with patch.object(sys, "argv", argv):
+                with patch("sys.stdout", new=buf):
+                    code = init_session.main()
+            self.assertEqual(code, 0)
+            text = buf.getvalue()
+            self.assertIn("agents-inc init complete.", text)
+            self.assertIn("agents-inc group-list", text)
+            self.assertIn("agents-inc init --json", text)
 
     def test_init_bootstrap_missing_codex_still_succeeds(self) -> None:
         with tempfile.TemporaryDirectory() as td:
