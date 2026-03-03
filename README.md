@@ -1,12 +1,11 @@
-# agents-inc
+# agents-**inc.**
 
 ```text
-    _                       _        _            
-   / \   __ _  ___ _ __ ___| |_ __ _(_)_ __   ___ 
-  / _ \ / _` |/ _ \ '__/ __| __/ _` | | '_ \ / __|
- / ___ \ (_| |  __/ |  \__ \ || (_| | | | | | (__ 
-/_/   \_\__, |\___|_|  |___/\__\__,_|_|_| |_|\___|
-        |___/                                      
+    _    ____ _____ _   _ _____ ____      ___ _   _  ____
+   / \  / ___| ____| \ | |_   _/ ___|    |_ _| \ | |/ ___|
+  / _ \| |  _|  _| |  \| | | | \___ \     | ||  \| | |
+ / ___ \ |_| | |___| |\  | | |  ___) |    | || |\  | |___
+/_/   \_\____|_____|_| \_| |_| |____/    |___|_| \_|\____|
 ```
 
 `agents-inc` turns your Codex workspace into a restart-safe project workflow.
@@ -16,22 +15,13 @@ It feels simple at the surface: define intent, create a project, keep moving, co
 
 ## Install (Ready To Paste)
 
-### Option A: Source install (best for local development)
+### Source install (best for local development)
 
 ```bash
 git clone git@github.com:sacRedeeRhoRn/agents-inc.git
 cd agents-inc
 python3 -m pip install --upgrade pip
 python3 -m pip install -e .
-```
-
-### Option B: Standard local install
-
-```bash
-git clone git@github.com:sacRedeeRhoRn/agents-inc.git
-cd agents-inc
-python3 -m pip install --upgrade pip
-python3 -m pip install .
 ```
 
 ## Bootstrap Your Workspace

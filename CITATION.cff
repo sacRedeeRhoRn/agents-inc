@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use agents-inc in research or publications, please cite it with this metadata."
+title: "agents-inc"
+type: software
+version: "4.0.1"
+date-released: "2026-03-03"
+license: "MIT"
+authors:
+  - name: "sacRedeeRhoRn"
+abstract: "Publication-ready multi-agent group fabric and router orchestration toolkit for Codex sessions."
+repository-code: "https://github.com/sacRedeeRhoRn/agents-inc"
+url: "https://github.com/sacRedeeRhoRn/agents-inc"
