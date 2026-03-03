@@ -47,7 +47,9 @@ def resolve_project_context(
         raise FabricError(f"could not locate project '{normalized_project_id}'")
     project_root = Path(str(found["project_root"])).expanduser().resolve()
     resolved_fabric_root = (
-        Path(str(found.get("fabric_root") or (project_root / "agent_group_fabric"))).expanduser().resolve()
+        Path(str(found.get("fabric_root") or (project_root / "agent_group_fabric")))
+        .expanduser()
+        .resolve()
     )
     project_dir, manifest = load_project_manifest(resolved_fabric_root, normalized_project_id)
     manifest_path = project_dir / "manifest.yaml"

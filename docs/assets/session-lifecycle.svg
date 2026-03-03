@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">agents-inc Session Lifecycle</title>
+  <desc id="desc">Flow chart showing install, init, group setup, project lifecycle, save, deactivate, and resume.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f4ee; }
+      .title { font: 700 24px 'Segoe UI', Helvetica, Arial, sans-serif; fill: #1f2937; }
+      .sub { font: 500 14px 'Segoe UI', Helvetica, Arial, sans-serif; fill: #4b5563; }
+      .node { fill: #fffaf2; stroke: #c38b2f; stroke-width: 2; rx: 14; }
+      .nodeText { font: 700 16px 'Segoe UI', Helvetica, Arial, sans-serif; fill: #111827; }
+      .cmd { font: 500 13px 'Courier New', monospace; fill: #6b7280; }
+      .arrow { stroke: #6b7280; stroke-width: 2.5; fill: none; marker-end: url(#head); }
+    </style>
+    <marker id="head" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="360" />
+  <text class="title" x="36" y="44">From first install to confident resume</text>
+  <text class="sub" x="36" y="70">Keep the flow simple: install, initialize, create, save, pause, resume.</text>
+
+  <rect class="node" x="36" y="118" width="150" height="116" />
+  <text class="nodeText" x="58" y="152">Install</text>
+  <text class="cmd" x="58" y="178">git clone ...</text>
+  <text class="cmd" x="58" y="198">pip install ...</text>
+
+  <rect class="node" x="224" y="118" width="150" height="116" />
+  <text class="nodeText" x="246" y="152">Bootstrap</text>
+  <text class="cmd" x="246" y="178">agents-inc init</text>
+
+  <rect class="node" x="412" y="118" width="160" height="116" />
+  <text class="nodeText" x="434" y="152">Discover</text>
+  <text class="cmd" x="434" y="178">agents-inc</text>
+  <text class="cmd" x="434" y="198">group-list</text>
+
+  <rect class="node" x="610" y="118" width="170" height="116" />
+  <text class="nodeText" x="632" y="152">Create</text>
+  <text class="cmd" x="632" y="178">agents-inc new-group</text>
+  <text class="cmd" x="632" y="198">agents-inc create &lt;id&gt;</text>
+
+  <rect class="node" x="818" y="118" width="170" height="116" />
+  <text class="nodeText" x="840" y="152">Operate</text>
+  <text class="cmd" x="840" y="178">agents-inc list</text>
+  <text class="cmd" x="840" y="198">agents-inc save &lt;id&gt;</text>
+
+  <rect class="node" x="1026" y="118" width="140" height="116" />
+  <text class="nodeText" x="1048" y="152">Resume</text>
+  <text class="cmd" x="1048" y="178">agents-inc</text>
+  <text class="cmd" x="1048" y="198">resume &lt;id&gt;</text>
+
+  <path class="arrow" d="M186 176 H224" />
+  <path class="arrow" d="M374 176 H412" />
+  <path class="arrow" d="M572 176 H610" />
+  <path class="arrow" d="M780 176 H818" />
+  <path class="arrow" d="M988 176 H1026" />
+
+  <text class="sub" x="36" y="300">Pause gracefully with: agents-inc deactivate &lt;project-id&gt;</text>
+  <text class="sub" x="36" y="324">Restore continuity with: agents-inc resume &lt;project-id&gt;</text>
+</svg>

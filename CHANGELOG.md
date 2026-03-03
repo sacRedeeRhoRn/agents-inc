@@ -1,5 +1,29 @@
 # Changelog
 
+## v4.0.1
+
+- Rebuilt `README.md` into a low-friction onboarding guide:
+  - added ASCII-art intro and first-run lifecycle image
+  - added copy-paste install commands (`git clone` + `pip install`)
+  - centered bootstrap guidance on `agents-inc init`
+  - documented what init does and what users should expect
+  - added minimal-command lifecycle for:
+    - group listing
+    - first group creation
+    - project creation
+    - project listing
+    - deactivation
+    - checkpoint save
+    - resume
+- Replaced `OVERVIEW.md` with a full operator reference:
+  - complete command-router surface and detailed flag reference
+  - lifecycle, state/artifact contracts, and practical usage examples
+  - clear split between quickstart (`README`) and full-detail manual (`OVERVIEW`)
+- Added docs asset:
+  - `docs/assets/session-lifecycle.svg`
+- Updated docs/release references for `v4.0.1`.
+- Bumped package version to `4.0.1`.
+
 ## v4.0.0
 
 - Breaking catalog reset for domain-agnostic orchestration baseline:

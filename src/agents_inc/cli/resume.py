@@ -42,7 +42,9 @@ def main() -> int:
 
         # Mark as active when present in index; if not present, continue with local project state.
         try:
-            set_index_project_status(default_project_index_path(args.project_index), project_id, "active")
+            set_index_project_status(
+                default_project_index_path(args.project_index), project_id, "active"
+            )
         except Exception:  # noqa: BLE001
             pass
 

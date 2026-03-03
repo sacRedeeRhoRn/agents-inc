@@ -104,7 +104,8 @@ def _build_single_group(args: argparse.Namespace, fabric_root: Path) -> dict:
     display_name = str(args.display_name or _ask("Display name", "New Group")).strip()
     domain = slugify(args.domain or _ask("Domain", "general-services"))
     purpose = str(
-        args.purpose or _ask("Purpose", f"Coordinate expert specialists for {display_name} objectives.")
+        args.purpose
+        or _ask("Purpose", f"Coordinate expert specialists for {display_name} objectives.")
     ).strip()
     success_criteria = _parse_csv(
         args.success_criteria
@@ -181,7 +182,9 @@ def _regenerate_core_groups(args: argparse.Namespace, fabric_root: Path) -> dict
         display_name = str(seed.get("display_name") or "").strip()
         domain = slugify(str(seed.get("domain") or ""))
         purpose = str(seed.get("purpose") or "").strip()
-        success_criteria = [str(x).strip() for x in seed.get("success_criteria", []) if str(x).strip()]
+        success_criteria = [
+            str(x).strip() for x in seed.get("success_criteria", []) if str(x).strip()
+        ]
         extra_roles = [str(x).strip() for x in seed.get("extra_roles", []) if str(x).strip()]
         if not all([group_id, display_name, domain, purpose]) or not success_criteria:
             raise FabricError(f"invalid core seed entry: {seed}")

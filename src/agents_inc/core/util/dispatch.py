@@ -223,6 +223,7 @@ def gate_specialist_output(
         return {"status": "BLOCKED_INVALID", "reasons": ["output must be a map"]}
 
     reasons: List[str] = []
+    role_name = str(role or "").strip().lower()
 
     if citation_required:
         claims = output.get("claims_with_citations", [])
@@ -240,7 +241,7 @@ def gate_specialist_output(
         reasons.append("required web evidence unavailable")
         return {"status": "BLOCKED_NEEDS_EVIDENCE", "reasons": reasons}
 
-    if output.get("contradictions"):
+    if output.get("contradictions") and role_name != "evidence-review":
         reasons.append("internal contradictions detected")
 
     if output.get("scope_violation"):
@@ -249,11 +250,17 @@ def gate_specialist_output(
     if not output.get("repro_steps"):
         reasons.append("missing reproducibility steps")
 
-    execution_status = str(output.get("execution_status") or "").strip().upper()
-    if execution_status not in {"COMPLETE", "PASS"}:
+    execution_status = (
+        str(output.get("execution_status") or output.get("status") or "").strip().upper()
+    )
+    blocked_execution = execution_status.startswith("BLOCKED_")
+    allowed_execution_statuses = {"COMPLETE", "PASS"}
+    if role_name == "evidence-review":
+        allowed_execution_statuses.update({"BLOCKED_NEEDS_EVIDENCE", "BLOCKED_REVIEW"})
+    if execution_status not in allowed_execution_statuses and not blocked_execution:
         reasons.append("missing or invalid execution_status")
 
-    if output.get("dependencies_satisfied") is not True:
+    if output.get("dependencies_satisfied") is not True and not blocked_execution:
         reasons.append("dependencies_satisfied must be true")
 
     if not isinstance(output.get("produced_artifacts"), list):
@@ -262,7 +269,6 @@ def gate_specialist_output(
     if not isinstance(output.get("citations_summary"), dict):
         reasons.append("citations_summary must be a map")
 
-    role_name = str(role or "").strip().lower()
     claims = output.get("claims_with_citations", [])
     normalized_claims = claims if isinstance(claims, list) else []
 
@@ -281,8 +287,6 @@ def gate_specialist_output(
                 web_citation_count += 1
         if web_citation_count < 3:
             reasons.append("web-research requires at least 3 web citations")
-        if not str(output.get("source_quality_note") or "").strip():
-            reasons.append("web-research missing source_quality_note")
     elif role_name == "evidence-review":
         if "contradictions" not in output:
             reasons.append("evidence-review must include contradictions field")

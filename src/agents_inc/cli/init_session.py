@@ -19,6 +19,7 @@ from agents_inc.core.config_state import (
     get_projects_root,
     set_projects_root,
 )
+from agents_inc.core.context_state import save_global_context
 from agents_inc.core.fabric_lib import (
     FabricError,
     ensure_fabric_root_initialized,
@@ -722,6 +723,19 @@ def main() -> int:
             else get_projects_root(config_path)
         )
         set_projects_root(config_path, projects_root)
+        context_project_index = (
+            default_project_index_path(args.project_index)
+            if args.project_index
+            else default_project_index_path(str(config_path.parent / "projects" / "index.yaml"))
+        )
+        save_global_context(
+            {
+                "config_path": str(config_path),
+                "project_index": str(context_project_index),
+                "projects_root": str(projects_root),
+                "fabric_root": str(fabric_root),
+            }
+        )
 
         bootstrap_state_path = config_path.parent / "bootstrap.yaml"
         bootstrap_payload = {

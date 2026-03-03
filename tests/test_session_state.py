@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
 import shutil
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
@@ -26,6 +28,7 @@ from agents_inc.core.session_compaction import (  # noqa: E402
     load_latest_compacted_summary,
 )
 from agents_inc.core.session_state import (  # noqa: E402
+    default_project_index_path,
     find_resume_project,
     get_index_project,
     list_index_projects,
@@ -41,6 +44,102 @@ from agents_inc.core.session_state import (  # noqa: E402
 
 
 class SessionStateTests(unittest.TestCase):
+    def test_default_paths_discover_local_agents_inc_context(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            workspace = Path(td) / "workspace"
+            nested = workspace / "projects" / "demo"
+            nested.mkdir(parents=True, exist_ok=True)
+
+            local_config = workspace / ".agents-inc" / "config.yaml"
+            local_index = workspace / ".agents-inc" / "projects" / "index.yaml"
+            local_config.parent.mkdir(parents=True, exist_ok=True)
+            local_index.parent.mkdir(parents=True, exist_ok=True)
+            local_config.write_text("schema_version: '1.0'\n", encoding="utf-8")
+            local_index.write_text("schema_version: '3.0'\nprojects: {}\n", encoding="utf-8")
+
+            prev_cwd = Path.cwd()
+            try:
+                os.chdir(nested)
+                self.assertEqual(default_config_path(None), local_config.resolve())
+                self.assertEqual(default_project_index_path(None), local_index.resolve())
+            finally:
+                os.chdir(prev_cwd)
+
+    def test_default_project_index_path_uses_local_config_when_index_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            workspace = Path(td) / "workspace"
+            nested = workspace / "analysis"
+            nested.mkdir(parents=True, exist_ok=True)
+
+            local_config = workspace / ".agents-inc" / "config.yaml"
+            local_config.parent.mkdir(parents=True, exist_ok=True)
+            local_config.write_text("schema_version: '1.0'\n", encoding="utf-8")
+
+            expected_index = (workspace / ".agents-inc" / "projects" / "index.yaml").resolve()
+            prev_cwd = Path.cwd()
+            try:
+                os.chdir(nested)
+                self.assertEqual(default_project_index_path(None), expected_index)
+            finally:
+                os.chdir(prev_cwd)
+
+    def test_default_paths_use_global_context_when_local_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            cwd = Path(td) / "outside"
+            cwd.mkdir(parents=True, exist_ok=True)
+            context_config = Path(td) / "ctx" / "config.yaml"
+            context_index = Path(td) / "ctx" / "projects" / "index.yaml"
+            context_config.parent.mkdir(parents=True, exist_ok=True)
+            context_index.parent.mkdir(parents=True, exist_ok=True)
+            context_config.write_text("schema_version: '1.0'\n", encoding="utf-8")
+            context_index.write_text("schema_version: '3.0'\nprojects: {}\n", encoding="utf-8")
+
+            prev_cwd = Path.cwd()
+            try:
+                os.chdir(cwd)
+                with patch(
+                    "agents_inc.core.config_state.load_global_context",
+                    return_value={"config_path": str(context_config)},
+                ):
+                    self.assertEqual(default_config_path(None), context_config.resolve())
+                with patch(
+                    "agents_inc.core.session_state.load_global_context",
+                    return_value={"project_index": str(context_index)},
+                ):
+                    self.assertEqual(default_project_index_path(None), context_index.resolve())
+            finally:
+                os.chdir(prev_cwd)
+
+    def test_default_paths_ignore_home_discovery_in_favor_of_context(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            context_config = Path(td) / "ctx" / "config.yaml"
+            context_index = Path(td) / "ctx" / "projects" / "index.yaml"
+            context_config.parent.mkdir(parents=True, exist_ok=True)
+            context_index.parent.mkdir(parents=True, exist_ok=True)
+            context_config.write_text("schema_version: '1.0'\n", encoding="utf-8")
+            context_index.write_text("schema_version: '3.0'\nprojects: {}\n", encoding="utf-8")
+
+            home_config = (Path.home() / ".agents-inc" / "config.yaml").resolve()
+            home_index = (Path.home() / ".agents-inc" / "projects" / "index.yaml").resolve()
+
+            with patch(
+                "agents_inc.core.config_state._find_upward_file",
+                return_value=home_config,
+            ), patch(
+                "agents_inc.core.config_state.load_global_context",
+                return_value={"config_path": str(context_config)},
+            ):
+                self.assertEqual(default_config_path(None), context_config.resolve())
+
+            with patch(
+                "agents_inc.core.session_state._find_upward_file",
+                side_effect=[home_index, home_config],
+            ), patch(
+                "agents_inc.core.session_state.load_global_context",
+                return_value={"project_index": str(context_index)},
+            ):
+                self.assertEqual(default_project_index_path(None), context_index.resolve())
+
     def test_config_projects_root_roundtrip(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             config_path = Path(td) / "config.yaml"

@@ -1,126 +1,107 @@
 # agents-inc
 
-`agents-inc` is a project-scoped multi-agent orchestration fabric for Codex.
-
-You define the objective. Group heads coordinate specialists. The session keeps continuity, so you can stop, reboot, and resume without losing project rhythm.
-
-## Quick Start (Codex Orchestrator, v4.0.0)
-
-Run this in Terminal:
-
-```bash
-export AGI_VER="v4.0.0" && \
-export AGI_BOOTSTRAP_URL="https://raw.githubusercontent.com/sacRedeeRhoRn/agents-inc/${AGI_VER}/docs/bootstrap/START_IN_CODEX.md" && \
-export AGI_BOOTSTRAP_HOME="$HOME/.agents-inc/bootstrap-codex-home" && \
-mkdir -p "$AGI_BOOTSTRAP_HOME/skills/local" && \
-[ -f "$HOME/.codex/auth.json" ] && ln -snf "$HOME/.codex/auth.json" "$AGI_BOOTSTRAP_HOME/auth.json" || true && \
-[ -f "$HOME/.codex/config.toml" ] && ln -snf "$HOME/.codex/config.toml" "$AGI_BOOTSTRAP_HOME/config.toml" || true && \
-AGI_BOOTSTRAP_MD="$(mktemp /tmp/agents-inc-start.XXXXXX)" && \
-curl -fsSL "$AGI_BOOTSTRAP_URL" -o "$AGI_BOOTSTRAP_MD" && \
-test -s "$AGI_BOOTSTRAP_MD" && \
-CODEX_HOME="$AGI_BOOTSTRAP_HOME" codex -C "$HOME" "$(cat "$AGI_BOOTSTRAP_MD")"
+```text
+    _                       _        _            
+   / \   __ _  ___ _ __ ___| |_ __ _(_)_ __   ___ 
+  / _ \ / _` |/ _ \ '__/ __| __/ _` | | '_ \ / __|
+ / ___ \ (_| |  __/ |  \__ \ || (_| | | | | | (__ 
+/_/   \_\__, |\___|_|  |___/\__\__,_|_|_| |_|\___|
+        |___/                                      
 ```
 
-The first prompt should immediately ask:
+`agents-inc` turns your Codex workspace into a restart-safe project workflow.
+It feels simple at the surface: define intent, create a project, keep moving, come back later, resume exactly where you left off.
 
-`Start new project or resume existing project?`
+![Session lifecycle](./docs/assets/session-lifecycle.svg)
 
-## Install In Terminal
+## Install (Ready To Paste)
 
-Use a release-pinned, checksum-verified install:
+### Option A: Source install (best for local development)
 
 ```bash
-export AGI_VER="v4.0.0" && \
-WHEEL="agents_inc-4.0.0-py3-none-any.whl" && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/${WHEEL}" -o "/tmp/${WHEEL}" && \
-curl -sfL "https://github.com/sacRedeeRhoRn/agents-inc/releases/download/${AGI_VER}/agents_inc-4.0.0.sha256" -o /tmp/agents_inc-4.0.0.sha256 && \
-(cd /tmp && grep "  ${WHEEL}$" agents_inc-4.0.0.sha256 > wheel.sha256 && shasum -a 256 -c wheel.sha256) && \
-python3 -m pip install --upgrade pip setuptools wheel && \
-python3 -m pip install --upgrade "/tmp/${WHEEL}"
+git clone git@github.com:sacRedeeRhoRn/agents-inc.git
+cd agents-inc
+python3 -m pip install --upgrade pip
+python3 -m pip install -e .
 ```
 
-## Terminal vs Codex
+### Option B: Standard local install
 
-| Place | Purpose |
-| --- | --- |
-| Terminal | Install, init/resume, session listing, skill activation, dispatch commands. |
-| Codex session | Orchestration conversation and group-routed reasoning. |
+```bash
+git clone git@github.com:sacRedeeRhoRn/agents-inc.git
+cd agents-inc
+python3 -m pip install --upgrade pip
+python3 -m pip install .
+```
 
-Terminal anchors state. Codex drives orchestration.
-
-## Session Commands
+## Bootstrap Your Workspace
 
 ```bash
 agents-inc init
+```
+
+If you saw `entrace init` in older notes, use `agents-inc init`.
+
+What happens when you run this:
+- You get an intake flow: start new project or resume existing project.
+- `agents-inc` prepares/updates your local control state under `~/.agents-inc/`.
+- Project artifacts are generated in a project root.
+- Checkpoint + compact resume data are written for recovery.
+- Managed chat can launch automatically (or stay terminal-only depending on your flow).
+
+## First Practical Workflow (Minimal Commands)
+
+1. See available groups:
+
+```bash
+agents-inc group-list
+```
+
+2. Create your first group (interactive):
+
+```bash
+agents-inc new-group
+```
+
+3. Create your first project:
+
+```bash
+agents-inc create <project-id>
+```
+
+4. List projects:
+
+```bash
 agents-inc list
-agents-inc resume <project-id>
-agents-inc project-groups list --project-id <project-id>
-agents-inc project-groups add --project-id <project-id> --groups <group-id>
-agents-inc project-groups remove --project-id <project-id> --groups <group-id>
+```
+
+Default listing includes `active` + `inactive`. Use `--include-stale` only when needed.
+
+5. Deactivate a project you want to pause:
+
+```bash
 agents-inc deactivate <project-id>
-agents-inc delete <project-id> --yes
-agents-inc cleanup-projects --all-indexed --yes
-agents-inc orchestrator-reply --project-id <project-id> --message "<objective>" --live-profile bounded --require-negotiation true
 ```
 
-`agents-inc list` now shows only:
-- `project_id`
-- `status`
-- `root`
-
-## Project-Scoped Skills
-
-Default behavior:
-- active group heads are installed
-- specialists stay off until explicitly enabled
-
-Enable specialists only for selected groups:
+6. Make a checkpoint snapshot before a risky change:
 
 ```bash
-agents-inc skills activate --project-id <project-id> --groups <group-id> --specialists
+agents-inc save <project-id>
 ```
 
-Clean old globally-managed skills safely (managed entries only):
+7. Resume later:
 
 ```bash
-agents-inc skills cleanup-global --dry-run
-agents-inc skills cleanup-global --apply
+agents-inc resume <project-id>
 ```
 
-## Full Guide
+## Need Full Flags and Features?
 
-See [OVERVIEW.md](./OVERVIEW.md) for the full operator journey, including:
-- installation and bootstrap details
-- project lifecycle and artifact map
-- complete metastable chiral silicide example run
-- resume and checkpoint workflow
+Use the full operator manual:
+- [OVERVIEW.md](./OVERVIEW.md)
 
-## Orchestrator Contract
-
-Group-routed turns are strict and artifact-grounded:
-- all active project groups must publish valid `exposed/handoff.json` contributions
-- orchestration runs iterative cooperative cycles (delegate -> group meeting -> refine -> re-delegate)
-- group mode requires the meeting loop and non-zero cycle budget
-- per-agent timeout is unlimited by default (`--agent-timeout-sec` omitted or `0`)
-- use `--agent-timeout-sec <seconds>` only when you explicitly want bounded agent sessions
-- final answer is emitted only on pass
-- otherwise, the turn returns `blocked-report.md` and `blocked-reasons.json`
-- successful turns save:
-  - `final/full-report.md`
-  - `final/full-report.json`
-  - `final/key-points.txt` (also printed in terminal)
-  - turn-root latest pointers for polling:
-    - `wait-state.latest.json`
-    - `cooperation-ledger.latest.ndjson`
-    - `group-head-sessions.latest.json`
-    - `specialist-sessions.latest.json`
-
-## References
-
-- Bootstrap prompt: [docs/bootstrap/START_IN_CODEX.md](./docs/bootstrap/START_IN_CODEX.md)
-- Deep operator guide: [OVERVIEW.md](./OVERVIEW.md)
-- Session intake internals: [src/agents_inc/docs/internal/session-intake.md](./src/agents_inc/docs/internal/session-intake.md)
-- Session resume internals: [src/agents_inc/docs/internal/session-resume.md](./src/agents_inc/docs/internal/session-resume.md)
-- Session compaction internals: [src/agents_inc/docs/internal/session-compaction.md](./src/agents_inc/docs/internal/session-compaction.md)
+Quick references:
+- Bootstrap prompt contract: [docs/bootstrap/START_IN_CODEX.md](./docs/bootstrap/START_IN_CODEX.md)
+- Internal session intake details: [src/agents_inc/docs/internal/session-intake.md](./src/agents_inc/docs/internal/session-intake.md)
+- Internal resume details: [src/agents_inc/docs/internal/session-resume.md](./src/agents_inc/docs/internal/session-resume.md)
 - GitHub repository: [sacRedeeRhoRn/agents-inc](https://github.com/sacRedeeRhoRn/agents-inc)
-- Releases: [github.com/sacRedeeRhoRn/agents-inc/releases](https://github.com/sacRedeeRhoRn/agents-inc/releases)

@@ -115,6 +115,10 @@ class OrchestratorReplyTests(unittest.TestCase):
             self.assertTrue((blocked_turn_dir / "blocked-report.md").exists())
             self.assertTrue((blocked_turn_dir / "blocked-reasons.json").exists())
             self.assertFalse((blocked_turn_dir / "final-exposed-answer.md").exists())
+            blocked_report_text = (blocked_turn_dir / "blocked-report.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("--meeting-enabled --require-negotiation true", blocked_report_text)
 
             project_dir = fabric_root / "generated" / "projects" / project_id
             for group_id in ["literature-intelligence", "developer", "quality-assurance"]:
@@ -251,6 +255,7 @@ class OrchestratorReplyTests(unittest.TestCase):
                 code = new_project_cli.main()
             self.assertEqual(code, 0)
 
+            progress_events: list[dict] = []
             with patch.dict(os.environ, {"AGENTS_INC_AGENT_RUNNER": "mock"}):
                 result = run_orchestrator_reply(
                     OrchestratorReplyConfig(
@@ -262,6 +267,7 @@ class OrchestratorReplyTests(unittest.TestCase):
                         ),
                         group="auto",
                         output_dir=Path(td) / "runtime-pass-turn",
+                        progress_callback=lambda event: progress_events.append(dict(event)),
                     )
                 )
 
@@ -276,6 +282,13 @@ class OrchestratorReplyTests(unittest.TestCase):
             )
             self.assertTrue(bool(wait_state.get("all_groups_complete")))
             self.assertEqual(wait_state.get("agent_timeout_mode"), "unlimited")
+            event_names = {
+                str(row.get("event")) for row in progress_events if isinstance(row, dict)
+            }
+            self.assertIn("turn_started", event_names)
+            self.assertIn("cycle_started", event_names)
+            self.assertIn("runtime_group_done", event_names)
+            self.assertIn("turn_completed", event_names)
 
             orchestrator_plan = json.loads(
                 (
@@ -385,6 +398,12 @@ class OrchestratorReplyTests(unittest.TestCase):
             self.assertIsInstance(timed_out, list)
             self.assertEqual(len(timed_out), 1)
             self.assertEqual(timed_out[0].get("specialist_id"), "phase-stability-specialist")
+            negotiation_monitor = payload.get("negotiation_monitor", {})
+            self.assertIsInstance(negotiation_monitor, dict)
+            self.assertEqual(negotiation_monitor.get("meeting_cycles_executed"), 0)
+            checks = negotiation_monitor.get("checks", {})
+            self.assertIsInstance(checks, dict)
+            self.assertFalse(bool(checks.get("meeting_cycles_executed_gte_1")))
 
     def test_blocked_payload_includes_escalations(self) -> None:
         with tempfile.TemporaryDirectory() as td:

@@ -158,12 +158,29 @@ class FabricUnitTests(unittest.TestCase):
             "dependencies_satisfied": True,
             "produced_artifacts": [],
             "citations_summary": {"count": 2, "has_web_url": True},
-            "source_quality_note": "sources reviewed",
         }
         gate = gate_specialist_output(
             out, role="web-research", citation_required=True, web_available=True
         )
         self.assertEqual(gate["status"], "BLOCKED_UNCITED")
+
+    def test_quality_gate_web_research_passes_without_source_quality_note(self) -> None:
+        out = {
+            "claims_with_citations": [
+                {"claim": "x", "citation": "https://example.org/a"},
+                {"claim": "y", "citation": "https://example.org/b"},
+                {"claim": "z", "citation": "https://example.org/c"},
+            ],
+            "repro_steps": ["step1"],
+            "execution_status": "COMPLETE",
+            "dependencies_satisfied": True,
+            "produced_artifacts": [],
+            "citations_summary": {"count": 3, "has_web_url": True},
+        }
+        gate = gate_specialist_output(
+            out, role="web-research", citation_required=True, web_available=True
+        )
+        self.assertEqual(gate["status"], "PASS")
 
     def test_quality_gate_repro_qa_requires_commands_and_expected_outputs(self) -> None:
         out = {
@@ -175,6 +192,72 @@ class FabricUnitTests(unittest.TestCase):
             "citations_summary": {"count": 1, "has_web_url": False},
             "repro_commands": ["python -m pytest tests/test_smoke.py"],
             "expected_outputs": ["exit code 0"],
+        }
+        gate = gate_specialist_output(
+            out, role="repro-qa", citation_required=True, web_available=True
+        )
+        self.assertEqual(gate["status"], "PASS")
+
+    def test_quality_gate_evidence_review_allows_blocked_status_for_contradictions(self) -> None:
+        out = {
+            "claims_with_citations": [{"claim": "x", "citation": "https://example.org/x"}],
+            "repro_steps": ["step1"],
+            "status": "BLOCKED_NEEDS_EVIDENCE",
+            "execution_status": "BLOCKED_NEEDS_EVIDENCE",
+            "contradictions": True,
+            "unsupported_claims": ["claim mismatch between groups"],
+            "dependencies_satisfied": True,
+            "produced_artifacts": ["outputs/review.md"],
+            "citations_summary": {"count": 1, "has_web_url": True},
+        }
+        gate = gate_specialist_output(
+            out, role="evidence-review", citation_required=True, web_available=True
+        )
+        self.assertEqual(gate["status"], "PASS")
+
+    def test_quality_gate_non_evidence_role_with_contradictions_still_blocks(self) -> None:
+        out = {
+            "claims_with_citations": [{"claim": "x", "citation": "https://example.org/x"}],
+            "repro_steps": ["step1"],
+            "execution_status": "COMPLETE",
+            "dependencies_satisfied": True,
+            "produced_artifacts": [],
+            "citations_summary": {"count": 1, "has_web_url": True},
+            "contradictions": True,
+        }
+        gate = gate_specialist_output(
+            out, role="integration", citation_required=True, web_available=True
+        )
+        self.assertEqual(gate["status"], "BLOCKED_REVIEW")
+
+    def test_quality_gate_integration_allows_blocked_execution_status(self) -> None:
+        out = {
+            "claims_with_citations": [{"claim": "x", "citation": "https://example.org/x"}],
+            "repro_steps": ["step1"],
+            "status": "BLOCKED_NEEDS_EVIDENCE",
+            "execution_status": "BLOCKED_NEEDS_EVIDENCE",
+            "dependencies_satisfied": False,
+            "produced_artifacts": [],
+            "citations_summary": {"count": 1, "has_web_url": True},
+            "dependencies_consumed": [],
+            "integration_risks": ["awaiting meeting arbitration"],
+        }
+        gate = gate_specialist_output(
+            out, role="integration", citation_required=True, web_available=True
+        )
+        self.assertEqual(gate["status"], "PASS")
+
+    def test_quality_gate_repro_qa_allows_blocked_execution_status(self) -> None:
+        out = {
+            "claims_with_citations": [{"claim": "x", "citation": "https://example.org/x"}],
+            "repro_steps": ["step1"],
+            "status": "BLOCKED_NEEDS_EVIDENCE",
+            "execution_status": "BLOCKED_NEEDS_EVIDENCE",
+            "dependencies_satisfied": False,
+            "produced_artifacts": [],
+            "citations_summary": {"count": 1, "has_web_url": True},
+            "repro_commands": ["echo check"],
+            "expected_outputs": ["waiting for lock"],
         }
         gate = gate_specialist_output(
             out, role="repro-qa", citation_required=True, web_available=True

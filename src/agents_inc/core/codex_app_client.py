@@ -95,7 +95,11 @@ class CodexAppClient:
     def resume_thread(self, thread_id: str) -> str:
         result = self._request(
             "thread/resume",
-            {"threadId": str(thread_id), "cwd": str(self.cwd), "approvalPolicy": self.approval_policy},
+            {
+                "threadId": str(thread_id),
+                "cwd": str(self.cwd),
+                "approvalPolicy": self.approval_policy,
+            },
             timeout_sec=30.0,
         )
         thread = result.get("thread")

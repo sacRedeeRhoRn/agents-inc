@@ -78,6 +78,31 @@ class CLIMainTests(unittest.TestCase):
         self.assertEqual(code, 14)
         mocked.assert_called_once()
 
+    def test_main_routes_dispatch_command(self) -> None:
+        with patch("agents_inc.cli.dispatch_dry_run.main", return_value=15) as mocked:
+            with patch.object(sys, "argv", ["agents-inc", "dispatch", "--project-id", "proj-x"]):
+                code = cli_main.main()
+        self.assertEqual(code, 15)
+        mocked.assert_called_once()
+
+    def test_main_routes_orchestrator_reply_command(self) -> None:
+        with patch("agents_inc.cli.orchestrator_reply.main", return_value=16) as mocked:
+            with patch.object(
+                sys,
+                "argv",
+                [
+                    "agents-inc",
+                    "orchestrator-reply",
+                    "--project-id",
+                    "proj-x",
+                    "--message",
+                    "hello",
+                ],
+            ):
+                code = cli_main.main()
+        self.assertEqual(code, 16)
+        mocked.assert_called_once()
+
     def test_main_version_flag(self) -> None:
         with patch.object(sys, "argv", ["agents-inc", "--version"]):
             code = cli_main.main()
@@ -99,7 +124,10 @@ class CLIMainTests(unittest.TestCase):
             ):
                 with patch(
                     "agents_inc.cli.resume.run_orchestrator_chat",
-                    return_value={"thread_id": "thread-1", "chat_log_path": str(project_root / "chat.log")},
+                    return_value={
+                        "thread_id": "thread-1",
+                        "chat_log_path": str(project_root / "chat.log"),
+                    },
                 ) as run_chat:
                     with patch.object(
                         sys, "argv", ["agents-inc-resume", "proj-test", "--no-launch", "--json"]
@@ -128,9 +156,14 @@ class CLIMainTests(unittest.TestCase):
                 ):
                     with patch(
                         "agents_inc.cli.resume.run_orchestrator_chat",
-                        return_value={"thread_id": "thread-next", "chat_log_path": str(project_root / "chat.log")},
+                        return_value={
+                            "thread_id": "thread-next",
+                            "chat_log_path": str(project_root / "chat.log"),
+                        },
                     ) as run_chat:
-                        with patch.object(sys, "argv", ["agents-inc-resume", "proj-test", "--json"]):
+                        with patch.object(
+                            sys, "argv", ["agents-inc-resume", "proj-test", "--json"]
+                        ):
                             code = resume_cli.main()
             self.assertEqual(code, 0)
             run_chat.assert_called_once()

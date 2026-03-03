@@ -14,7 +14,6 @@ from agents_inc.core.fabric_lib import (
     resolve_fabric_root,
     slugify,
 )
-from agents_inc.core.orchestrator_reply import OrchestratorReplyConfig, run_orchestrator_reply
 from agents_inc.core.model_profiles import (
     DEFAULT_HEAD_MODEL,
     DEFAULT_HEAD_REASONING_EFFORT,
@@ -22,6 +21,8 @@ from agents_inc.core.model_profiles import (
     normalize_model_slug,
     normalize_reasoning_effort,
 )
+from agents_inc.core.orchestrator_reply import OrchestratorReplyConfig, run_orchestrator_reply
+from agents_inc.core.progress_notes import format_progress_event
 from agents_inc.core.session_state import default_project_index_path, find_resume_project
 
 
@@ -363,8 +364,11 @@ def main() -> int:
                 raise FabricError(
                     "group mode requires meeting loop. Remove --no-meeting or use [non-group] prefix."
                 )
-            if int(runtime["max_cycles"]) < 2:
-                raise FabricError("group mode requires --max-cycles >= 2.")
+
+        def _print_live_event(event: dict) -> None:
+            line = format_progress_event(event)
+            if line:
+                print(line)
 
         config = OrchestratorReplyConfig(
             fabric_root=fabric_root,
@@ -390,6 +394,7 @@ def main() -> int:
             specialist_reasoning_effort=model_settings["specialist_reasoning_effort"],
             head_model=str(model_settings["head_model"]),
             head_reasoning_effort=model_settings["head_reasoning_effort"],
+            progress_callback=(None if args.json else _print_live_event),
         )
         result = run_orchestrator_reply(config)
         if args.json:

@@ -17,6 +17,9 @@ Default behavior:
 agents-inc list
 ```
 
+Default list output includes `active` and `inactive` projects.
+Use `agents-inc list --include-stale` to include `stale` entries.
+
 ## Resume With Explicit Source
 Compacted snapshot only:
 
@@ -63,4 +66,4 @@ Strict mode behavior:
 ## Global Index
 `~/.agents-inc/projects-index.yaml` tracks project roots and latest checkpoints.
 
-If an entry points to a missing path, status becomes `stale` and it is skipped unless explicitly included.
+If an entry points to a missing path, status becomes `stale` and it is skipped unless `--include-stale` is used.

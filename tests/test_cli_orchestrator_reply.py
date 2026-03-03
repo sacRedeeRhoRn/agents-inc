@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import io
+import json
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -88,16 +91,27 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
             self.assertEqual(code, 1)
             runner.assert_not_called()
 
-    def test_group_mode_rejects_max_cycles_lt_2(self) -> None:
+    def test_group_mode_allows_max_cycles_1(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             fake_root = Path(td)
+            captured = {}
+
+            def _fake_run(config):  # type: ignore[no-untyped-def]
+                captured["config"] = config
+                return {
+                    "project_id": "proj-a",
+                    "turn_dir": str(fake_root / "turn"),
+                    "full_report_path": str(fake_root / "full-report.md"),
+                }
+
             with patch(
                 "agents_inc.cli.orchestrator_reply._resolve_project_fabric_root",
                 return_value=fake_root,
             ):
                 with patch("agents_inc.cli.orchestrator_reply.ensure_fabric_root_initialized"):
                     with patch(
-                        "agents_inc.cli.orchestrator_reply.run_orchestrator_reply"
+                        "agents_inc.cli.orchestrator_reply.run_orchestrator_reply",
+                        side_effect=_fake_run,
                     ) as runner:
                         with patch.object(
                             sys,
@@ -110,11 +124,15 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
                                 "normal group objective",
                                 "--max-cycles",
                                 "1",
+                                "--json",
                             ],
                         ):
                             code = orchestrator_reply_cli.main()
-            self.assertEqual(code, 1)
-            runner.assert_not_called()
+            self.assertEqual(code, 0)
+            runner.assert_called_once()
+            config = captured.get("config")
+            self.assertIsNotNone(config)
+            self.assertEqual(config.max_cycles, 1)
 
     def test_model_settings_defaults(self) -> None:
         args = SimpleNamespace(
@@ -188,6 +206,96 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
             self.assertEqual(config.specialist_model, "gpt-5.3-codex-spark")
             self.assertEqual(config.head_model, "gpt-5.3-codex")
             self.assertEqual(config.head_reasoning_effort, "xhigh")
+
+    def test_main_prints_live_notes_in_non_json_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fake_root = Path(td)
+
+            def _fake_run(config):  # type: ignore[no-untyped-def]
+                callback = config.progress_callback
+                self.assertTrue(callable(callback))
+                assert callback is not None
+                callback(
+                    {
+                        "event": "turn_started",
+                        "selected_groups": ["developer", "quality-assurance"],
+                        "max_cycles": 4,
+                    }
+                )
+                callback({"event": "cycle_started", "cycle": 1})
+                return {
+                    "project_id": "proj-a",
+                    "turn_dir": str(fake_root / "turn"),
+                    "full_report_path": str(fake_root / "full-report.md"),
+                }
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                with patch(
+                    "agents_inc.cli.orchestrator_reply._resolve_project_fabric_root",
+                    return_value=fake_root,
+                ):
+                    with patch("agents_inc.cli.orchestrator_reply.ensure_fabric_root_initialized"):
+                        with patch(
+                            "agents_inc.cli.orchestrator_reply.run_orchestrator_reply",
+                            side_effect=_fake_run,
+                        ):
+                            with patch.object(
+                                sys,
+                                "argv",
+                                [
+                                    "agents-inc-orchestrator-reply",
+                                    "--project-id",
+                                    "proj-a",
+                                    "--message",
+                                    "delegate objective",
+                                ],
+                            ):
+                                code = orchestrator_reply_cli.main()
+            self.assertEqual(code, 0)
+            text = out.getvalue()
+            self.assertIn("live: turn started", text)
+            self.assertIn("live: cycle 1 started", text)
+
+    def test_main_json_mode_suppresses_live_notes(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fake_root = Path(td)
+
+            def _fake_run(config):  # type: ignore[no-untyped-def]
+                self.assertIsNone(config.progress_callback)
+                return {
+                    "project_id": "proj-a",
+                    "turn_dir": str(fake_root / "turn"),
+                    "full_report_path": str(fake_root / "full-report.md"),
+                }
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                with patch(
+                    "agents_inc.cli.orchestrator_reply._resolve_project_fabric_root",
+                    return_value=fake_root,
+                ):
+                    with patch("agents_inc.cli.orchestrator_reply.ensure_fabric_root_initialized"):
+                        with patch(
+                            "agents_inc.cli.orchestrator_reply.run_orchestrator_reply",
+                            side_effect=_fake_run,
+                        ):
+                            with patch.object(
+                                sys,
+                                "argv",
+                                [
+                                    "agents-inc-orchestrator-reply",
+                                    "--project-id",
+                                    "proj-a",
+                                    "--message",
+                                    "delegate objective",
+                                    "--json",
+                                ],
+                            ):
+                                code = orchestrator_reply_cli.main()
+            self.assertEqual(code, 0)
+            payload = json.loads(out.getvalue())
+            self.assertEqual(payload.get("project_id"), "proj-a")
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ from agents_inc.core.codex_app_client import CodexAppClient, CodexAppServerError
 from agents_inc.core.codex_home import codex_launch_env
 from agents_inc.core.orchestrator_reply import OrchestratorReplyConfig, run_orchestrator_reply
 from agents_inc.core.orchestrator_state import load_orchestrator_state, save_orchestrator_state
+from agents_inc.core.progress_notes import format_progress_event
 from agents_inc.core.util.fs import read_text, write_text
 from agents_inc.core.util.time import now_iso
 
@@ -112,12 +113,22 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                 if not objective:
                     print("agents-inc> provide a request after the orchestration prefix")
                     continue
+
+                def _print_live_event(event: dict) -> None:
+                    line = format_progress_event(event)
+                    if not line:
+                        return
+                    print("agents-inc-live>")
+                    print(line)
+                    _append_chat_line(chat_log_path, "agents-inc-live", line)
+
                 result = run_orchestrator_reply(
                     OrchestratorReplyConfig(
                         fabric_root=config.fabric_root,
                         project_id=config.project_id,
                         message=objective,
                         group="",
+                        progress_callback=_print_live_event,
                     )
                 )
                 final_answer_path = Path(str(result.get("final_answer_path") or "")).expanduser()

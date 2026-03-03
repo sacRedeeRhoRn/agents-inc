@@ -19,10 +19,26 @@ from agents_inc.cli import create_project as create_cli  # noqa: E402
 from agents_inc.cli import group_list as group_list_cli  # noqa: E402
 from agents_inc.cli import new_group as new_group_cli  # noqa: E402
 from agents_inc.cli import save_project as save_cli  # noqa: E402
-from agents_inc.core.fabric_lib import ensure_fabric_root_initialized, load_yaml  # noqa: E402
+from agents_inc.core.fabric_lib import (  # noqa: E402
+    FabricError,
+    ensure_fabric_root_initialized,
+    load_yaml,
+)
 
 
 class CLIV5Tests(unittest.TestCase):
+    def test_interactive_group_picker_accepts_group_ids(self) -> None:
+        rows = ["developer", "material-scientist", "quality-assurance"]
+        with patch("builtins.input", side_effect=["developer,material-scientist", "done"]):
+            selected = create_cli._interactive_select_groups(rows)
+        self.assertEqual(selected, ["developer", "material-scientist"])
+
+    def test_interactive_group_picker_cancel(self) -> None:
+        rows = ["developer", "material-scientist"]
+        with patch("builtins.input", side_effect=["cancel"]):
+            with self.assertRaises(FabricError):
+                create_cli._interactive_select_groups(rows)
+
     def test_group_list_outputs_indexed_ids(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             fabric_root = Path(td) / "fabric"
@@ -47,7 +63,10 @@ class CLIV5Tests(unittest.TestCase):
             config_path = Path(td) / ".agents-inc" / "config.yaml"
             with patch(
                 "agents_inc.cli.create_project.run_orchestrator_chat",
-                return_value={"thread_id": "thread-123", "chat_log_path": str(Path(td) / "chat.log")},
+                return_value={
+                    "thread_id": "thread-123",
+                    "chat_log_path": str(Path(td) / "chat.log"),
+                },
             ):
                 with patch.object(
                     sys,
@@ -118,7 +137,10 @@ class CLIV5Tests(unittest.TestCase):
 
             with patch(
                 "agents_inc.cli.create_project.run_orchestrator_chat",
-                return_value={"thread_id": "thread-123", "chat_log_path": str(Path(td) / "chat.log")},
+                return_value={
+                    "thread_id": "thread-123",
+                    "chat_log_path": str(Path(td) / "chat.log"),
+                },
             ):
                 with patch.object(
                     sys,
@@ -173,7 +195,10 @@ class CLIV5Tests(unittest.TestCase):
             config_path = Path(td) / ".agents-inc" / "config.yaml"
             with patch(
                 "agents_inc.cli.create_project.run_orchestrator_chat",
-                return_value={"thread_id": "thread-123", "chat_log_path": str(Path(td) / "chat.log")},
+                return_value={
+                    "thread_id": "thread-123",
+                    "chat_log_path": str(Path(td) / "chat.log"),
+                },
             ):
                 with patch.object(
                     sys,

@@ -14,6 +14,7 @@ class NegotiationCycleRecord:
     refined_objectives: Dict[str, str]
     decisions: Dict[str, dict]
     unsatisfied_groups: List[str]
+    meeting_executed: bool = False
 
 
 def evaluate_negotiation(
@@ -23,7 +24,7 @@ def evaluate_negotiation(
     require_negotiation: bool,
     final_all_satisfied: bool,
 ) -> dict:
-    meeting_cycles = len(cycles)
+    meeting_cycles = sum(1 for record in cycles if bool(record.meeting_executed))
     per_head_actions: Dict[str, dict] = {}
     cross_group_critique_or_request_count = 0
     objective_delta_for_unsatisfied = False

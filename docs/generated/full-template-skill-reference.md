@@ -1,6 +1,6 @@
 # Full Template and Skill Reference
 
-Generated at: `2026-03-03T00:48:21Z`
+Generated at: `2026-03-03T11:13:00Z`
 Fabric root: `/home/msj/Desktop/playground/agents-inc_dev/agents-inc`
 Include generated projects: `True`
 
@@ -3023,12 +3023,12 @@ projects:
     manifest_path: generated/projects/proj-test-alpha/manifest.yaml
     selected_groups:
     - integration-delivery
-    updated_at: '2026-03-03T00:48:21Z'
+    updated_at: '2026-03-03T11:12:59Z'
   proj-test-hpc:
     manifest_path: generated/projects/proj-test-hpc/manifest.yaml
     selected_groups:
     - integration-delivery
-    updated_at: '2026-03-03T00:48:21Z'
+    updated_at: '2026-03-03T11:13:00Z'
 ```
 
 ## 35. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/AGENTS.md`
@@ -4451,7 +4451,7 @@ project_id: proj-test-alpha
 selected_groups:
 - integration-delivery
 install_targets:
-  codex_skill_dir: /tmp/agents-inc-home/.codex/skills/local
+  codex_skill_dir: /home/msj/.codex/skills/local
 router_skill_name: research-router
 bundle_version: 3.0.0
 template_versions:
@@ -5909,7 +5909,7 @@ project_id: proj-test-hpc
 selected_groups:
 - integration-delivery
 install_targets:
-  codex_skill_dir: /tmp/agents-inc-home/.codex/skills/local
+  codex_skill_dir: /home/msj/.codex/skills/local
 router_skill_name: research-router
 bundle_version: 3.0.0
 template_versions:

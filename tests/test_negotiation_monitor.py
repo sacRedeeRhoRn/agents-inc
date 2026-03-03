@@ -49,6 +49,7 @@ class NegotiationMonitorTests(unittest.TestCase):
                     },
                 },
                 unsatisfied_groups=["g1", "g2"],
+                meeting_executed=True,
             )
         ]
         monitor = evaluate_negotiation(
@@ -59,6 +60,25 @@ class NegotiationMonitorTests(unittest.TestCase):
         )
         self.assertTrue(bool(monitor["passed"]))
         self.assertTrue(bool(monitor["checks"]["cross_group_critique_or_request_exists"]))
+
+    def test_runtime_block_cycle_does_not_count_as_meeting(self) -> None:
+        monitor = evaluate_negotiation(
+            selected_groups=["g1", "g2"],
+            cycles=[
+                NegotiationCycleRecord(
+                    cycle_id=1,
+                    objectives={"g1": "a", "g2": "b"},
+                    refined_objectives={"g1": "a", "g2": "b"},
+                    decisions={},
+                    unsatisfied_groups=["g1", "g2"],
+                    meeting_executed=False,
+                )
+            ],
+            require_negotiation=True,
+            final_all_satisfied=False,
+        )
+        self.assertEqual(monitor["meeting_cycles_executed"], 0)
+        self.assertFalse(bool(monitor["checks"]["meeting_cycles_executed_gte_1"]))
 
 
 if __name__ == "__main__":

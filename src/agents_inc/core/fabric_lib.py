@@ -24,6 +24,8 @@ from typing import Dict, List, Optional, Tuple
 
 import yaml
 
+from agents_inc.core.context_state import load_global_context
+
 # ── canonical utility imports (single source of truth) ────────────────────
 from agents_inc.core.util.constants import (  # noqa: F401  (re-exported)
     BUNDLE_VERSION,
@@ -125,6 +127,12 @@ def default_fabric_root(cwd: Optional[Path] = None) -> Path:
         and (base / "schemas").exists()
     ):
         return base
+    context = load_global_context()
+    context_fabric = str(context.get("fabric_root") or "").strip()
+    if context_fabric:
+        candidate = Path(context_fabric).expanduser().resolve()
+        if (candidate / "catalog").exists() and (candidate / "templates").exists():
+            return candidate
     if (base / "agent_group_fabric").exists():
         candidate = (base / "agent_group_fabric").resolve()
         if (candidate / "catalog").exists() and (candidate / "templates").exists():

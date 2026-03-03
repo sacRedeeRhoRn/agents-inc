@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from agents_inc.core.context_state import load_global_context
 from agents_inc.core.fabric_lib import FabricError, load_yaml
 from agents_inc.core.util.fs import dump_yaml, load_yaml_map
 from agents_inc.core.util.time import now_iso, to_stamp  # noqa: F401  (now_iso re-exported)
@@ -11,6 +12,15 @@ STATE_SCHEMA_VERSION = "3.0"
 INDEX_SCHEMA_VERSION = "3.0"
 STATE_REL_DIR = Path(".agents-inc") / "state"
 DEFAULT_INDEX_PATH = Path.home() / ".agents-inc" / "projects-index.yaml"
+
+
+def _find_upward_file(relative_path: Path, *, start: Optional[Path] = None) -> Optional[Path]:
+    current = (start or Path.cwd()).expanduser().resolve()
+    for base in (current, *current.parents):
+        candidate = (base / relative_path).expanduser().resolve()
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def _require_schema(path: Path, payload: dict, expected: str, kind: str) -> None:
@@ -42,6 +52,23 @@ def checkpoints_dir(project_root: Path) -> Path:
 def default_project_index_path(raw: Optional[str] = None) -> Path:
     if raw:
         return Path(raw).expanduser().resolve()
+    global_config_path = (Path.home() / ".agents-inc" / "config.yaml").resolve()
+    global_local_index_path = (Path.home() / ".agents-inc" / "projects" / "index.yaml").resolve()
+    discovered = _find_upward_file(Path(".agents-inc") / "projects" / "index.yaml")
+    if discovered is not None and discovered != global_local_index_path:
+        return discovered
+    discovered_config = _find_upward_file(Path(".agents-inc") / "config.yaml")
+    if discovered_config is not None and discovered_config != global_config_path:
+        return (discovered_config.parent / "projects" / "index.yaml").resolve()
+    context = load_global_context()
+    context_index = str(context.get("project_index") or "").strip()
+    if context_index:
+        return Path(context_index).expanduser().resolve()
+    context_config = str(context.get("config_path") or "").strip()
+    if context_config:
+        return (
+            Path(context_config).expanduser().resolve().parent / "projects" / "index.yaml"
+        ).resolve()
     return DEFAULT_INDEX_PATH
 
 

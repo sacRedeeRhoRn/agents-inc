@@ -118,7 +118,10 @@ def render_blocked_report(
 
     lines.extend(
         [
-            '- `agents-inc orchestrator-reply --project-id {0} --message "{1}"`'.format(
+            (
+                '- `agents-inc orchestrator-reply --project-id {0} --message "{1}" '
+                "--meeting-enabled --require-negotiation true`"
+            ).format(
                 project_id,
                 message.replace('"', "'"),
             ),

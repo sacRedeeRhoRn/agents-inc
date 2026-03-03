@@ -8,10 +8,12 @@ from agents_inc.cli import (
     create_project,
     deactivate_project,
     delete_project,
+    dispatch_dry_run,
     group_list,
     init_session,
     list_sessions,
     new_group,
+    orchestrator_reply,
     project_groups,
     resume,
     save_project,
@@ -42,6 +44,8 @@ def _print_help() -> None:
     print("  deactivate <project-id> deactivate project")
     print("  list                    list projects")
     print("  resume <project-id>     resume project orchestrator chat")
+    print("  dispatch                dry-run deterministic dispatch plan")
+    print("  orchestrator-reply      execute one orchestrator reply turn")
     print("  project-groups          list/add/remove groups for a project")
     print("  delete <project-id>     delete project data (requires confirmation)")
     print("  new-group               launch group creation flow")
@@ -57,6 +61,8 @@ def main() -> int:
         "save": save_project.main,
         "list": list_sessions.main,
         "resume": resume.main,
+        "dispatch": dispatch_dry_run.main,
+        "orchestrator-reply": orchestrator_reply.main,
         "deactivate": deactivate_project.main,
         "delete": delete_project.main,
         "project-groups": project_groups.main,

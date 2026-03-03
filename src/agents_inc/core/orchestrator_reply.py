@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from agents_inc.core.fabric_lib import (
     FabricError,
@@ -69,6 +69,7 @@ class OrchestratorReplyConfig:
     specialist_reasoning_effort: str | None = None
     head_model: str = DEFAULT_HEAD_MODEL
     head_reasoning_effort: str | None = DEFAULT_HEAD_REASONING_EFFORT
+    progress_callback: Callable[[dict], None] | None = None
 
 
 def _turn_id() -> str:
@@ -1049,7 +1050,10 @@ def _render_blocked_report(
 
     lines.extend(
         [
-            '- `agents-inc orchestrator-reply --project-id {0} --message "{1}"`'.format(
+            (
+                '- `agents-inc orchestrator-reply --project-id {0} --message "{1}" '
+                "--meeting-enabled --require-negotiation true`"
+            ).format(
                 project_id,
                 message.replace('"', "'"),
             ),
@@ -1157,6 +1161,17 @@ def _render_key_points(
     return "\n".join(lines).strip() + "\n"
 
 
+def _emit_progress(config: OrchestratorReplyConfig, event: dict) -> None:
+    callback = config.progress_callback
+    if callback is None:
+        return
+    try:
+        callback(event)
+    except Exception:
+        # Progress rendering is best effort and must not break orchestration.
+        return
+
+
 def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     project_id = slugify(config.project_id)
     config = OrchestratorReplyConfig(
@@ -1193,6 +1208,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             config.head_reasoning_effort,
             default=DEFAULT_HEAD_REASONING_EFFORT,
         ),
+        progress_callback=config.progress_callback,
     )
     project_root, project_dir, manifest = _load_project_bundle(config)
     policy = ensure_response_policy(project_root)
@@ -1275,6 +1291,16 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         selected_groups=selected_groups,
         group_manifests=group_manifests,
     )
+    _emit_progress(
+        config,
+        {
+            "event": "turn_started",
+            "project_id": config.project_id,
+            "selected_groups": selected_groups,
+            "max_cycles": config.max_cycles,
+            "heartbeat_sec": config.heartbeat_sec,
+        },
+    )
     blocked_reasons: List[str] = []
     block_status = ""
     cycle = 0
@@ -1300,6 +1326,15 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             blocked_reasons.append("watchdog cycle limit reached before unanimous satisfaction")
             break
 
+        _emit_progress(
+            config,
+            {
+                "event": "cycle_started",
+                "project_id": config.project_id,
+                "cycle": cycle,
+                "selected_groups": selected_groups,
+            },
+        )
         cycle_dir = turn_dir / "cycles" / f"cycle-{cycle:04d}"
         cycle_dir.mkdir(parents=True, exist_ok=True)
         cycle_layer2 = cycle_dir / "layer2"
@@ -1340,6 +1375,8 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 specialist_reasoning_effort=config.specialist_reasoning_effort,
                 head_model=config.head_model,
                 head_reasoning_effort=config.head_reasoning_effort,
+                progress_callback=config.progress_callback,
+                cycle_id=cycle,
             )
         )
         latest_artifacts = _write_turn_latest_artifacts(turn_dir, runtime_result)
@@ -1393,6 +1430,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                     refined_objectives=dict(group_objectives),
                     decisions={},
                     unsatisfied_groups=selected_groups,
+                    meeting_executed=False,
                 )
             )
         if runtime_result.get("blocked"):
@@ -1445,6 +1483,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                     refined_objectives=dict(group_objectives),
                     decisions={},
                     unsatisfied_groups=selected_groups,
+                    meeting_executed=False,
                 )
             )
             break
@@ -1472,6 +1511,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                     refined_objectives=dict(group_objectives),
                     decisions={},
                     unsatisfied_groups=[],
+                    meeting_executed=False,
                 )
             )
             break
@@ -1513,6 +1553,16 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             raw_unsatisfied = matrix.get("unsatisfied_groups", [])
             if isinstance(raw_unsatisfied, list):
                 unsatisfied_groups = [str(item) for item in raw_unsatisfied if str(item).strip()]
+        _emit_progress(
+            config,
+            {
+                "event": "meeting_result",
+                "project_id": config.project_id,
+                "cycle": cycle,
+                "all_satisfied": bool(meeting.get("all_satisfied")),
+                "unsatisfied_groups": unsatisfied_groups,
+            },
+        )
         cycle_records.append(
             NegotiationCycleRecord(
                 cycle_id=cycle,
@@ -1524,6 +1574,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                     else {}
                 ),
                 unsatisfied_groups=unsatisfied_groups,
+                meeting_executed=True,
             )
         )
         if bool(meeting.get("all_satisfied")):
@@ -1584,6 +1635,15 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         blocked_reasons.append("no web evidence URLs and no artifact citation refs available")
 
     if block_status:
+        _emit_progress(
+            config,
+            {
+                "event": "turn_blocked",
+                "project_id": config.project_id,
+                "status": block_status,
+                "reason_count": len(blocked_reasons),
+            },
+        )
         quality = _quality_gate(
             mode=mode,
             answer_text="",
@@ -1681,6 +1741,15 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     quality["timed_out_specialist_count"] = len(timed_out_specialists)
 
     if not quality.get("passed"):
+        _emit_progress(
+            config,
+            {
+                "event": "turn_blocked",
+                "project_id": config.project_id,
+                "status": "BLOCKED_QUALITY_GATE",
+                "reason_count": 1,
+            },
+        )
         quality["block_status"] = "BLOCKED_QUALITY_GATE"
         quality["block_reasons"] = ["group-mode final answer failed quality checks"]
         write_text(turn_dir / "final-answer-quality.json", stable_json(quality) + "\n")
@@ -1774,6 +1843,14 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         turn_dir=turn_dir,
     )
     write_text(key_points_path, key_points)
+    _emit_progress(
+        config,
+        {
+            "event": "turn_completed",
+            "project_id": config.project_id,
+            "cycles_executed": cycle,
+        },
+    )
 
     return {
         "mode": mode,

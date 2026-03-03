@@ -40,7 +40,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--projects-root", default=None, help="projects root path")
     parser.add_argument("--config-path", default=None, help="config path")
     parser.add_argument("--project-index", default=None, help="project index path")
-    parser.add_argument("--groups", default="", help="comma-separated group ids (skip interactive picker)")
+    parser.add_argument(
+        "--groups", default="", help="comma-separated group ids (skip interactive picker)"
+    )
     parser.add_argument("--no-launch", action="store_true", help="skip launching managed chat")
     parser.add_argument("--json", action="store_true", help="emit summary as JSON")
     parser.add_argument(
@@ -62,21 +64,29 @@ def _print_picker(rows: List[str], selected: Set[str]) -> None:
         print(f"{index:>2}. {mark} {gid}")
     print("")
     print("Selection commands:")
-    print("- enter index numbers (e.g. 1 or 1,3,5) to toggle")
+    print("- enter index numbers or group ids (e.g. 1 or developer,material-scientist) to toggle")
     print("- 'all' to select all")
     print("- 'none' to clear")
     print("- 'show' to reprint list")
     print("- 'done' to finish")
+    print("- 'cancel' to abort")
 
 
 def _interactive_select_groups(rows: List[str]) -> List[str]:
     selected: Set[str] = set()
+    available = set(rows)
     _print_picker(rows, selected)
     while True:
-        raw = input("select> ").strip().lower()
+        try:
+            raw = input("select> ").strip().lower()
+        except EOFError as exc:  # pragma: no cover - shell-dependent
+            raise FabricError("group selection aborted (stdin closed)") from exc
         if not raw:
             continue
         if raw == "show":
+            _print_picker(rows, selected)
+            continue
+        if raw in {"help", "?"}:
             _print_picker(rows, selected)
             continue
         if raw == "all":
@@ -87,28 +97,40 @@ def _interactive_select_groups(rows: List[str]) -> List[str]:
             selected = set()
             print("cleared selection")
             continue
+        if raw in {"cancel", "quit", "exit", "q"}:
+            raise FabricError("group selection cancelled by user")
         if raw == "done":
             if not selected:
                 print("select at least one group before 'done'")
                 continue
             return [gid for gid in rows if gid in selected]
         parts = [part.strip() for part in raw.split(",") if part.strip()]
-        bad = [part for part in parts if not part.isdigit()]
-        if bad:
-            print(f"invalid tokens: {', '.join(bad)}")
-            continue
         toggled = []
+        bad = []
         for part in parts:
-            index = int(part)
-            if index < 1 or index > len(rows):
-                print(f"index out of range: {index}")
-                continue
-            gid = rows[index - 1]
+            gid = ""
+            if part.isdigit():
+                index = int(part)
+                if index < 1 or index > len(rows):
+                    bad.append(part)
+                    continue
+                gid = rows[index - 1]
+            else:
+                candidate = slugify(part)
+                if candidate in available:
+                    gid = candidate
+                else:
+                    bad.append(part)
+                    continue
             if gid in selected:
                 selected.remove(gid)
             else:
                 selected.add(gid)
             toggled.append(gid)
+        if bad:
+            print(
+                "invalid tokens: {0} (use index numbers or exact group ids)".format(", ".join(bad))
+            )
         if toggled:
             print("toggled:", ", ".join(toggled))
 

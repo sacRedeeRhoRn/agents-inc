@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agents-inc"
-version = "4.0.0"
+version = "4.0.1"
 description = "Publication-ready multi-agent group fabric and router orchestration toolkit for Codex sessions"
 readme = "README.md"
 requires-python = ">=3.8"

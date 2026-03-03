@@ -3,15 +3,13 @@ from __future__ import annotations
 import json
 import shutil
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed, wait
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from agents_inc.core.agent_session_runner import AgentRunConfig, AgentSessionRunner
 from agents_inc.core.agent_threads import (
-    get_head_thread,
-    get_specialist_thread,
     set_head_thread,
     set_specialist_thread,
 )
@@ -28,6 +26,15 @@ from agents_inc.core.model_profiles import (
 )
 from agents_inc.core.util.dispatch import gate_specialist_output
 from agents_inc.core.util.edges import resolve_handoff_edges
+
+HEAD_MIN_TIMEOUT_SEC = 480
+HEAD_MAX_TIMEOUT_SEC = 1800
+HEAD_TIMEOUT_MULTIPLIER = 3
+HEAD_PROMPT_MAX_SPECIALISTS = 16
+HEAD_PROMPT_MAX_CLAIMS_PER_SPECIALIST = 2
+HEAD_PROMPT_MAX_ARTIFACTS_PER_SPECIALIST = 3
+HEAD_PROMPT_CLAIM_PREVIEW_CHARS = 180
+HEAD_PROMPT_CITATION_PREVIEW_CHARS = 180
 
 
 @dataclass
@@ -52,6 +59,8 @@ class LayeredRuntimeConfig:
     specialist_reasoning_effort: str | None = None
     head_model: str = DEFAULT_HEAD_MODEL
     head_reasoning_effort: str | None = DEFAULT_HEAD_REASONING_EFFORT
+    progress_callback: Callable[[dict], None] | None = None
+    cycle_id: int = 0
 
 
 @dataclass
@@ -86,6 +95,16 @@ class HeadResult:
     visible_skills: List[str]
     mount_status: Dict[str, object]
     error: str
+
+
+def _emit_progress(config: LayeredRuntimeConfig, event: dict) -> None:
+    callback = config.progress_callback
+    if callback is None:
+        return
+    try:
+        callback(event)
+    except Exception:
+        return
 
 
 def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
@@ -189,6 +208,7 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
             "blocked_groups": sorted(config.selected_groups),
             "reasons": blocked_reasons,
             "timed_out_specialists": [],
+            "specialist_failures": [],
             "agent_timeout_sec": config.agent_timeout_sec,
             "agent_timeout_mode": _timeout_mode(config.agent_timeout_sec),
             "group_head_sessions_path": str(layer3_dir / "group-head-sessions.json"),
@@ -205,6 +225,7 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
     )
 
     timed_out_specialists: List[dict] = []
+    specialist_failures: List[dict] = []
     with ThreadPoolExecutor(max_workers=max_group_workers) as pool:
         future_map = {
             pool.submit(
@@ -220,24 +241,86 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
             ): group_id
             for group_id in config.selected_groups
         }
-        for future in as_completed(future_map):
-            group_id = future_map[future]
-            result = future.result()
-            group_results[group_id] = result
-            timed_out_rows = result.get("timed_out_specialists", [])
-            if isinstance(timed_out_rows, list):
-                for row in timed_out_rows:
-                    if isinstance(row, dict):
-                        timed_out_specialists.append(row)
-            escalation_rows = result.get("escalations", [])
-            if isinstance(escalation_rows, list):
-                for row in escalation_rows:
-                    if isinstance(row, dict):
-                        escalations.append(row)
-            if result["status"] != "COMPLETE":
-                blocked_reasons.append(
-                    f"group '{group_id}' {result['status'].lower()}: {result.get('error', 'no detail')}"
+        heartbeat_every = max(1, int(config.heartbeat_sec))
+        next_heartbeat = time.monotonic() + heartbeat_every
+        pending = set(future_map.keys())
+        while pending:
+            timeout = max(0.0, next_heartbeat - time.monotonic())
+            done, pending = wait(pending, timeout=timeout, return_when=FIRST_COMPLETED)
+            if not done:
+                completed_groups = sorted(group_results.keys())
+                pending_groups = sorted(future_map[future] for future in pending)
+                _emit_progress(
+                    config,
+                    {
+                        "event": "runtime_heartbeat",
+                        "project_id": config.project_id,
+                        "cycle": int(config.cycle_id),
+                        "completed_groups": len(completed_groups),
+                        "total_groups": len(config.selected_groups),
+                        "pending_groups": pending_groups,
+                    },
                 )
+                next_heartbeat = time.monotonic() + heartbeat_every
+                continue
+
+            for future in done:
+                group_id = future_map[future]
+                result = future.result()
+                group_results[group_id] = result
+                _emit_progress(
+                    config,
+                    {
+                        "event": "runtime_group_done",
+                        "project_id": config.project_id,
+                        "cycle": int(config.cycle_id),
+                        "group_id": group_id,
+                        "status": str(result.get("status") or "UNKNOWN"),
+                    },
+                )
+                timed_out_rows = result.get("timed_out_specialists", [])
+                if isinstance(timed_out_rows, list):
+                    for row in timed_out_rows:
+                        if isinstance(row, dict):
+                            timed_out_specialists.append(row)
+                escalation_rows = result.get("escalations", [])
+                if isinstance(escalation_rows, list):
+                    for row in escalation_rows:
+                        if isinstance(row, dict):
+                            escalations.append(row)
+                if result["status"] != "COMPLETE":
+                    blocked_reasons.append(
+                        f"group '{group_id}' {result['status'].lower()}: {result.get('error', 'no detail')}"
+                    )
+                    failure_rows = result.get("specialist_failures", [])
+                    if isinstance(failure_rows, list):
+                        for row in failure_rows:
+                            if not isinstance(row, dict):
+                                continue
+                            specialist_failures.append(row)
+                            specialist_id = str(row.get("specialist_id") or "").strip()
+                            error_text = str(row.get("error") or "").strip()
+                            if not specialist_id or not error_text:
+                                continue
+                            detail = f"group '{group_id}' specialist '{specialist_id}' failed: {error_text}"
+                            if detail not in blocked_reasons:
+                                blocked_reasons.append(detail)
+
+            if time.monotonic() >= next_heartbeat:
+                completed_groups = sorted(group_results.keys())
+                pending_groups = sorted(future_map[future] for future in pending)
+                _emit_progress(
+                    config,
+                    {
+                        "event": "runtime_heartbeat",
+                        "project_id": config.project_id,
+                        "cycle": int(config.cycle_id),
+                        "completed_groups": len(completed_groups),
+                        "total_groups": len(config.selected_groups),
+                        "pending_groups": pending_groups,
+                    },
+                )
+                next_heartbeat = time.monotonic() + heartbeat_every
 
     # Same-layer cooperation: head-to-head consume from exposed only.
     active = set(config.selected_groups)
@@ -298,6 +381,7 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
         "blocked_groups": wait_state["blocked_groups"],
         "reasons": blocked_reasons,
         "timed_out_specialists": timed_out_specialists,
+        "specialist_failures": specialist_failures,
         "agent_timeout_sec": config.agent_timeout_sec,
         "agent_timeout_mode": _timeout_mode(config.agent_timeout_sec),
         "group_head_sessions_path": str(layer3_dir / "group-head-sessions.json"),
@@ -327,6 +411,7 @@ def _run_group(
     group_error = ""
     timed_out_specialists: List[dict] = []
     group_escalations: List[dict] = []
+    specialist_failures: List[dict] = []
 
     for phase in dispatch.get("phases", []):
         if _abort_requested(config):
@@ -377,6 +462,20 @@ def _run_group(
                     )
                 if isinstance(result.escalation_request, dict):
                     group_escalations.append(result.escalation_request)
+                if not result.success:
+                    failure_entry = {
+                        "group_id": group_id,
+                        "specialist_id": result.specialist_id,
+                        "role": result.role,
+                        "attempts": result.attempt,
+                        "timed_out": bool(result.timed_out),
+                        "error": str(result.error or f"specialist '{result.specialist_id}' failed"),
+                    }
+                    if isinstance(result.escalation_request, dict):
+                        failure_entry["escalation_type"] = str(
+                            result.escalation_request.get("type", "custom")
+                        )
+                    specialist_failures.append(failure_entry)
                 if not result.success and not group_error:
                     if isinstance(result.escalation_request, dict):
                         group_error = (
@@ -427,6 +526,7 @@ def _run_group(
             "error": group_error,
             "timed_out_specialists": timed_out_specialists,
             "escalations": group_escalations,
+            "specialist_failures": specialist_failures,
         }
 
     head_result = _run_head_with_retries(
@@ -466,6 +566,7 @@ def _run_group(
             "error": head_result.error,
             "timed_out_specialists": timed_out_specialists,
             "escalations": group_escalations,
+            "specialist_failures": specialist_failures,
         }
 
     exposed = config.project_dir / "agent-groups" / group_id / "exposed"
@@ -582,6 +683,7 @@ def _run_group(
         "specialist_count": len(phase_outputs),
         "timed_out_specialists": timed_out_specialists,
         "escalations": group_escalations,
+        "specialist_failures": specialist_failures,
     }
 
 
@@ -650,6 +752,7 @@ def _run_specialist_with_retries(
         )
 
     timed_out = False
+    retry_gate_reasons: List[str] = []
     for attempt in range(1, attempts_total + 1):
         specialist_sessions[group_id][specialist_id]["status"] = "RUNNING"
         specialist_sessions[group_id][specialist_id]["attempts"] = attempt
@@ -669,6 +772,7 @@ def _run_specialist_with_retries(
                 "work_path": str(work_path),
                 "handoff_path": str(handoff_path),
             },
+            retry_gate_reasons=retry_gate_reasons,
         )
 
         result = runner.run(
@@ -681,7 +785,8 @@ def _run_specialist_with_retries(
                 timeout_sec=config.agent_timeout_sec,
                 web_search=web_search_enabled,
                 codex_home=codex_home,
-                thread_id=get_specialist_thread(config.project_root, group_id, specialist_id),
+                # Specialists start fresh each run to avoid stale cross-turn context drift.
+                thread_id=None,
                 session_label=f"{group_id}/{specialist_id}",
                 model=config.specialist_model,
                 model_reasoning_effort=config.specialist_reasoning_effort,
@@ -833,6 +938,9 @@ def _run_specialist_with_retries(
                 )
                 if attempt < attempts_total and int(config.retry_backoff_sec) > 0:
                     time.sleep(int(config.retry_backoff_sec))
+                retry_gate_reasons = [
+                    str(item).strip() for item in gate_reasons if str(item).strip()
+                ]
                 continue
 
             write_text(work_path, result.parsed_work.rstrip() + "\n")
@@ -973,14 +1081,7 @@ def _run_head_with_retries(
     redacted_log_path = group_layer3 / "head-redacted.log"
 
     head_skill = str(dispatch.get("head_skill") or "").strip()
-    specialist_skills: List[str] = []
-    for phase in dispatch.get("phases", []):
-        for task in phase.get("tasks", []):
-            skill_name = str(task.get("skill_name") or "").strip()
-            if skill_name and skill_name not in specialist_skills:
-                specialist_skills.append(skill_name)
-
-    allowed_skills = [head_skill] + specialist_skills
+    allowed_skills = [head_skill] if head_skill else []
     codex_home, visible_skills, missing_skills, mount_status = _prepare_agent_codex_home(
         config=config,
         runtime_dir=group_layer3,
@@ -1014,6 +1115,7 @@ def _run_head_with_retries(
         dispatch=dispatch,
         phase_outputs=phase_outputs,
     )
+    head_timeout_sec = _resolve_head_timeout_sec(config.agent_timeout_sec)
 
     for attempt in range(1, attempts_total + 1):
         group_work_dir = config.project_dir / "agent-groups" / group_id
@@ -1025,10 +1127,11 @@ def _run_head_with_retries(
                 prompt=prompt,
                 raw_log_path=raw_log_path,
                 redacted_log_path=redacted_log_path,
-                timeout_sec=config.agent_timeout_sec,
-                web_search=True,
+                timeout_sec=head_timeout_sec,
+                web_search=False,
                 codex_home=codex_home,
-                thread_id=get_head_thread(config.project_root, group_id),
+                # Heads must start fresh each run to avoid stale cross-turn context bloat.
+                thread_id=None,
                 session_label=f"{group_id}/head",
                 model=config.head_model,
                 model_reasoning_effort=config.head_reasoning_effort,
@@ -1112,6 +1215,44 @@ def _run_head_with_retries(
     )
 
 
+def _role_specific_contract(role: str) -> Tuple[List[str], List[str]]:
+    role_name = str(role or "").strip().lower()
+    if role_name == "integration":
+        return (
+            [
+                "Include dependencies_consumed as a JSON list.",
+                "Include integration_risks as a JSON list.",
+            ],
+            [
+                '  "dependencies_consumed": [],',
+                '  "integration_risks": [],',
+            ],
+        )
+    if role_name == "evidence-review":
+        return (
+            [
+                "Include contradictions field (false when none).",
+                "Include unsupported_claims as a JSON list.",
+            ],
+            [
+                '  "contradictions": false,',
+                '  "unsupported_claims": [],',
+            ],
+        )
+    if role_name == "repro-qa":
+        return (
+            [
+                "Include repro_commands as a non-empty JSON list.",
+                "Include expected_outputs as a non-empty JSON list.",
+            ],
+            [
+                '  "repro_commands": ["<exact command>"],',
+                '  "expected_outputs": ["<observable output>"],',
+            ],
+        )
+    return ([], [])
+
+
 def _build_specialist_prompt(
     *,
     objective: str,
@@ -1124,12 +1265,30 @@ def _build_specialist_prompt(
     required_outputs: object,
     required_references: object,
     artifact_scope: dict,
+    retry_gate_reasons: List[str] | None = None,
 ) -> str:
     activation = (
         f"Activate and follow the `${skill_name}` skill if available, then proceed.\n"
         if str(skill_name or "").strip()
         else ""
     )
+    role_requirements, role_handoff_fields = _role_specific_contract(role)
+    role_requirements_text = ""
+    if role_requirements:
+        role_requirements_text = "Role-specific requirements:\n" + "\n".join(
+            f"- {item}" for item in role_requirements
+        )
+        role_requirements_text += "\n"
+    retry_feedback_text = ""
+    if retry_gate_reasons:
+        retry_items = [str(item).strip() for item in retry_gate_reasons if str(item).strip()]
+        if retry_items:
+            retry_feedback_text = (
+                "Retry correction checklist from prior gate failure (MUST satisfy all):\n"
+                + "\n".join(f"- {item}" for item in retry_items)
+                + "\n"
+            )
+    role_handoff_text = "".join(f"{line}\n" for line in role_handoff_fields)
     return activation + (
         "You are a specialist agent in a layered multi-agent research runtime. "
         "Work only in your scope and produce structured output.\n"
@@ -1145,20 +1304,26 @@ def _build_specialist_prompt(
         "1. Include claim-level citations for all key technical claims.\n"
         "2. Include reproducibility steps and artifact paths.\n"
         "3. If evidence is missing, set status to BLOCKED_NEEDS_EVIDENCE with reasons.\n"
-        "4. If privileged access or unknown external credentials are required, write ESCALATION_REQUEST.json in your working directory.\n"
-        "Return ONLY with these exact blocks:\n"
+        "4. If privileged access or unknown external credentials are required, write "
+        "ESCALATION_REQUEST.json in your working directory.\n"
+        + role_requirements_text
+        + retry_feedback_text
+        + "Return ONLY with these exact blocks:\n"
         "BEGIN_WORK\n"
         "<markdown work notes>\n"
         "END_WORK\n"
         "BEGIN_HANDOFF_JSON\n"
         "{\n"
         '  "status": "COMPLETE",\n'
+        '  "execution_status": "COMPLETE",\n'
         '  "assumptions": [],\n'
         '  "claims_with_citations": [{"claim": "...", "citation": "..."}],\n'
         '  "repro_steps": ["..."],\n'
         '  "artifact_paths": ["..."],\n'
         '  "produced_artifacts": ["..."],\n'
-        '  "dependencies_satisfied": true\n'
+        '  "citations_summary": {"count": 1, "has_web_url": true},\n'
+        + role_handoff_text
+        + '  "dependencies_satisfied": true\n'
         "}\n"
         "END_HANDOFF_JSON\n"
         f"Artifact scope target work_path={artifact_scope['work_path']} handoff_path={artifact_scope['handoff_path']}\n"
@@ -1174,24 +1339,64 @@ def _build_head_prompt(
     phase_outputs: Dict[str, SpecialistResult],
 ) -> str:
     input_rows: List[dict] = []
-    for specialist_id, output in sorted(phase_outputs.items()):
+    for specialist_id, output in sorted(phase_outputs.items())[:HEAD_PROMPT_MAX_SPECIALISTS]:
         handoff_path = Path(output.handoff_path)
-        claim_preview = ""
+        status = ""
+        dependencies_satisfied: Optional[bool] = None
+        citation_count = 0
+        has_web_url = False
+        claim_preview_rows: List[dict] = []
+        artifact_preview: List[str] = []
         if handoff_path.exists():
             try:
                 payload = json.loads(handoff_path.read_text(encoding="utf-8"))
+                status = str(payload.get("status") or payload.get("execution_status") or "").strip()
+                deps_value = payload.get("dependencies_satisfied")
+                if isinstance(deps_value, bool):
+                    dependencies_satisfied = deps_value
+                summary = payload.get("citations_summary")
+                if isinstance(summary, dict):
+                    try:
+                        citation_count = int(summary.get("count") or 0)
+                    except Exception:
+                        citation_count = 0
+                    has_web_url = bool(summary.get("has_web_url"))
+
                 claims = payload.get("claims_with_citations", [])
-                if isinstance(claims, list) and claims:
-                    first = claims[0]
-                    if isinstance(first, dict):
-                        claim_preview = str(first.get("claim") or "")[:180]
+                if isinstance(claims, list):
+                    for claim in claims[:HEAD_PROMPT_MAX_CLAIMS_PER_SPECIALIST]:
+                        if not isinstance(claim, dict):
+                            continue
+                        claim_text = str(claim.get("claim") or "").strip()
+                        citation = str(claim.get("citation") or "").strip()
+                        if claim_text or citation:
+                            claim_preview_rows.append(
+                                {
+                                    "claim": claim_text[:HEAD_PROMPT_CLAIM_PREVIEW_CHARS],
+                                    "citation": citation[:HEAD_PROMPT_CITATION_PREVIEW_CHARS],
+                                }
+                            )
+
+                artifact_rows = payload.get("produced_artifacts")
+                if not isinstance(artifact_rows, list):
+                    artifact_rows = payload.get("artifact_paths")
+                if isinstance(artifact_rows, list):
+                    for item in artifact_rows[:HEAD_PROMPT_MAX_ARTIFACTS_PER_SPECIALIST]:
+                        text = str(item).strip()
+                        if text:
+                            artifact_preview.append(text)
             except Exception:
-                claim_preview = ""
+                status = ""
         input_rows.append(
             {
                 "specialist_id": specialist_id,
+                "status": status or "UNKNOWN",
+                "dependencies_satisfied": dependencies_satisfied,
+                "citation_count": citation_count,
+                "has_web_url": has_web_url,
+                "claims": claim_preview_rows,
+                "produced_artifacts": artifact_preview,
                 "handoff_path": str(handoff_path),
-                "claim_preview": claim_preview,
             }
         )
 
@@ -1207,11 +1412,12 @@ def _build_head_prompt(
         f"Objective: {objective}\n"
         f"Group: {group_id}\n"
         f"Dispatch metadata: {json.dumps({'head_agent': dispatch.get('head_agent'), 'head_skill': dispatch.get('head_skill')}, ensure_ascii=True)}\n"
-        f"Specialist inputs: {json.dumps(input_rows, ensure_ascii=True)}\n"
+        f"Specialist summaries (canonical): {json.dumps(input_rows, ensure_ascii=True)}\n"
         "Rules:\n"
-        "1. Consume specialist handoff artifacts listed above.\n"
-        "2. Resolve conflicts and report unresolved assumptions explicitly.\n"
-        "3. Publish only group-level artifacts and citations.\n"
+        "1. Use only the specialist summaries provided above as input. Do not perform web searches.\n"
+        "2. Avoid broad filesystem crawling; read at most one specialist handoff file only if a required field is missing.\n"
+        "3. Resolve conflicts and report unresolved assumptions explicitly.\n"
+        "4. Publish only group-level artifacts and citations.\n"
         "Return ONLY these exact blocks:\n"
         "BEGIN_WORK\n"
         "<group summary markdown>\n"
@@ -1227,6 +1433,18 @@ def _build_head_prompt(
         "}\n"
         "END_HANDOFF_JSON\n"
     )
+
+
+def _resolve_head_timeout_sec(timeout_sec: int) -> int:
+    try:
+        parsed = int(timeout_sec)
+    except Exception:
+        parsed = 0
+    if parsed <= 0:
+        return 0
+    scaled = parsed * HEAD_TIMEOUT_MULTIPLIER
+    bounded = max(parsed, max(HEAD_MIN_TIMEOUT_SEC, scaled))
+    return min(HEAD_MAX_TIMEOUT_SEC, bounded)
 
 
 def _prepare_agent_codex_home(

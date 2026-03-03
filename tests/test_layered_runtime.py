@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 import tempfile
+import time
 import unittest
 from copy import deepcopy
 from pathlib import Path
@@ -15,13 +16,16 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from agents_inc.core.agent_session_runner import AgentSessionRunner  # noqa: E402
 from agents_inc.core.layered_runtime import (  # noqa: E402
     LayeredRuntimeConfig,
+    _build_head_prompt,
+    _build_specialist_prompt,
     _prepare_agent_codex_home,
+    _resolve_head_timeout_sec,
     _symlink_or_copy,
     run_layered_runtime,
 )
-from agents_inc.core.agent_session_runner import AgentSessionRunner  # noqa: E402
 
 
 class LayeredRuntimeMountTests(unittest.TestCase):
@@ -122,6 +126,155 @@ class LayeredRuntimeMountTests(unittest.TestCase):
                 self.assertIsNone(cfg.model_reasoning_effort)
             self.assertEqual(head_runs[0].model, "gpt-5.3-codex")
             self.assertEqual(head_runs[0].model_reasoning_effort, "xhigh")
+
+    def test_runtime_emits_heartbeat_and_group_completion_events(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_root = root / "project-root"
+            project_dir = root / "project-dir"
+            turn_dir = root / "turn-001"
+            project_root.mkdir(parents=True, exist_ok=True)
+            project_dir.mkdir(parents=True, exist_ok=True)
+            turn_dir.mkdir(parents=True, exist_ok=True)
+
+            developer_manifest = yaml.safe_load(
+                (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+            )
+            qa_manifest = yaml.safe_load(
+                (ROOT / "catalog" / "groups" / "quality-assurance.yaml").read_text(encoding="utf-8")
+            )
+            self.assertIsInstance(developer_manifest, dict)
+            self.assertIsInstance(qa_manifest, dict)
+
+            events: list[dict] = []
+
+            def _fake_group(*args, **kwargs):  # type: ignore[no-untyped-def]
+                group_id = str(args[1])
+                time.sleep(1.2)
+                return {
+                    "status": "COMPLETE",
+                    "started_at": "2026-03-03T00:00:00Z",
+                    "finished_at": "2026-03-03T00:00:01Z",
+                    "error": "",
+                    "timed_out_specialists": [],
+                    "escalations": [],
+                    "specialist_failures": [],
+                    "group_id": group_id,
+                }
+
+            runtime_config = LayeredRuntimeConfig(
+                project_id="proj-heartbeat",
+                project_root=project_root,
+                project_dir=project_dir,
+                turn_dir=turn_dir,
+                message="test runtime heartbeat",
+                selected_groups=["developer", "quality-assurance"],
+                group_manifests={
+                    "developer": deepcopy(developer_manifest),
+                    "quality-assurance": deepcopy(qa_manifest),
+                },
+                heartbeat_sec=1,
+                max_parallel=2,
+                cycle_id=2,
+                progress_callback=lambda event: events.append(dict(event)),
+            )
+
+            with patch("agents_inc.core.layered_runtime._run_group", side_effect=_fake_group):
+                result = run_layered_runtime(runtime_config)
+
+            self.assertFalse(bool(result.get("blocked")))
+            event_names = {str(row.get("event")) for row in events if isinstance(row, dict)}
+            self.assertIn("runtime_heartbeat", event_names)
+            self.assertIn("runtime_group_done", event_names)
+
+    def test_specialist_prompt_includes_role_specific_requirements(self) -> None:
+        base_kwargs = {
+            "objective": "test objective",
+            "group_id": "developer",
+            "specialist_id": "integration-specialist",
+            "focus": "integration focus",
+            "skill_name": "",
+            "dependencies": [],
+            "required_outputs": [],
+            "required_references": [],
+            "artifact_scope": {"work_path": "work.md", "handoff_path": "handoff.json"},
+        }
+        integration_prompt = _build_specialist_prompt(role="integration", **base_kwargs)
+        self.assertIn('"dependencies_consumed": []', integration_prompt)
+        self.assertIn('"integration_risks": []', integration_prompt)
+
+        evidence_prompt = _build_specialist_prompt(role="evidence-review", **base_kwargs)
+        self.assertIn('"contradictions": false', evidence_prompt)
+        self.assertIn('"unsupported_claims": []', evidence_prompt)
+
+        repro_prompt = _build_specialist_prompt(role="repro-qa", **base_kwargs)
+        self.assertIn('"repro_commands": ["<exact command>"]', repro_prompt)
+        self.assertIn('"expected_outputs": ["<observable output>"]', repro_prompt)
+
+    def test_specialist_prompt_includes_retry_gate_feedback(self) -> None:
+        prompt = _build_specialist_prompt(
+            objective="test objective",
+            group_id="developer",
+            specialist_id="integration-specialist",
+            role="integration",
+            focus="integration focus",
+            skill_name="",
+            dependencies=[],
+            required_outputs=[],
+            required_references=[],
+            artifact_scope={"work_path": "work.md", "handoff_path": "handoff.json"},
+            retry_gate_reasons=[
+                "integration dependencies_consumed must be a list",
+                "integration integration_risks must be a list",
+            ],
+        )
+        self.assertIn("Retry correction checklist from prior gate failure", prompt)
+        self.assertIn("integration dependencies_consumed must be a list", prompt)
+        self.assertIn("integration integration_risks must be a list", prompt)
+
+    def test_resolve_head_timeout_sec_scales_and_bounds(self) -> None:
+        self.assertEqual(_resolve_head_timeout_sec(0), 0)
+        self.assertEqual(_resolve_head_timeout_sec(-1), 0)
+        self.assertEqual(_resolve_head_timeout_sec(120), 480)
+        self.assertEqual(_resolve_head_timeout_sec(180), 540)
+        self.assertEqual(_resolve_head_timeout_sec(900), 1800)
+
+    def test_build_head_prompt_includes_no_web_search_rule(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            handoff = root / "handoff.json"
+            handoff.write_text(
+                yaml.safe_dump(
+                    {
+                        "status": "COMPLETE",
+                        "dependencies_satisfied": True,
+                        "citations_summary": {"count": 1, "has_web_url": True},
+                        "claims_with_citations": [
+                            {"claim": "Claim A", "citation": "https://example.org/a"}
+                        ],
+                        "produced_artifacts": ["artifact-a"],
+                    },
+                    sort_keys=True,
+                ),
+                encoding="utf-8",
+            )
+
+            phase_outputs = {
+                "web-research-specialist": type(
+                    "Row",
+                    (),
+                    {"handoff_path": str(handoff)},
+                )()
+            }
+            prompt = _build_head_prompt(
+                objective="test",
+                group_id="developer",
+                dispatch={"head_agent": "head", "head_skill": "dev-head"},
+                phase_outputs=phase_outputs,  # type: ignore[arg-type]
+            )
+            self.assertIn("Do not perform web searches", prompt)
+            self.assertIn("Specialist summaries (canonical)", prompt)
+            self.assertIn("web-research-specialist", prompt)
 
 
 if __name__ == "__main__":

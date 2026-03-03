@@ -51,6 +51,16 @@ def _simplify_rows(rows: list[dict]) -> list[dict]:
     return simplified
 
 
+def _filter_rows(rows: list[dict], *, include_stale: bool) -> list[dict]:
+    visible: list[dict] = []
+    for row in rows:
+        status = str(row.get("status") or "").strip().lower()
+        if status == "stale" and not include_stale:
+            continue
+        visible.append(row)
+    return visible
+
+
 def _print_table(rows: list[dict]) -> None:
     if not rows:
         print("no sessions found")
@@ -80,12 +90,8 @@ def main() -> int:
         if not args.no_scan:
             sync_index_from_scan(project_index_path, scan_root)
 
-        rows = _simplify_rows(
-            list_index_projects(
-                project_index_path,
-                include_stale=bool(args.include_stale),
-            )
-        )
+        rows = _simplify_rows(list_index_projects(project_index_path, include_stale=True))
+        rows = _filter_rows(rows, include_stale=bool(args.include_stale))
         payload = {
             "count": len(rows),
             "sessions": rows,
