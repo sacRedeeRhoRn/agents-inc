@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import time
@@ -17,10 +18,12 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from agents_inc.core.agent_session_runner import AgentSessionRunner  # noqa: E402
+from agents_inc.core.evidence_cache import load_evidence_cache  # noqa: E402
 from agents_inc.core.layered_runtime import (  # noqa: E402
     LayeredRuntimeConfig,
     _build_head_prompt,
     _build_specialist_prompt,
+    _hydrate_evidence_refs_from_cache,
     _prepare_agent_codex_home,
     _resolve_head_timeout_sec,
     _symlink_or_copy,
@@ -124,8 +127,55 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             for cfg in specialist_runs:
                 self.assertEqual(cfg.model, "gpt-5.3-codex-spark")
                 self.assertIsNone(cfg.model_reasoning_effort)
+                self.assertTrue(bool(cfg.disable_mcp))
+                if str(cfg.session_label).endswith("/web-research-specialist"):
+                    self.assertTrue(bool(cfg.web_search))
+                else:
+                    self.assertFalse(bool(cfg.web_search))
             self.assertEqual(head_runs[0].model, "gpt-5.3-codex")
             self.assertEqual(head_runs[0].model_reasoning_effort, "xhigh")
+            self.assertFalse(bool(head_runs[0].disable_mcp))
+
+    def test_web_search_policy_all_enabled_applies_to_all_specialists(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_root = root / "project-root"
+            project_dir = root / "project-dir"
+            turn_dir = root / "turn-001"
+            project_root.mkdir(parents=True, exist_ok=True)
+            project_dir.mkdir(parents=True, exist_ok=True)
+            turn_dir.mkdir(parents=True, exist_ok=True)
+
+            group_manifest = yaml.safe_load(
+                (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+            )
+            self.assertIsInstance(group_manifest, dict)
+            runtime_config = LayeredRuntimeConfig(
+                project_id="proj-web-policy",
+                project_root=project_root,
+                project_dir=project_dir,
+                turn_dir=turn_dir,
+                message="test web-search policy",
+                selected_groups=["developer"],
+                group_manifests={"developer": deepcopy(group_manifest)},
+                web_search_policy="all-enabled",
+            )
+
+            captured = []
+            original_run = AgentSessionRunner.run
+
+            def _capture_run(self, config):  # type: ignore[no-untyped-def]
+                captured.append(config)
+                return original_run(self, config)
+
+            with patch.dict("os.environ", {"AGENTS_INC_BACKEND": "mock"}, clear=False):
+                with patch.object(AgentSessionRunner, "run", _capture_run):
+                    result = run_layered_runtime(runtime_config)
+
+            self.assertFalse(bool(result.get("blocked")))
+            specialist_runs = [cfg for cfg in captured if "/head" not in str(cfg.session_label)]
+            self.assertGreater(len(specialist_runs), 0)
+            self.assertTrue(all(bool(cfg.web_search) for cfg in specialist_runs))
 
     def test_runtime_emits_heartbeat_and_group_completion_events(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -187,6 +237,130 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             self.assertIn("runtime_heartbeat", event_names)
             self.assertIn("runtime_group_done", event_names)
 
+    def test_final_gate_failure_soft_passes_specialist_and_group(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_root = root / "project-root"
+            project_dir = root / "project-dir"
+            turn_dir = root / "turn-001"
+            project_root.mkdir(parents=True, exist_ok=True)
+            project_dir.mkdir(parents=True, exist_ok=True)
+            turn_dir.mkdir(parents=True, exist_ok=True)
+
+            developer_manifest = yaml.safe_load(
+                (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+            )
+            self.assertIsInstance(developer_manifest, dict)
+
+            runtime_config = LayeredRuntimeConfig(
+                project_id="proj-soft-gate",
+                project_root=project_root,
+                project_dir=project_dir,
+                turn_dir=turn_dir,
+                message="test specialist gate soft pass",
+                selected_groups=["developer"],
+                group_manifests={"developer": deepcopy(developer_manifest)},
+                retry_attempts=0,
+                retry_backoff_sec=0,
+            )
+
+            def _fake_gate(output, role="", citation_required=True, web_available=True):  # type: ignore[no-untyped-def]
+                role_name = str(role).strip().lower()
+                if role_name == "web-research":
+                    return {
+                        "status": "BLOCKED_UNCITED",
+                        "reasons": ["web-research requires at least 3 web citations"],
+                    }
+                return {"status": "PASS", "reasons": []}
+
+            with patch.dict("os.environ", {"AGENTS_INC_BACKEND": "mock"}, clear=False):
+                with patch(
+                    "agents_inc.core.layered_runtime.gate_specialist_output",
+                    side_effect=_fake_gate,
+                ):
+                    result = run_layered_runtime(runtime_config)
+
+            self.assertFalse(bool(result.get("blocked")))
+            group_status = result.get("group_status", {}).get("developer", {})
+            self.assertEqual(group_status.get("status"), "COMPLETE")
+
+            sessions_path = Path(str(result.get("specialist_sessions_path") or ""))
+            sessions = json.loads(sessions_path.read_text(encoding="utf-8"))
+            web_row = sessions.get("developer", {}).get("web-research-specialist", {})
+            self.assertEqual(web_row.get("status"), "COMPLETE_WITH_WARNINGS")
+            self.assertIn("specialist gate failed", str(web_row.get("error", "")))
+
+            snapshot_handoff = Path(str(web_row.get("snapshot_handoff_path") or ""))
+            payload = json.loads(snapshot_handoff.read_text(encoding="utf-8"))
+            gate_row = payload.get("quality_gate", {})
+            self.assertTrue(bool(isinstance(gate_row, dict) and gate_row.get("soft_pass")))
+
+    def test_runtime_persists_and_reuses_evidence_cache(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_root = root / "project-root"
+            project_dir = root / "project-dir"
+            project_root.mkdir(parents=True, exist_ok=True)
+            project_dir.mkdir(parents=True, exist_ok=True)
+
+            developer_manifest = yaml.safe_load(
+                (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+            )
+            self.assertIsInstance(developer_manifest, dict)
+
+            runtime_config_a = LayeredRuntimeConfig(
+                project_id="proj-cache-a",
+                project_root=project_root,
+                project_dir=project_dir,
+                turn_dir=root / "turn-001",
+                message="cache warm-up run",
+                selected_groups=["developer"],
+                group_manifests={"developer": deepcopy(developer_manifest)},
+            )
+            runtime_config_b = LayeredRuntimeConfig(
+                project_id="proj-cache-b",
+                project_root=project_root,
+                project_dir=project_dir,
+                turn_dir=root / "turn-002",
+                message="cache reuse run",
+                selected_groups=["developer"],
+                group_manifests={"developer": deepcopy(developer_manifest)},
+            )
+
+            with patch.dict("os.environ", {"AGENTS_INC_BACKEND": "mock"}, clear=False):
+                first = run_layered_runtime(runtime_config_a)
+                second = run_layered_runtime(runtime_config_b)
+
+            self.assertFalse(bool(first.get("blocked")))
+            self.assertFalse(bool(second.get("blocked")))
+
+            cache = load_evidence_cache(project_root)
+            entries = cache.get("entries", {})
+            self.assertIsInstance(entries, dict)
+            self.assertGreater(len(entries), 0)
+
+            hit_counts = [int((row or {}).get("hit_count", 0)) for row in entries.values()]
+            self.assertGreaterEqual(max(hit_counts), 2)
+
+            first_id = sorted(entries.keys())[0]
+            first_row = entries[first_id]
+            self.assertIsInstance(first_row, dict)
+            hydrated = _hydrate_evidence_refs_from_cache(
+                project_root=project_root,
+                payload={
+                    "claims": [{"claim": "cached-claim", "evidence_ids": [first_id]}],
+                    "evidence_refs": [],
+                },
+            )
+            hydrated_refs = hydrated.get("evidence_refs", [])
+            self.assertIsInstance(hydrated_refs, list)
+            self.assertGreater(len(hydrated_refs), 0)
+            self.assertEqual(str(hydrated_refs[0].get("evidence_id", "")), first_id)
+            self.assertEqual(
+                str(hydrated_refs[0].get("citation", "")),
+                str(first_row.get("citation", "")),
+            )
+
     def test_specialist_prompt_includes_role_specific_requirements(self) -> None:
         base_kwargs = {
             "objective": "test objective",
@@ -197,6 +371,9 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             "dependencies": [],
             "required_outputs": [],
             "required_references": [],
+            "required_reference_paths": [],
+            "dependency_artifact_paths": [],
+            "web_search_enabled": True,
             "artifact_scope": {"work_path": "work.md", "handoff_path": "handoff.json"},
         }
         integration_prompt = _build_specialist_prompt(role="integration", **base_kwargs)
@@ -222,6 +399,9 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             dependencies=[],
             required_outputs=[],
             required_references=[],
+            required_reference_paths=[],
+            dependency_artifact_paths=[],
+            web_search_enabled=True,
             artifact_scope={"work_path": "work.md", "handoff_path": "handoff.json"},
             retry_gate_reasons=[
                 "integration dependencies_consumed must be a list",

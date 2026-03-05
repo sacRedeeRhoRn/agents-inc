@@ -214,6 +214,49 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
             self.assertEqual(config.specialist_model, "gpt-5.3-codex-spark")
             self.assertEqual(config.head_model, "gpt-5.3-codex")
             self.assertEqual(config.head_reasoning_effort, "xhigh")
+            self.assertEqual(config.web_search_policy, "web-role-only")
+
+    def test_main_passes_web_search_policy_override(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fake_root = Path(td)
+            captured = {}
+
+            def _fake_run(config):  # type: ignore[no-untyped-def]
+                captured["config"] = config
+                return {
+                    "project_id": "proj-a",
+                    "turn_dir": str(fake_root / "turn"),
+                    "full_report_path": str(fake_root / "full-report.md"),
+                }
+
+            with patch(
+                "agents_inc.cli.orchestrator_reply._resolve_project_fabric_root",
+                return_value=fake_root,
+            ):
+                with patch("agents_inc.cli.orchestrator_reply.ensure_fabric_root_initialized"):
+                    with patch(
+                        "agents_inc.cli.orchestrator_reply.run_orchestrator_reply",
+                        side_effect=_fake_run,
+                    ):
+                        with patch.object(
+                            sys,
+                            "argv",
+                            [
+                                "agents-inc-orchestrator-reply",
+                                "--project-id",
+                                "proj-a",
+                                "--message",
+                                "delegate objective",
+                                "--web-search-policy",
+                                "all-enabled",
+                                "--json",
+                            ],
+                        ):
+                            code = orchestrator_reply_cli.main()
+            self.assertEqual(code, 0)
+            config = captured.get("config")
+            self.assertIsNotNone(config)
+            self.assertEqual(config.web_search_policy, "all-enabled")
 
     def test_main_prints_live_notes_in_non_json_mode(self) -> None:
         with tempfile.TemporaryDirectory() as td:

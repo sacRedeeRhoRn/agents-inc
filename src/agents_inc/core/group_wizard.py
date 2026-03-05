@@ -85,7 +85,7 @@ def _specialist_from_role(group_id: str, display_name: str, domain: str, role: s
         "contract": {
             "inputs": ["objective.md", "group-context.json"],
             "outputs": ["work.md", "handoff.json"],
-            "output_schema": "specialist-handoff-v2",
+            "output_schema": "specialist-handoff-v4",
         },
         "depends_on": depends_on,
         "execution": {
@@ -375,7 +375,7 @@ def build_manifest_v2(draft: GroupDraft) -> dict:
         },
         "gate_profile": {
             "profile_id": "standard-evidence-v3",
-            "specialist_output_schema": "specialist-handoff-v3",
+            "specialist_output_schema": "specialist-handoff-v4",
             "checks": {
                 "web_citations_required": True,
                 "repro_command_required": True,

@@ -35,7 +35,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -59,7 +59,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -83,7 +83,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -112,7 +112,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -141,7 +141,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -170,7 +170,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -194,7 +194,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -218,7 +218,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -238,7 +238,7 @@ required_artifacts:
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
   profile_id: standard-evidence-v3
-  specialist_output_schema: specialist-handoff-v3
+  specialist_output_schema: specialist-handoff-v4
   checks:
     web_citations_required: true
     repro_command_required: true

@@ -326,7 +326,7 @@ def write_group_assets(
         write_text(internal_dir / "work.md", "# Work\n\nPending specialist execution.\n")
         write_text(
             internal_dir / "handoff.json",
-            '{\n  "schema_version": "3.0",\n  "status": "PENDING",\n  "claims_with_citations": [],\n  "repro_steps": [],\n  "risks": []\n}\n',
+            '{\n  "schema_version": "4.0",\n  "status": "PENDING",\n  "claims": [],\n  "evidence_refs": [],\n  "repro_steps": [],\n  "risks": []\n}\n',
         )
 
     for specialist in group["specialists"]:

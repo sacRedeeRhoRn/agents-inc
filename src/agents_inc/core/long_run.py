@@ -886,23 +886,35 @@ class LongRunRunner:
         claims = [
             {
                 "claim": f"{group_id}/{specialist_id} synthesized claim for cycle {cycle} phase {phase_id}",
+                "evidence_ids": [f"ev_{specialist_id}_core"],
+            }
+        ]
+        evidence_refs = [
+            {
+                "evidence_id": f"ev_{specialist_id}_core",
                 "citation": f"local:references/{specialist_id}-core.md",
+                "source_type": "reference",
             }
         ]
         if role_name == "web-research":
             claims = [
                 {
                     "claim": f"{group_id}/{specialist_id} gathered evidence row 1",
-                    "citation": "https://example.org/evidence-1",
+                    "evidence_ids": ["ev_web_1"],
                 },
                 {
                     "claim": f"{group_id}/{specialist_id} gathered evidence row 2",
-                    "citation": "https://example.org/evidence-2",
+                    "evidence_ids": ["ev_web_2"],
                 },
                 {
                     "claim": f"{group_id}/{specialist_id} gathered evidence row 3",
-                    "citation": "https://example.org/evidence-3",
+                    "evidence_ids": ["ev_web_3"],
                 },
+            ]
+            evidence_refs = [
+                {"evidence_id": "ev_web_1", "citation": "https://example.org/evidence-1", "source_type": "web"},
+                {"evidence_id": "ev_web_2", "citation": "https://example.org/evidence-2", "source_type": "web"},
+                {"evidence_id": "ev_web_3", "citation": "https://example.org/evidence-3", "source_type": "web"},
             ]
 
         output = {
@@ -910,7 +922,8 @@ class LongRunRunner:
                 "Synthetic simulation run",
                 "Deterministic local mode",
             ],
-            "claims_with_citations": claims,
+            "claims": claims,
+            "evidence_refs": evidence_refs,
             "repro_steps": [
                 f"Acquire lease for {group_id}/{specialist_id}",
                 "Write internal artifact",
@@ -925,18 +938,16 @@ class LongRunRunner:
             "execution_status": "COMPLETE",
             "dependencies_satisfied": True,
             "citations_summary": {
-                "count": len(claims),
+                "count": len(evidence_refs),
                 "has_web_url": any(
                     str(item.get("citation") or "").startswith(("http://", "https://"))
-                    for item in claims
+                    for item in evidence_refs
                 ),
             },
             "confidence": "medium",
             "unresolved_assumptions": [],
         }
-        if role_name == "web-research":
-            output["source_quality_note"] = "All web sources include publication metadata."
-        elif role_name == "evidence-review":
+        if role_name == "evidence-review":
             output["contradictions"] = False
             output["unsupported_claims"] = []
         elif role_name == "repro-qa":
@@ -954,7 +965,8 @@ class LongRunRunner:
 
         if self.config.inject_gate_expose_failure and not self._injected_gate_payload:
             self._injected_gate_payload = True
-            output["claims_with_citations"] = [{"claim": "intentionally uncited claim"}]
+            output["claims"] = [{"claim": "intentionally uncited claim", "evidence_ids": []}]
+            output["evidence_refs"] = []
 
         return output
 

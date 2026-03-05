@@ -174,6 +174,11 @@ class OrchestratorReplyTests(unittest.TestCase):
             self.assertTrue((group_turn_dir / "final-exposed-answer.md").exists())
             self.assertTrue((group_turn_dir / "final" / "full-report.md").exists())
             self.assertTrue((group_turn_dir / "final" / "key-points.txt").exists())
+            self.assertTrue((group_turn_dir / "token-usage-report.json").exists())
+            self.assertTrue((group_turn_dir / "token-usage-report.md").exists())
+            self.assertIn("token_usage_summary", group_result)
+            self.assertIn("token_usage_json_path", group_result)
+            self.assertIn("token_usage_md_path", group_result)
             self.assertTrue(
                 (
                     group_turn_dir / "cycles" / "cycle-0001" / "layer2" / "orchestrator-plan.json"
@@ -307,6 +312,10 @@ class OrchestratorReplyTests(unittest.TestCase):
             )
             self.assertEqual(
                 orchestrator_plan.get("settings", {}).get("agent_timeout_mode"), "unlimited"
+            )
+            self.assertEqual(
+                orchestrator_plan.get("settings", {}).get("web_search_policy"),
+                "web-role-only",
             )
 
             specialist_sessions = json.loads(

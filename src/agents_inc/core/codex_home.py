@@ -12,7 +12,10 @@ from agents_inc.core.util.time import now_iso
 
 CODEX_HOME_SCHEMA_VERSION = "3.0"
 SKILL_ACTIVATION_SCHEMA_VERSION = "3.0"
-DEFAULT_GLOBAL_CODEX_HOME = Path.home() / ".codex"
+
+
+def default_global_codex_home() -> Path:
+    return (Path.home() / ".codex").expanduser().resolve()
 
 
 def resolve_project_codex_home(project_root: Path) -> Path:
@@ -85,25 +88,26 @@ def ensure_project_codex_home(
     project_root: Path,
     *,
     project_id: str,
-    global_codex_home: Path = DEFAULT_GLOBAL_CODEX_HOME,
+    global_codex_home: Optional[Path] = None,
     config_link_mode: str = "symlink",
 ) -> dict:
     mode = str(config_link_mode or "symlink").strip().lower()
     if mode not in {"symlink", "copy"}:
         raise FabricError("config_link_mode must be 'symlink' or 'copy'")
+    source_codex_home = (global_codex_home or default_global_codex_home()).expanduser().resolve()
 
     codex_home = resolve_project_codex_home(project_root)
     skills_dir = codex_home / "skills" / "local"
     skills_dir.mkdir(parents=True, exist_ok=True)
 
-    auth_src = global_codex_home / "auth.json"
+    auth_src = source_codex_home / "auth.json"
     auth_dst = codex_home / "auth.json"
     auth_mode = "missing"
     if auth_src.exists():
         _ensure_symlink(auth_src, auth_dst)
         auth_mode = "symlink"
 
-    config_src = global_codex_home / "config.toml"
+    config_src = source_codex_home / "config.toml"
     config_dst = codex_home / "config.toml"
     config_mode = "missing"
     if config_src.exists():

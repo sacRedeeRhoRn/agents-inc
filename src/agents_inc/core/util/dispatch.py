@@ -196,7 +196,7 @@ def build_dispatch_plan(
         ),
         "specialist_output_schema": str(
             group_manifest.get("gate_profile", {}).get(
-                "specialist_output_schema", "specialist-handoff-v2"
+                "specialist_output_schema", "specialist-handoff-v4"
             )
         ),
         "group_web_search_default": bool(
@@ -208,34 +208,146 @@ def build_dispatch_plan(
     }
 
 
+def _legacy_claim_refs(claim: dict) -> List[str]:
+    out: List[str] = []
+    if not isinstance(claim, dict):
+        return out
+    candidates = [claim.get("citation"), claim.get("url"), claim.get("source_url"), claim.get("doi")]
+    refs = claim.get("citations")
+    if isinstance(refs, list):
+        candidates.extend(refs)
+    for item in candidates:
+        text = str(item or "").strip()
+        if not text:
+            continue
+        if text.lower().startswith("doi:"):
+            text = "https://doi.org/" + text[4:].strip()
+        if text and text not in out:
+            out.append(text)
+    return out
+
+
+def _extract_claims(output: dict) -> List[dict]:
+    claims = output.get("claims")
+    if isinstance(claims, list):
+        out: List[dict] = []
+        for row in claims:
+            if not isinstance(row, dict):
+                continue
+            claim_text = str(row.get("claim") or row.get("text") or "").strip()
+            ids = row.get("evidence_ids")
+            if not isinstance(ids, list):
+                ids = []
+            evidence_ids = [str(item).strip() for item in ids if str(item).strip()]
+            if claim_text:
+                out.append({"claim": claim_text, "evidence_ids": evidence_ids})
+        return out
+
+    legacy = output.get("claims_with_citations")
+    if not isinstance(legacy, list):
+        return []
+    index = 0
+    out = []
+    for row in legacy:
+        if not isinstance(row, dict):
+            continue
+        claim_text = str(row.get("claim") or row.get("text") or "").strip()
+        if not claim_text:
+            continue
+        refs = _legacy_claim_refs(row)
+        evidence_ids: List[str] = []
+        for _ in refs:
+            index += 1
+            evidence_ids.append(f"legacy::{index}")
+        out.append({"claim": claim_text, "evidence_ids": evidence_ids})
+    return out
+
+
+def _extract_evidence_refs(output: dict) -> List[dict]:
+    refs = output.get("evidence_refs")
+    if isinstance(refs, list):
+        out: List[dict] = []
+        for row in refs:
+            if not isinstance(row, dict):
+                continue
+            evidence_id = str(row.get("evidence_id") or row.get("id") or row.get("key") or "").strip()
+            citation = str(
+                row.get("citation") or row.get("url") or row.get("source_url") or row.get("doi") or ""
+            ).strip()
+            source_type = str(row.get("source_type") or "").strip()
+            if citation.startswith(("http://", "https://")) and not source_type:
+                source_type = "web"
+            if citation and not source_type:
+                source_type = "reference"
+            if evidence_id:
+                out.append(
+                    {
+                        "evidence_id": evidence_id,
+                        "citation": citation,
+                        "source_type": source_type or "reference",
+                    }
+                )
+        return out
+
+    # Legacy fallback: flatten claim-level citations as pseudo refs.
+    out: List[dict] = []
+    legacy = output.get("claims_with_citations")
+    if not isinstance(legacy, list):
+        return out
+    index = 0
+    for row in legacy:
+        if not isinstance(row, dict):
+            continue
+        for ref in _legacy_claim_refs(row):
+            index += 1
+            out.append(
+                {
+                    "evidence_id": f"legacy::{index}",
+                    "citation": ref,
+                    "source_type": "web" if ref.startswith(("http://", "https://")) else "reference",
+                }
+            )
+    return out
+
+
 def gate_specialist_output(
     output: dict,
     role: str = "",
     citation_required: bool = True,
     web_available: bool = True,
 ) -> dict:
-    """Evaluate a specialist handoff against the framework quality gates.
-
-    Returns ``{"status": "PASS", "reasons": []}`` on success, or a blocked
-    status dict with reasons on failure.
-    """
+    """Evaluate a specialist handoff against framework quality gates."""
     if not isinstance(output, dict):
         return {"status": "BLOCKED_INVALID", "reasons": ["output must be a map"]}
 
     reasons: List[str] = []
     role_name = str(role or "").strip().lower()
+    claims = _extract_claims(output)
+    evidence_refs = _extract_evidence_refs(output)
+    evidence_ids_available = {
+        str(row.get("evidence_id") or "").strip()
+        for row in evidence_refs
+        if isinstance(row, dict) and str(row.get("evidence_id") or "").strip()
+    }
 
     if citation_required:
-        claims = output.get("claims_with_citations", [])
-        if not isinstance(claims, list) or not claims:
-            reasons.append("missing claims_with_citations")
+        if not evidence_refs:
+            reasons.append("missing evidence_refs")
+        if not claims:
+            reasons.append("missing claims")
         else:
             for idx, claim in enumerate(claims):
-                citation = None
-                if isinstance(claim, dict):
-                    citation = claim.get("citation")
-                if not citation:
-                    reasons.append(f"claim[{idx}] missing citation")
+                ids = claim.get("evidence_ids")
+                if not isinstance(ids, list) or not ids:
+                    reasons.append(f"claim[{idx}] missing evidence_ids")
+                    continue
+                for evidence_id in ids:
+                    text = str(evidence_id or "").strip()
+                    if not text:
+                        reasons.append(f"claim[{idx}] contains empty evidence_id")
+                        continue
+                    if evidence_ids_available and text not in evidence_ids_available:
+                        reasons.append(f"claim[{idx}] references unknown evidence_id '{text}'")
 
     if output.get("needs_web_evidence") and not web_available:
         reasons.append("required web evidence unavailable")
@@ -269,23 +381,14 @@ def gate_specialist_output(
     if not isinstance(output.get("citations_summary"), dict):
         reasons.append("citations_summary must be a map")
 
-    claims = output.get("claims_with_citations", [])
-    normalized_claims = claims if isinstance(claims, list) else []
-
     if role_name == "web-research":
-        web_citation_count = 0
-        for claim in normalized_claims:
-            if not isinstance(claim, dict):
-                continue
-            candidates = [claim.get("citation"), claim.get("url"), claim.get("source_url")]
-            refs = claim.get("citations")
-            if isinstance(refs, list):
-                candidates.extend(refs)
-            if any(
-                str(item or "").strip().startswith(("http://", "https://")) for item in candidates
-            ):
-                web_citation_count += 1
-        if web_citation_count < 3:
+        web_refs = [
+            row
+            for row in evidence_refs
+            if isinstance(row, dict)
+            and str(row.get("citation") or "").strip().startswith(("http://", "https://"))
+        ]
+        if len(web_refs) < 3:
             reasons.append("web-research requires at least 3 web citations")
     elif role_name == "evidence-review":
         if "contradictions" not in output:
@@ -304,9 +407,15 @@ def gate_specialist_output(
             reasons.append("integration dependencies_consumed must be a list")
         if not isinstance(output.get("integration_risks"), list):
             reasons.append("integration integration_risks must be a list")
+
     if reasons:
         blocked_status = (
-            "BLOCKED_UNCITED" if any("citation" in r for r in reasons) else "BLOCKED_REVIEW"
+            "BLOCKED_UNCITED"
+            if any(
+                "citation" in reason or "evidence_id" in reason or "claims" in reason
+                for reason in reasons
+            )
+            else "BLOCKED_REVIEW"
         )
         return {"status": blocked_status, "reasons": reasons}
 

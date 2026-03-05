@@ -6,11 +6,13 @@ from typing import Dict, Optional
 from agents_inc.core.fabric_lib import dump_yaml, load_yaml
 from agents_inc.core.util.time import now_iso
 
-CONNECTIONS_DIR = Path.home() / ".agents-inc" / "connections"
+
+def _default_connections_dir() -> Path:
+    return (Path.home() / ".agents-inc" / "connections").expanduser().resolve()
 
 
 def _profile_path(profile_name: str, root: Optional[Path] = None) -> Path:
-    base = (root or CONNECTIONS_DIR).expanduser().resolve()
+    base = (root or _default_connections_dir()).expanduser().resolve()
     return base / f"{profile_name}.yaml"
 
 

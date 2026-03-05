@@ -19,6 +19,7 @@ HANDOFF_BLOCK_RE = re.compile(
     r"BEGIN_HANDOFF_JSON\s*(\{.*?\})\s*END_HANDOFF_JSON",
     re.DOTALL | re.IGNORECASE,
 )
+JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL | re.IGNORECASE)
 
 
 @dataclass
@@ -35,6 +36,7 @@ class AgentRunConfig:
     session_label: str = ""
     model: str | None = None
     model_reasoning_effort: str | None = None
+    disable_mcp: bool = False
 
 
 @dataclass
@@ -53,6 +55,7 @@ class AgentRunResult:
     thread_id: str
     used_resume: bool
     rotated_thread: bool
+    parse_mode: str
 
 
 class AgentSessionRunner:
@@ -96,6 +99,7 @@ class AgentSessionRunner:
                 thread_id="",
                 used_resume=False,
                 rotated_thread=False,
+                parse_mode="",
             )
 
         used_resume = bool(str(config.thread_id or "").strip())
@@ -105,6 +109,7 @@ class AgentSessionRunner:
             thread_id=(str(config.thread_id or "").strip() or None),
             model=config.model,
             model_reasoning_effort=config.model_reasoning_effort,
+            disable_mcp=bool(config.disable_mcp),
         )
 
         try:
@@ -112,7 +117,7 @@ class AgentSessionRunner:
             primary_raw = (primary_proc.stdout or "") + "\n" + (primary_proc.stderr or "")
             thread_id, agent_text = _extract_exec_json(primary_raw)
             parse_input = agent_text if agent_text else primary_raw
-            parsed_work, parsed_handoff, parse_error = _parse_session_output(parse_input)
+            parsed_work, parsed_handoff, parse_error, parse_mode = _parse_session_output(parse_input)
             success = primary_proc.returncode == 0 and not parse_error
             rotated = False
             final_proc = primary_proc
@@ -128,17 +133,19 @@ class AgentSessionRunner:
                     thread_id=None,
                     model=config.model,
                     model_reasoning_effort=config.model_reasoning_effort,
+                    disable_mcp=bool(config.disable_mcp),
                 )
                 rotate_proc = self._run_process(config=config, cmd=rotate_cmd)
                 rotate_raw = (rotate_proc.stdout or "") + "\n" + (rotate_proc.stderr or "")
                 rotate_thread_id, rotate_agent_text = _extract_exec_json(rotate_raw)
                 rotate_parse_input = rotate_agent_text if rotate_agent_text else rotate_raw
-                rotate_work, rotate_handoff, rotate_error = _parse_session_output(
+                rotate_work, rotate_handoff, rotate_error, rotate_parse_mode = _parse_session_output(
                     rotate_parse_input
                 )
                 if rotate_proc.returncode == 0 and not rotate_error:
                     success = True
                     parse_error = ""
+                    parse_mode = rotate_parse_mode
                     parsed_work = rotate_work
                     parsed_handoff = rotate_handoff
                     final_proc = rotate_proc
@@ -152,6 +159,8 @@ class AgentSessionRunner:
                     final_proc = rotate_proc if rotate_proc.returncode != 0 else primary_proc
                     final_thread_id = rotate_thread_id or thread_id
 
+            if parse_mode:
+                final_raw = final_raw.rstrip() + f"\n--- PARSE_MODE:{parse_mode} ---\n"
             self._write_logs(config, raw_text=final_raw)
             finished = now_iso()
             if not parse_error and success and not parsed_work and final_agent_text:
@@ -172,6 +181,7 @@ class AgentSessionRunner:
                 thread_id=str(final_thread_id or ""),
                 used_resume=used_resume,
                 rotated_thread=rotated,
+                parse_mode=parse_mode,
             )
         except subprocess.TimeoutExpired as exc:
             stdout = self._coerce_text(exc.stdout)
@@ -195,6 +205,7 @@ class AgentSessionRunner:
                 thread_id=str(config.thread_id or ""),
                 used_resume=used_resume,
                 rotated_thread=False,
+                parse_mode="",
             )
 
     def _run_mock(self, config: AgentRunConfig) -> AgentRunResult:
@@ -209,16 +220,23 @@ class AgentSessionRunner:
         citation = "https://example.org/mock-evidence"
         if role in {"domain-core", "domain_core", "domain"}:
             citation = "local:references/domain-core.md"
+        evidence_ref = {
+            "evidence_id": "ev_mock_001",
+            "citation": citation,
+            "title": "mock evidence",
+            "source_type": "web" if citation.startswith("http") else "reference",
+        }
         handoff = {
-            "schema_version": "3.0",
+            "schema_version": "4.0",
             "status": "COMPLETE",
             "assumptions": ["mock runner"],
-            "claims_with_citations": [
+            "claims": [
                 {
                     "claim": f"{label} completed specialist task.",
-                    "citation": citation,
+                    "evidence_ids": [evidence_ref["evidence_id"]],
                 }
             ],
+            "evidence_refs": [evidence_ref],
             "repro_steps": ["Run mocked specialist session"],
             "artifact_paths": [],
             "execution_status": "COMPLETE",
@@ -226,15 +244,34 @@ class AgentSessionRunner:
             "produced_artifacts": [],
             "citations_summary": {
                 "count": 1,
-                "has_web_url": True,
+                "has_web_url": bool(citation.startswith("http")),
             },
         }
         if role == "web-research":
-            handoff["source_quality_note"] = "Mock source quality note."
-            handoff["claims_with_citations"] = [
-                {"claim": f"{label} web claim 1", "citation": "https://example.org/a"},
-                {"claim": f"{label} web claim 2", "citation": "https://example.org/b"},
-                {"claim": f"{label} web claim 3", "citation": "https://example.org/c"},
+            handoff["claims"] = [
+                {"claim": f"{label} web claim 1", "evidence_ids": ["ev_mock_a"]},
+                {"claim": f"{label} web claim 2", "evidence_ids": ["ev_mock_b"]},
+                {"claim": f"{label} web claim 3", "evidence_ids": ["ev_mock_c"]},
+            ]
+            handoff["evidence_refs"] = [
+                {
+                    "evidence_id": "ev_mock_a",
+                    "citation": "https://example.org/a",
+                    "title": "mock a",
+                    "source_type": "web",
+                },
+                {
+                    "evidence_id": "ev_mock_b",
+                    "citation": "https://example.org/b",
+                    "title": "mock b",
+                    "source_type": "web",
+                },
+                {
+                    "evidence_id": "ev_mock_c",
+                    "citation": "https://example.org/c",
+                    "title": "mock c",
+                    "source_type": "web",
+                },
             ]
             handoff["citations_summary"] = {
                 "count": 3,
@@ -274,6 +311,7 @@ class AgentSessionRunner:
             thread_id=thread_id,
             used_resume=bool(config.thread_id),
             rotated_thread=False,
+            parse_mode="strict",
         )
 
     @staticmethod
@@ -314,6 +352,7 @@ class AgentSessionRunner:
         thread_id: str | None,
         model: str | None = None,
         model_reasoning_effort: str | None = None,
+        disable_mcp: bool = False,
     ) -> list[str]:
         cmd: list[str] = [codex_bin, "exec"]
         if thread_id:
@@ -325,6 +364,8 @@ class AgentSessionRunner:
         effort = str(model_reasoning_effort or "").strip()
         if effort:
             cmd.extend(["-c", f'model_reasoning_effort="{effort}"'])
+        if disable_mcp:
+            cmd.extend(["-c", "mcp_servers={}"])
         if thread_id:
             cmd.extend([thread_id, prompt])
         else:
@@ -393,22 +434,90 @@ def datetime_from_iso(value: str):
         return datetime.now(timezone.utc)
 
 
-def _parse_session_output(raw_text: str) -> tuple[str, Dict[str, object], str]:
+def _parse_session_output(raw_text: str) -> tuple[str, Dict[str, object], str, str]:
     work_match = WORK_BLOCK_RE.search(raw_text)
     handoff_match = HANDOFF_BLOCK_RE.search(raw_text)
 
-    if not work_match:
-        return "", {}, "missing BEGIN_WORK/END_WORK block"
-    if not handoff_match:
-        return "", {}, "missing BEGIN_HANDOFF_JSON/END_HANDOFF_JSON block"
+    if work_match and handoff_match:
+        work_text = work_match.group(1).strip()
+        handoff_raw = handoff_match.group(1).strip()
+        try:
+            payload = json.loads(handoff_raw)
+        except Exception as exc:  # noqa: BLE001
+            return work_text, {}, f"invalid handoff json: {exc}", "strict"
 
-    work_text = work_match.group(1).strip()
-    handoff_raw = handoff_match.group(1).strip()
-    try:
-        payload = json.loads(handoff_raw)
-    except Exception as exc:  # noqa: BLE001
-        return work_text, {}, f"invalid handoff json: {exc}"
+        if not isinstance(payload, dict):
+            return work_text, {}, "handoff payload must be JSON object", "strict"
+        return work_text, payload, "", "strict"
 
-    if not isinstance(payload, dict):
-        return work_text, {}, "handoff payload must be JSON object"
-    return work_text, payload, ""
+    return _parse_session_output_fallback(raw_text, work_match)
+
+
+def _parse_session_output_fallback(
+    raw_text: str, work_match: re.Match[str] | None
+) -> tuple[str, Dict[str, object], str, str]:
+    payload: Dict[str, object] = {}
+    payload_span: tuple[int, int] | None = None
+
+    for match in JSON_FENCE_RE.finditer(raw_text):
+        snippet = str(match.group(1) or "").strip()
+        if not snippet:
+            continue
+        try:
+            parsed = json.loads(snippet)
+        except Exception:
+            continue
+        if isinstance(parsed, dict):
+            payload = parsed
+            payload_span = (match.start(0), match.end(0))
+
+    if not payload:
+        parsed_obj, span = _extract_last_json_object(raw_text)
+        if isinstance(parsed_obj, dict):
+            payload = parsed_obj
+            payload_span = span
+
+    if not payload:
+        if work_match is None:
+            return "", {}, "missing BEGIN_WORK/END_WORK block", ""
+        return work_match.group(1).strip(), {}, "missing BEGIN_HANDOFF_JSON/END_HANDOFF_JSON block", ""
+
+    if work_match is not None:
+        work_text = work_match.group(1).strip()
+    else:
+        trimmed = raw_text
+        if payload_span is not None:
+            start, end = payload_span
+            trimmed = (raw_text[:start] + raw_text[end:]).strip()
+        work_text = trimmed.strip()
+
+    if not work_text:
+        work_text = (
+            "# Work Notes\n\n"
+            "Recovered work notes from fallback parse because strict BEGIN_WORK/END_WORK markers were missing."
+        )
+    return work_text, payload, "", "fallback"
+
+
+def _extract_last_json_object(raw_text: str) -> tuple[object | None, tuple[int, int] | None]:
+    decoder = json.JSONDecoder()
+    best_obj: object | None = None
+    best_span: tuple[int, int] | None = None
+    best_len = -1
+    best_start = -1
+    for index, char in enumerate(raw_text):
+        if char != "{":
+            continue
+        try:
+            parsed, end_index = decoder.raw_decode(raw_text[index:])
+        except Exception:
+            continue
+        if not isinstance(parsed, dict):
+            continue
+        span_len = int(end_index)
+        if span_len > best_len or (span_len == best_len and index > best_start):
+            best_obj = parsed
+            best_span = (index, index + span_len)
+            best_len = span_len
+            best_start = index
+    return best_obj, best_span

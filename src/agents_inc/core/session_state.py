@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -11,7 +12,42 @@ from agents_inc.core.util.time import now_iso, to_stamp  # noqa: F401  (now_iso 
 STATE_SCHEMA_VERSION = "3.0"
 INDEX_SCHEMA_VERSION = "3.0"
 STATE_REL_DIR = Path(".agents-inc") / "state"
-DEFAULT_INDEX_PATH = Path.home() / ".agents-inc" / "projects-index.yaml"
+
+try:
+    import pwd
+except Exception:  # pragma: no cover - non-posix fallback
+    pwd = None  # type: ignore[assignment]
+
+
+def _effective_home() -> Path:
+    return Path.home().expanduser().resolve()
+
+
+def _real_user_home() -> Path:
+    if pwd is None:  # pragma: no cover - non-posix fallback
+        return _effective_home()
+    try:
+        return Path(pwd.getpwuid(os.getuid()).pw_dir).expanduser().resolve()
+    except Exception:  # noqa: BLE001
+        return _effective_home()
+
+
+def _default_index_path() -> Path:
+    return (_effective_home() / ".agents-inc" / "projects-index.yaml").resolve()
+
+
+def _global_config_candidates() -> set[Path]:
+    return {
+        (_effective_home() / ".agents-inc" / "config.yaml").resolve(),
+        (_real_user_home() / ".agents-inc" / "config.yaml").resolve(),
+    }
+
+
+def _global_local_index_candidates() -> set[Path]:
+    return {
+        (_effective_home() / ".agents-inc" / "projects" / "index.yaml").resolve(),
+        (_real_user_home() / ".agents-inc" / "projects" / "index.yaml").resolve(),
+    }
 
 
 def _find_upward_file(relative_path: Path, *, start: Optional[Path] = None) -> Optional[Path]:
@@ -52,13 +88,12 @@ def checkpoints_dir(project_root: Path) -> Path:
 def default_project_index_path(raw: Optional[str] = None) -> Path:
     if raw:
         return Path(raw).expanduser().resolve()
-    global_config_path = (Path.home() / ".agents-inc" / "config.yaml").resolve()
-    global_local_index_path = (Path.home() / ".agents-inc" / "projects" / "index.yaml").resolve()
+    default_index_path = _default_index_path()
     discovered = _find_upward_file(Path(".agents-inc") / "projects" / "index.yaml")
-    if discovered is not None and discovered != global_local_index_path:
+    if discovered is not None and discovered.resolve() not in _global_local_index_candidates():
         return discovered
     discovered_config = _find_upward_file(Path(".agents-inc") / "config.yaml")
-    if discovered_config is not None and discovered_config != global_config_path:
+    if discovered_config is not None and discovered_config.resolve() not in _global_config_candidates():
         return (discovered_config.parent / "projects" / "index.yaml").resolve()
     context = load_global_context()
     context_index = str(context.get("project_index") or "").strip()
@@ -69,7 +104,7 @@ def default_project_index_path(raw: Optional[str] = None) -> Path:
         return (
             Path(context_config).expanduser().resolve().parent / "projects" / "index.yaml"
         ).resolve()
-    return DEFAULT_INDEX_PATH
+    return default_index_path
 
 
 def ensure_state_dirs(project_root: Path) -> None:

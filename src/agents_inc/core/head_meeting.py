@@ -162,18 +162,29 @@ def _collect_group_exposed(project_dir: Path, groups: List[str]) -> Dict[str, di
         if status in {"", "PENDING"}:
             reasons.append("handoff status is pending")
 
-        claims = payload.get("claims_with_citations")
+        claims = payload.get("claims")
+        if not isinstance(claims, list):
+            claims = payload.get("claims_with_citations")
         if not isinstance(claims, list):
             claims = []
         citation_count = 0
+        seen_ids: set[str] = set()
         for claim in claims:
             if not isinstance(claim, dict):
                 continue
+            evidence_ids = claim.get("evidence_ids")
+            if isinstance(evidence_ids, list):
+                for item in evidence_ids:
+                    text = str(item or "").strip()
+                    if text and text not in seen_ids:
+                        seen_ids.add(text)
             if str(claim.get("citation") or "").strip():
                 citation_count += 1
             citations = claim.get("citations")
             if isinstance(citations, list):
                 citation_count += len([item for item in citations if str(item).strip()])
+        if seen_ids:
+            citation_count = len(seen_ids)
 
         response_status = _normalize_response_status(
             payload.get("response_status")

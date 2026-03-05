@@ -54,4 +54,4 @@ autouse_triggers:
 ## Output Contract
 - Return `BEGIN_WORK/END_WORK` markdown notes.
 - Return `BEGIN_HANDOFF_JSON/END_HANDOFF_JSON` JSON object.
-- Include `claims_with_citations`, `execution_status`, `dependencies_satisfied`, and reproducibility details.
+- Include `claims` with `evidence_ids`, `evidence_refs`, `execution_status`, `dependencies_satisfied`, and reproducibility details.

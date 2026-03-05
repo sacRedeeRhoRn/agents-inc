@@ -10,8 +10,18 @@ from pathlib import Path
 
 from agents_inc.core.codex_app_client import CodexAppClient, CodexAppServerError
 
+RUN_LIVE_CODEX = str(os.environ.get("AGENTS_INC_RUN_LIVE_CODEX") or "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+}
+
 
 class CodexLiveSessionTests(unittest.TestCase):
+    @unittest.skipUnless(
+        RUN_LIVE_CODEX,
+        "set AGENTS_INC_RUN_LIVE_CODEX=1 to run live Codex integration test",
+    )
     def test_live_codex_session_protocol_success(self) -> None:
         prompt = "Reply with exactly one word: OK. Do not use tools."
         attempt = 0

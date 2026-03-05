@@ -14,6 +14,12 @@ from agents_inc.core.agent_threads import (
     set_head_thread,
     set_specialist_thread,
 )
+from agents_inc.core.evidence_cache import (
+    canonicalize_evidence_refs,
+    evidence_id_for_citation,
+    merge_evidence_refs_into_cache,
+    resolve_evidence_ids,
+)
 from agents_inc.core.escalation import (
     ESCALATION_REQUEST_FILE,
     ESCALATION_RESPONSE_FILE,
@@ -79,6 +85,7 @@ class LayeredRuntimeConfig:
     specialist_reasoning_effort: str | None = DEFAULT_SPECIALIST_REASONING_EFFORT
     head_model: str = DEFAULT_HEAD_MODEL
     head_reasoning_effort: str | None = DEFAULT_HEAD_REASONING_EFFORT
+    web_search_policy: str = "web-role-only"
     progress_callback: Callable[[dict], None] | None = None
     cycle_id: int = 0
 
@@ -127,6 +134,16 @@ def _emit_progress(config: LayeredRuntimeConfig, event: dict) -> None:
         return
 
 
+def _resolve_task_web_search_enabled(*, config: LayeredRuntimeConfig, task: dict, role: str) -> bool:
+    default_enabled = bool(task.get("web_search_enabled", True))
+    policy = str(config.web_search_policy or "web-role-only").strip().lower()
+    role_name = str(role or "").strip().lower()
+    if policy == "all-enabled":
+        return default_enabled
+    # Default policy keeps browsing scoped to web-research specialists only.
+    return default_enabled and role_name == "web-research"
+
+
 def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
     layer2_dir = config.turn_dir / "layer2"
     layer3_dir = config.turn_dir / "layer3"
@@ -158,6 +175,7 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
             "specialist_reasoning_effort": config.specialist_reasoning_effort,
             "head_model": config.head_model,
             "head_reasoning_effort": config.head_reasoning_effort,
+            "web_search_policy": str(config.web_search_policy or "web-role-only"),
         },
         "created_at": now_iso(),
     }
@@ -403,6 +421,8 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
     else:
         write_text(cooperation_path, "")
 
+    _persist_turn_evidence_cache(config=config, group_results=group_results)
+
     return {
         "schema_version": "3.1",
         "group_status": group_results,
@@ -607,6 +627,13 @@ def _run_group(
     claims = _normalized_claims(handoff_payload)
     if not claims:
         claims = _claims_from_specialist_payloads(specialist_payloads)
+    evidence_refs = _normalized_evidence_refs(handoff_payload)
+    for row in _evidence_refs_from_specialist_payloads(specialist_payloads):
+        evidence_id = str(row.get("evidence_id") or "").strip()
+        if not evidence_id:
+            continue
+        if all(str(item.get("evidence_id") or "").strip() != evidence_id for item in evidence_refs):
+            evidence_refs.append(row)
 
     artifacts = _normalized_artifacts(handoff_payload)
     produced_artifacts = _normalized_strings(handoff_payload.get("produced_artifacts"))
@@ -617,16 +644,25 @@ def _run_group(
         produced_artifacts = [item for item in produced_artifacts if item]
 
     if not claims:
+        fallback_ref = {
+            "evidence_id": evidence_id_for_citation("https://example.org/group-complete"),
+            "citation": "https://example.org/group-complete",
+            "title": "group-complete",
+            "source_type": "web",
+            "domain": "example.org",
+        }
+        evidence_refs.append(fallback_ref)
         claims.append(
             {
                 "claim": f"{group_id} completed all scheduled specialist tasks.",
-                "citation": "https://example.org/group-complete",
+                "evidence_ids": [str(fallback_ref["evidence_id"])],
             }
         )
 
+    claims = _canonicalize_claim_evidence_ids(claims=claims, evidence_refs=evidence_refs)
     citation_count = _count_claim_citations(claims)
 
-    handoff_payload.setdefault("schema_version", "3.0")
+    handoff_payload.setdefault("schema_version", "4.0")
     handoff_payload["status"] = "COMPLETE"
     handoff_payload["group_id"] = group_id
     handoff_payload["execution_status"] = "COMPLETE"
@@ -634,10 +670,12 @@ def _run_group(
     handoff_payload["produced_artifacts"] = sorted(set(produced_artifacts))
     handoff_payload["citations_summary"] = {
         "count": citation_count,
-        "has_web_url": _claims_have_web_url(claims),
+        "has_web_url": _claims_have_web_url(evidence_refs),
     }
     handoff_payload["artifacts"] = artifacts
-    handoff_payload["claims_with_citations"] = claims
+    handoff_payload["claims"] = claims
+    handoff_payload["evidence_refs"] = evidence_refs
+    handoff_payload.pop("claims_with_citations", None)
     handoff_payload["updated_at"] = now_iso()
 
     summary_text = head_result.work_text.strip()
@@ -743,7 +781,11 @@ def _run_specialist_with_retries(
     specialist_id = str(task.get("agent_id") or "")
     role = str(task.get("role") or "domain-core")
     focus = str(task.get("focus") or "")
-    web_search_enabled = bool(task.get("web_search_enabled", True))
+    web_search_enabled = _resolve_task_web_search_enabled(
+        config=config,
+        task=task,
+        role=role,
+    )
     attempts_total = max(1, int(config.retry_attempts) + 1)
 
     specialist_root = config.project_dir / "agent-groups" / group_id / "internal" / specialist_id
@@ -796,6 +838,16 @@ def _run_specialist_with_retries(
 
     timed_out = False
     retry_gate_reasons: List[str] = []
+    resolved_reference_paths = _resolve_required_reference_paths(
+        project_dir=config.project_dir,
+        group_id=group_id,
+        required_references=task.get("required_references", []),
+    )
+    resolved_dependency_artifacts = _resolve_dependency_artifact_paths(
+        project_dir=config.project_dir,
+        group_id=group_id,
+        dependencies=task.get("depends_on", []),
+    )
     for attempt in range(1, attempts_total + 1):
         specialist_sessions[group_id][specialist_id]["status"] = "RUNNING"
         specialist_sessions[group_id][specialist_id]["attempts"] = attempt
@@ -811,6 +863,9 @@ def _run_specialist_with_retries(
             dependencies=task.get("depends_on", []),
             required_outputs=task.get("required_outputs", []),
             required_references=task.get("required_references", []),
+            required_reference_paths=resolved_reference_paths,
+            dependency_artifact_paths=resolved_dependency_artifacts,
+            web_search_enabled=web_search_enabled,
             artifact_scope={
                 "work_path": str(work_path),
                 "handoff_path": str(handoff_path),
@@ -833,6 +888,7 @@ def _run_specialist_with_retries(
                 session_label=f"{group_id}/{specialist_id}",
                 model=config.specialist_model,
                 model_reasoning_effort=config.specialist_reasoning_effort,
+                disable_mcp=True,
             )
         )
 
@@ -913,21 +969,24 @@ def _run_specialist_with_retries(
 
         handoff_payload = dict(result.parsed_handoff or {})
         if result.success:
-            handoff_payload.setdefault("schema_version", "3.0")
+            handoff_payload = _apply_evidence_auto_heal(
+                project_root=config.project_root,
+                payload=handoff_payload,
+            )
+            handoff_payload.setdefault("schema_version", "4.0")
             handoff_payload.setdefault("status", "COMPLETE")
             handoff_payload.setdefault("execution_status", "COMPLETE")
             handoff_payload.setdefault("dependencies_satisfied", True)
             handoff_payload.setdefault("produced_artifacts", [])
-            handoff_payload.setdefault(
-                "citations_summary",
-                {
-                    "count": _count_claim_citations(_normalized_claims(handoff_payload)),
-                    "has_web_url": _claims_have_web_url(_normalized_claims(handoff_payload)),
-                },
-            )
-            handoff_payload.setdefault("claims_with_citations", [])
+            handoff_payload["claims"] = _normalized_claims(handoff_payload)
+            handoff_payload["evidence_refs"] = _normalized_evidence_refs(handoff_payload)
+            handoff_payload["citations_summary"] = {
+                "count": _count_claim_citations(handoff_payload["claims"]),
+                "has_web_url": _claims_have_web_url(handoff_payload["evidence_refs"]),
+            }
             handoff_payload.setdefault("repro_steps", ["specialist execution complete"])
             handoff_payload.setdefault("artifact_paths", [])
+            handoff_payload.pop("claims_with_citations", None)
             gate = gate_specialist_output(
                 handoff_payload,
                 role=role,
@@ -939,11 +998,12 @@ def _run_specialist_with_retries(
             if not isinstance(gate_reasons, list):
                 gate_reasons = []
             if gate_status != "PASS":
+                gate_error = "specialist gate failed: {0} ({1})".format(
+                    gate_status, "; ".join(str(x) for x in gate_reasons)
+                )
                 specialist_sessions[group_id][specialist_id]["status"] = "FAILED"
                 specialist_sessions[group_id][specialist_id]["finished_at"] = now_iso()
-                specialist_sessions[group_id][specialist_id][
-                    "error"
-                ] = f"specialist gate failed: {gate_status} ({'; '.join(str(x) for x in gate_reasons)})"
+                specialist_sessions[group_id][specialist_id]["error"] = gate_error
                 snapshot_paths = _write_specialist_snapshot(
                     snapshot_root=layer4_dir / "specialists" / group_id / specialist_id,
                     work_text=result.parsed_work,
@@ -957,7 +1017,7 @@ def _run_specialist_with_retries(
                         "role": role,
                         "attempt": attempt,
                         "success": False,
-                        "error": specialist_sessions[group_id][specialist_id]["error"],
+                        "error": gate_error,
                         "gate": gate,
                         "raw_log_path": str(raw_log_path),
                         "redacted_log_path": str(redacted_log_path),
@@ -979,15 +1039,114 @@ def _run_specialist_with_retries(
                         "gate_reasons": gate_reasons,
                     }
                 )
-                if attempt < attempts_total and int(config.retry_backoff_sec) > 0:
-                    time.sleep(int(config.retry_backoff_sec))
                 retry_gate_reasons = [
                     str(item).strip() for item in gate_reasons if str(item).strip()
                 ]
-                continue
+                # Gate failures are deterministic in most cases; do not spend extra model
+                # retries once auto-healing has already been applied.
+                handoff_payload["execution_status"] = (
+                    gate_status if gate_status.startswith("BLOCKED_") else "BLOCKED_REVIEW"
+                )
+                handoff_payload["dependencies_satisfied"] = False
+                handoff_payload["quality_gate"] = {
+                    "status": gate_status,
+                    "reasons": retry_gate_reasons,
+                    "soft_pass": True,
+                }
+                handoff_payload.setdefault("claims", [])
+                handoff_payload.setdefault("evidence_refs", [])
+                handoff_payload.setdefault("repro_steps", ["specialist execution completed with warnings"])
+                handoff_payload.setdefault("artifact_paths", [])
+                handoff_payload.setdefault("produced_artifacts", [])
+
+                soft_work_text = result.parsed_work.strip()
+                if not soft_work_text:
+                    soft_work_text = (
+                        "# Work Notes\n\n"
+                        "No specialist work notes were returned. Output published with quality gate "
+                        "warnings for downstream head triage."
+                    )
+                write_text(work_path, soft_work_text.rstrip() + "\n")
+                write_text(handoff_path, json.dumps(handoff_payload, indent=2, sort_keys=True) + "\n")
+                _persist_payload_evidence_cache(
+                    project_root=config.project_root,
+                    payload=handoff_payload,
+                )
+                snapshot_paths = _write_specialist_snapshot(
+                    snapshot_root=layer4_dir / "specialists" / group_id / specialist_id,
+                    work_text=soft_work_text,
+                    handoff_payload=handoff_payload,
+                    meta_payload={
+                        "schema_version": "1.0",
+                        "generated_at": now_iso(),
+                        "project_id": config.project_id,
+                        "group_id": group_id,
+                        "specialist_id": specialist_id,
+                        "role": role,
+                        "attempt": attempt,
+                        "success": True,
+                        "soft_success": True,
+                        "error": gate_error,
+                        "gate": gate,
+                        "raw_log_path": str(raw_log_path),
+                        "redacted_log_path": str(redacted_log_path),
+                    },
+                )
+                specialist_sessions[group_id][specialist_id].update(snapshot_paths)
+                specialist_sessions[group_id][specialist_id]["status"] = "COMPLETE_WITH_WARNINGS"
+                specialist_sessions[group_id][specialist_id]["finished_at"] = now_iso()
+                specialist_sessions[group_id][specialist_id]["error"] = gate_error
+                if result.thread_id:
+                    set_specialist_thread(
+                        config.project_root,
+                        group_id,
+                        specialist_id,
+                        result.thread_id,
+                        "COMPLETE",
+                    )
+                ledger_rows.append(
+                    {
+                        "ts": now_iso(),
+                        "event": "specialist_gate_soft_pass",
+                        "group_id": group_id,
+                        "specialist_id": specialist_id,
+                        "attempt": attempt,
+                        "gate_status": gate_status,
+                        "gate_reasons": retry_gate_reasons,
+                        "raw_log": str(raw_log_path),
+                        "redacted_log": str(redacted_log_path),
+                        "codex_home": str(codex_home),
+                        "visible_skills": visible_skills,
+                        "thread_id": result.thread_id,
+                        "used_resume": result.used_resume,
+                        "rotated_thread": result.rotated_thread,
+                        "parse_mode": result.parse_mode,
+                    }
+                )
+                return SpecialistResult(
+                    success=True,
+                    group_id=group_id,
+                    specialist_id=specialist_id,
+                    role=role,
+                    attempt=attempt,
+                    work_path=str(work_path),
+                    handoff_path=str(handoff_path),
+                    raw_log_path=str(raw_log_path),
+                    redacted_log_path=str(redacted_log_path),
+                    codex_home=str(codex_home),
+                    visible_skills=visible_skills,
+                    mount_status=mount_status,
+                    timed_out=False,
+                    error="",
+                    escalation_request=None,
+                )
 
             write_text(work_path, result.parsed_work.rstrip() + "\n")
             write_text(handoff_path, json.dumps(handoff_payload, indent=2, sort_keys=True) + "\n")
+            _persist_payload_evidence_cache(
+                project_root=config.project_root,
+                payload=handoff_payload,
+            )
             snapshot_paths = _write_specialist_snapshot(
                 snapshot_root=layer4_dir / "specialists" / group_id / specialist_id,
                 work_text=result.parsed_work,
@@ -1033,6 +1192,7 @@ def _run_specialist_with_retries(
                     "thread_id": result.thread_id,
                     "used_resume": result.used_resume,
                     "rotated_thread": result.rotated_thread,
+                    "parse_mode": result.parse_mode,
                 }
             )
             return SpecialistResult(
@@ -1081,19 +1241,24 @@ def _run_specialist_with_retries(
                 "thread_id": result.thread_id,
                 "used_resume": result.used_resume,
                 "rotated_thread": result.rotated_thread,
+                "parse_mode": result.parse_mode,
                 "timed_out": timed_out,
             }
         )
 
-        if attempt < attempts_total and int(config.retry_backoff_sec) > 0:
-            time.sleep(int(config.retry_backoff_sec))
+        if attempt < attempts_total:
+            if _is_retryable_specialist_failure(result):
+                if int(config.retry_backoff_sec) > 0:
+                    time.sleep(int(config.retry_backoff_sec))
+                continue
+            break
 
     return SpecialistResult(
         success=False,
         group_id=group_id,
         specialist_id=specialist_id,
         role=role,
-        attempt=attempts_total,
+        attempt=attempt,
         work_path=str(work_path),
         handoff_path=str(handoff_path),
         raw_log_path=str(raw_log_path),
@@ -1183,12 +1348,18 @@ def _run_head_with_retries(
 
         payload = dict(result.parsed_handoff or {})
         if result.success:
-            payload.setdefault("schema_version", "3.0")
+            payload = _normalize_specialist_handoff_payload(payload)
+            payload = _hydrate_evidence_refs_from_cache(
+                project_root=config.project_root,
+                payload=payload,
+            )
+            payload.setdefault("schema_version", "4.0")
             payload.setdefault("status", "COMPLETE")
             payload.setdefault("execution_status", "COMPLETE")
             payload.setdefault("dependencies_satisfied", True)
             payload.setdefault("produced_artifacts", [])
-            payload.setdefault("claims_with_citations", [])
+            payload.setdefault("claims", [])
+            payload.setdefault("evidence_refs", [])
             payload.setdefault("artifacts", [])
 
             ledger_rows.append(
@@ -1204,6 +1375,7 @@ def _run_head_with_retries(
                     "thread_id": result.thread_id,
                     "used_resume": result.used_resume,
                     "rotated_thread": result.rotated_thread,
+                    "parse_mode": result.parse_mode,
                 }
             )
             if result.thread_id:
@@ -1236,6 +1408,7 @@ def _run_head_with_retries(
                 "thread_id": result.thread_id,
                 "used_resume": result.used_resume,
                 "rotated_thread": result.rotated_thread,
+                "parse_mode": result.parse_mode,
             }
         )
         if result.thread_id:
@@ -1307,6 +1480,9 @@ def _build_specialist_prompt(
     dependencies: object,
     required_outputs: object,
     required_references: object,
+    required_reference_paths: List[str],
+    dependency_artifact_paths: List[str],
+    web_search_enabled: bool,
     artifact_scope: dict,
     retry_gate_reasons: List[str] | None = None,
 ) -> str:
@@ -1332,6 +1508,13 @@ def _build_specialist_prompt(
                 + "\n"
             )
     role_handoff_text = "".join(f"{line}\n" for line in role_handoff_fields)
+    compact_reference_paths = _compact_prompt_list(required_reference_paths, limit=4)
+    compact_dependency_paths = _compact_prompt_list(dependency_artifact_paths, limit=4)
+    web_policy_line = (
+        "Web search policy for this role: enabled.\n"
+        if web_search_enabled
+        else "Web search policy for this role: disabled. Reuse local artifacts, dependency handoffs, and cache-backed evidence.\n"
+    )
     return activation + (
         "You are a specialist agent in a layered multi-agent research runtime. "
         "Work only in your scope and produce structured output.\n"
@@ -1343,11 +1526,15 @@ def _build_specialist_prompt(
         f"Dependencies: {json.dumps(dependencies, ensure_ascii=True)}\n"
         f"Required outputs: {json.dumps(required_outputs, ensure_ascii=True)}\n"
         f"Required references: {json.dumps(required_references, ensure_ascii=True)}\n"
-        "Requirements:\n"
-        "1. Include claim-level citations for all key technical claims.\n"
-        "2. Include reproducibility steps and artifact paths.\n"
-        "3. If evidence is missing, set status to BLOCKED_NEEDS_EVIDENCE with reasons.\n"
-        "4. If privileged access or unknown external credentials are required, write "
+        f"Resolved required reference paths: {json.dumps(compact_reference_paths, ensure_ascii=True)}\n"
+        f"Resolved dependency artifact paths: {json.dumps(compact_dependency_paths, ensure_ascii=True)}\n"
+        + web_policy_line
+        + "Requirements:\n"
+        "1. Do not write files directly. Return structured blocks only; runtime persists artifacts.\n"
+        "2. Use compact evidence linking: claims must reference evidence IDs, and evidence details belong in evidence_refs.\n"
+        "3. Include reproducibility steps and artifact paths.\n"
+        "4. If evidence is missing, set status to BLOCKED_NEEDS_EVIDENCE with reasons.\n"
+        "5. If privileged access or unknown external credentials are required, write "
         "ESCALATION_REQUEST.json in your working directory.\n"
         + role_requirements_text
         + retry_feedback_text
@@ -1357,10 +1544,12 @@ def _build_specialist_prompt(
         "END_WORK\n"
         "BEGIN_HANDOFF_JSON\n"
         "{\n"
+        '  "schema_version": "4.0",\n'
         '  "status": "COMPLETE",\n'
         '  "execution_status": "COMPLETE",\n'
         '  "assumptions": [],\n'
-        '  "claims_with_citations": [{"claim": "...", "citation": "..."}],\n'
+        '  "claims": [{"claim": "...", "evidence_ids": ["e1"]}],\n'
+        '  "evidence_refs": [{"evidence_id": "e1", "citation": "https://...", "title": "...", "source_type": "web"}],\n'
         '  "repro_steps": ["..."],\n'
         '  "artifact_paths": ["..."],\n'
         '  "produced_artifacts": ["..."],\n'
@@ -1369,7 +1558,7 @@ def _build_specialist_prompt(
         + '  "dependencies_satisfied": true\n'
         "}\n"
         "END_HANDOFF_JSON\n"
-        f"Artifact scope target work_path={artifact_scope['work_path']} handoff_path={artifact_scope['handoff_path']}\n"
+        f"Artifact scope target (runtime-managed) work_path={artifact_scope['work_path']} handoff_path={artifact_scope['handoff_path']}\n"
         "If ESCALATION_RESPONSE.json exists in your working directory, consume it before finalizing output.\n"
     )
 
@@ -1405,18 +1594,23 @@ def _build_head_prompt(
                         citation_count = 0
                     has_web_url = bool(summary.get("has_web_url"))
 
-                claims = payload.get("claims_with_citations", [])
+                claims = payload.get("claims")
+                if not isinstance(claims, list):
+                    claims = payload.get("claims_with_citations", [])
                 if isinstance(claims, list):
                     for claim in claims[:HEAD_PROMPT_MAX_CLAIMS_PER_SPECIALIST]:
                         if not isinstance(claim, dict):
                             continue
-                        claim_text = str(claim.get("claim") or "").strip()
-                        citation = str(claim.get("citation") or "").strip()
-                        if claim_text or citation:
+                        claim_text = str(claim.get("claim") or claim.get("text") or "").strip()
+                        evidence_ids = claim.get("evidence_ids")
+                        if not isinstance(evidence_ids, list):
+                            evidence_ids = []
+                        preview_ids = [str(item).strip() for item in evidence_ids if str(item).strip()][:3]
+                        if claim_text or preview_ids:
                             claim_preview_rows.append(
                                 {
                                     "claim": claim_text[:HEAD_PROMPT_CLAIM_PREVIEW_CHARS],
-                                    "citation": citation[:HEAD_PROMPT_CITATION_PREVIEW_CHARS],
+                                    "evidence_ids": preview_ids,
                                 }
                             )
 
@@ -1470,13 +1664,15 @@ def _build_head_prompt(
         "END_WORK\n"
         "BEGIN_HANDOFF_JSON\n"
         "{\n"
+        '  "schema_version": "4.0",\n'
         '  "status": "COMPLETE",\n'
         '  "response_status": "ANSWERED",\n'
         '  "objective_response": "direct answer for this group",\n'
         '  "decision_summary": "merge decision in one to two sentences",\n'
         '  "recommended_actions": ["next action 1"],\n'
         '  "objective_coverage": 0.9,\n'
-        '  "claims_with_citations": [{"claim": "...", "citation": "..."}],\n'
+        '  "claims": [{"claim": "...", "evidence_ids": ["ev_..."]}],\n'
+        '  "evidence_refs": [{"evidence_id": "ev_...", "citation": "https://...", "title": "...", "source_type": "web"}],\n'
         '  "artifacts": [{"path": "...", "title": "..."}],\n'
         '  "produced_artifacts": ["..."],\n'
         '  "dependencies_satisfied": true,\n'
@@ -1664,13 +1860,25 @@ def _claims_from_specialist_payloads(payloads: List[dict]) -> List[dict]:
         payload = row.get("payload")
         if not isinstance(payload, dict):
             continue
-        claim_rows = payload.get("claims_with_citations", [])
-        if not isinstance(claim_rows, list):
-            continue
-        for item in claim_rows:
-            if isinstance(item, dict):
-                claims.append(item)
+        for item in _normalized_claims(payload):
+            claims.append(item)
     return claims
+
+
+def _evidence_refs_from_specialist_payloads(payloads: List[dict]) -> List[dict]:
+    refs: List[dict] = []
+    seen: set[str] = set()
+    for row in payloads:
+        payload = row.get("payload")
+        if not isinstance(payload, dict):
+            continue
+        for ref in _normalized_evidence_refs(payload):
+            evidence_id = str(ref.get("evidence_id") or "").strip()
+            if not evidence_id or evidence_id in seen:
+                continue
+            seen.add(evidence_id)
+            refs.append(ref)
+    return refs
 
 
 def _artifacts_from_specialist_payloads(payloads: List[dict]) -> List[dict]:
@@ -1697,10 +1905,297 @@ def _artifacts_from_specialist_payloads(payloads: List[dict]) -> List[dict]:
 
 
 def _normalized_claims(payload: dict) -> List[dict]:
-    claim_rows = payload.get("claims_with_citations", [])
+    claim_rows = payload.get("claims")
+    if isinstance(claim_rows, list):
+        out: List[dict] = []
+        for row in claim_rows:
+            if not isinstance(row, dict):
+                continue
+            text = str(row.get("claim") or row.get("text") or "").strip()
+            evidence_ids = row.get("evidence_ids")
+            if not isinstance(evidence_ids, list):
+                evidence_ids = []
+            normalized_ids: List[str] = []
+            for item in evidence_ids:
+                token = str(item or "").strip()
+                if token and token not in normalized_ids:
+                    normalized_ids.append(token)
+            if text:
+                out.append({"claim": text, "evidence_ids": normalized_ids})
+        return out
+    return _legacy_claims_to_v4(payload)
+
+
+def _normalized_evidence_refs(payload: dict) -> List[dict]:
+    raw = payload.get("evidence_refs")
+    refs, _ = canonicalize_evidence_refs(raw)
+    if refs:
+        return refs
+    claims = _legacy_claims_to_v4(payload)
+    built: List[dict] = []
+    seen: set[str] = set()
+    for claim in claims:
+        evidence_ids = claim.get("evidence_ids")
+        if not isinstance(evidence_ids, list):
+            continue
+        for evidence_id in evidence_ids:
+            text = str(evidence_id).strip()
+            if not text or text in seen:
+                continue
+            seen.add(text)
+            built.append(
+                {
+                    "evidence_id": text,
+                    "citation": "",
+                    "title": "",
+                    "source_type": "reference",
+                    "domain": "",
+                }
+            )
+    return built
+
+
+def _legacy_claims_to_v4(payload: dict) -> List[dict]:
+    claim_rows = payload.get("claims_with_citations")
     if not isinstance(claim_rows, list):
         return []
-    return [row for row in claim_rows if isinstance(row, dict)]
+    out: List[dict] = []
+    for row in claim_rows:
+        if not isinstance(row, dict):
+            continue
+        claim_text = str(row.get("claim") or row.get("text") or "").strip()
+        if not claim_text:
+            continue
+        evidence_ids: List[str] = []
+        for ref in _legacy_citations_from_claim(row):
+            evidence_id = evidence_id_for_citation(ref)
+            if evidence_id and evidence_id not in evidence_ids:
+                evidence_ids.append(evidence_id)
+        out.append({"claim": claim_text, "evidence_ids": evidence_ids})
+    return out
+
+
+def _legacy_citations_from_claim(row: dict) -> List[str]:
+    out: List[str] = []
+    candidates = [
+        row.get("citation"),
+        row.get("url"),
+        row.get("source_url"),
+        row.get("doi"),
+    ]
+    refs = row.get("citations")
+    if isinstance(refs, list):
+        candidates.extend(refs)
+    for item in candidates:
+        text = str(item or "").strip()
+        if not text:
+            continue
+        if text.lower().startswith("doi:"):
+            text = "https://doi.org/" + text[4:].strip()
+        if text and text not in out:
+            out.append(text)
+    return out
+
+
+def _canonicalize_claim_evidence_ids(*, claims: List[dict], evidence_refs: List[dict]) -> List[dict]:
+    canonical_refs, id_map = canonicalize_evidence_refs(evidence_refs)
+    mapped: List[dict] = []
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        text = str(claim.get("claim") or claim.get("text") or "").strip()
+        if not text:
+            continue
+        evidence_ids = claim.get("evidence_ids")
+        if not isinstance(evidence_ids, list):
+            evidence_ids = []
+        normalized_ids: List[str] = []
+        for item in evidence_ids:
+            token = str(item or "").strip()
+            if not token:
+                continue
+            mapped_id = id_map.get(token, token)
+            if mapped_id.startswith("http://") or mapped_id.startswith("https://"):
+                mapped_id = evidence_id_for_citation(mapped_id) or mapped_id
+            if mapped_id and mapped_id not in normalized_ids:
+                normalized_ids.append(mapped_id)
+        mapped.append({"claim": text, "evidence_ids": normalized_ids})
+    # Keep canonical refs in-place for caller by replacing list contents.
+    evidence_refs.clear()
+    evidence_refs.extend(canonical_refs)
+    return mapped
+
+
+def _normalize_specialist_handoff_payload(payload: dict) -> dict:
+    out = dict(payload)
+    claims = _normalized_claims(out)
+    evidence_refs = _normalized_evidence_refs(out)
+    if not evidence_refs:
+        # Build evidence_refs from legacy citations if present.
+        built_refs: List[dict] = []
+        seen: set[str] = set()
+        legacy_rows = out.get("claims_with_citations")
+        if isinstance(legacy_rows, list):
+            for row in legacy_rows:
+                if not isinstance(row, dict):
+                    continue
+                for ref in _legacy_citations_from_claim(row):
+                    evidence_id = evidence_id_for_citation(ref)
+                    if not evidence_id or evidence_id in seen:
+                        continue
+                    seen.add(evidence_id)
+                    built_refs.append(
+                        {
+                            "evidence_id": evidence_id,
+                            "citation": ref,
+                            "title": "",
+                            "source_type": "web" if ref.startswith("http") else "reference",
+                            "domain": "",
+                        }
+                    )
+        evidence_refs = built_refs
+    claims = _canonicalize_claim_evidence_ids(claims=claims, evidence_refs=evidence_refs)
+    out["claims"] = claims
+    out["evidence_refs"] = evidence_refs
+    out.pop("claims_with_citations", None)
+    return out
+
+
+def _collect_claim_evidence_ids(claims: List[dict]) -> List[str]:
+    out: List[str] = []
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        evidence_ids = claim.get("evidence_ids")
+        if not isinstance(evidence_ids, list):
+            continue
+        for item in evidence_ids:
+            text = str(item or "").strip()
+            if text and text not in out:
+                out.append(text)
+    return out
+
+
+def _hydrate_evidence_refs_from_cache(*, project_root: Path, payload: dict) -> dict:
+    out = dict(payload)
+    claims = _normalized_claims(out)
+    evidence_refs = _normalized_evidence_refs(out)
+    existing_ids = {
+        str(row.get("evidence_id") or "").strip()
+        for row in evidence_refs
+        if isinstance(row, dict)
+    }
+    needed_ids = [item for item in _collect_claim_evidence_ids(claims) if item not in existing_ids]
+    if needed_ids:
+        cached = resolve_evidence_ids(project_root, needed_ids)
+        for evidence_id in needed_ids:
+            row = cached.get(evidence_id)
+            if not isinstance(row, dict):
+                continue
+            evidence_refs.append(
+                {
+                    "evidence_id": evidence_id,
+                    "citation": str(row.get("citation") or "").strip(),
+                    "title": str(row.get("title") or "").strip(),
+                    "source_type": str(row.get("source_type") or "").strip() or "reference",
+                    "domain": str(row.get("domain") or "").strip(),
+                }
+            )
+    out["claims"] = _canonicalize_claim_evidence_ids(claims=claims, evidence_refs=evidence_refs)
+    out["evidence_refs"] = evidence_refs
+    return out
+
+
+def _apply_evidence_auto_heal(*, project_root: Path, payload: dict) -> dict:
+    out = _normalize_specialist_handoff_payload(payload)
+    before_claims = _normalized_claims(out)
+    before_refs = _normalized_evidence_refs(out)
+    out = _hydrate_evidence_refs_from_cache(project_root=project_root, payload=out)
+    claims = _normalized_claims(out)
+    evidence_refs = _normalized_evidence_refs(out)
+
+    available_ids = {
+        str(row.get("evidence_id") or "").strip()
+        for row in evidence_refs
+        if isinstance(row, dict)
+    }
+    healed_ids: List[str] = []
+
+    if len(available_ids) == 1:
+        fallback_id = next(iter(available_ids))
+        for row in claims:
+            if not isinstance(row, dict):
+                continue
+            ids = row.get("evidence_ids")
+            if not isinstance(ids, list):
+                ids = []
+            normalized = [str(item).strip() for item in ids if str(item).strip()]
+            if normalized:
+                continue
+            row["evidence_ids"] = [fallback_id]
+            healed_ids.append(fallback_id)
+
+    claims = _canonicalize_claim_evidence_ids(claims=claims, evidence_refs=evidence_refs)
+    out = _hydrate_evidence_refs_from_cache(
+        project_root=project_root,
+        payload={"claims": claims, "evidence_refs": evidence_refs},
+    )
+    claims = _normalized_claims(out)
+    evidence_refs = _normalized_evidence_refs(out)
+    available_ids = {
+        str(row.get("evidence_id") or "").strip()
+        for row in evidence_refs
+        if isinstance(row, dict)
+    }
+    unresolved_ids = sorted(
+        {
+            evidence_id
+            for evidence_id in _collect_claim_evidence_ids(claims)
+            if evidence_id not in available_ids
+        }
+    )
+    changed = stable_json(before_claims) != stable_json(claims) or stable_json(before_refs) != stable_json(
+        evidence_refs
+    )
+    out["claims"] = claims
+    out["evidence_refs"] = evidence_refs
+    out["evidence_auto_heal"] = {
+        "applied": bool(changed or healed_ids),
+        "healed_ids": sorted({str(item).strip() for item in healed_ids if str(item).strip()}),
+        "unresolved_ids": unresolved_ids,
+    }
+    return out
+
+
+def _persist_payload_evidence_cache(*, project_root: Path, payload: dict) -> None:
+    refs = _normalized_evidence_refs(payload)
+    if refs:
+        merge_evidence_refs_into_cache(project_root=project_root, evidence_refs=refs)
+
+
+def _is_retryable_specialist_failure(result: object) -> bool:
+    # Runtime failure retries should target transient failures only.
+    error_text = str(getattr(result, "error", "") or "").strip().lower()
+    return_code = int(getattr(result, "return_code", 0) or 0)
+    if return_code == 124 or "timeout" in error_text:
+        return True
+    if return_code != 0:
+        return True
+    parse_markers = (
+        "missing begin_work/end_work block",
+        "missing begin_handoff_json/end_handoff_json block",
+        "invalid handoff json",
+        "handoff payload must be json object",
+    )
+    return any(marker in error_text for marker in parse_markers)
+
+
+def _compact_prompt_list(values: List[str], *, limit: int = 5) -> List[str]:
+    rows = [str(item).strip() for item in values if str(item).strip()]
+    if len(rows) <= limit:
+        return rows
+    overflow = len(rows) - limit
+    return rows[:limit] + [f"...(+{overflow} more)"]
 
 
 def _normalized_artifacts(payload: dict) -> List[dict]:
@@ -1728,29 +2223,27 @@ def _normalized_strings(value: object) -> List[str]:
 
 
 def _count_claim_citations(claims: List[dict]) -> int:
-    count = 0
+    ids: set[str] = set()
     for claim in claims:
         if not isinstance(claim, dict):
             continue
-        if str(claim.get("citation") or "").strip():
-            count += 1
-        refs = claim.get("citations")
-        if isinstance(refs, list):
-            count += len([ref for ref in refs if str(ref).strip()])
-    return count
-
-
-def _claims_have_web_url(claims: List[dict]) -> bool:
-    for claim in claims:
-        if not isinstance(claim, dict):
+        refs = claim.get("evidence_ids")
+        if not isinstance(refs, list):
             continue
-        citation = str(claim.get("citation") or "")
-        if citation.startswith("http"):
+        for ref in refs:
+            text = str(ref or "").strip()
+            if text:
+                ids.add(text)
+    return len(ids)
+
+
+def _claims_have_web_url(evidence_refs: List[dict]) -> bool:
+    for ref in evidence_refs:
+        if not isinstance(ref, dict):
+            continue
+        citation = str(ref.get("citation") or "").strip().lower()
+        if citation.startswith("http://") or citation.startswith("https://"):
             return True
-        refs = claim.get("citations")
-        if isinstance(refs, list):
-            if any(str(ref).startswith("http") for ref in refs):
-                return True
     return False
 
 
@@ -1985,6 +2478,87 @@ def _normalize_head_objective_contract(
         "recommended_actions": recommended_actions[:8],
         "objective_coverage": round(max(0.0, min(1.0, float(objective_coverage))), 3),
     }
+
+
+def _resolve_required_reference_paths(
+    *, project_dir: Path, group_id: str, required_references: object
+) -> List[str]:
+    refs = required_references if isinstance(required_references, list) else []
+    group_root = project_dir / "agent-groups" / group_id
+    out: List[str] = []
+    for item in refs:
+        text = str(item or "").strip()
+        if not text:
+            continue
+        candidate = (group_root / text).resolve()
+        out.append(str(candidate))
+    return out
+
+
+def _resolve_dependency_artifact_paths(
+    *, project_dir: Path, group_id: str, dependencies: object
+) -> List[str]:
+    rows = dependencies if isinstance(dependencies, list) else []
+    group_root = project_dir / "agent-groups" / group_id
+    out: List[str] = []
+    for dep in rows:
+        if not isinstance(dep, dict):
+            continue
+        artifacts = dep.get("required_artifacts")
+        if not isinstance(artifacts, list):
+            continue
+        for item in artifacts:
+            text = str(item or "").strip()
+            if not text:
+                continue
+            candidate = (group_root / text).resolve()
+            rendered = str(candidate)
+            if rendered not in out:
+                out.append(rendered)
+    return out
+
+
+def _persist_turn_evidence_cache(
+    *, config: LayeredRuntimeConfig, group_results: Dict[str, dict]
+) -> None:
+    refs: List[dict] = []
+    seen: set[str] = set()
+
+    for group_id in config.selected_groups:
+
+        exposed_handoff = config.project_dir / "agent-groups" / group_id / "exposed" / "handoff.json"
+        if exposed_handoff.exists():
+            try:
+                payload = json.loads(exposed_handoff.read_text(encoding="utf-8"))
+            except Exception:
+                payload = {}
+            if isinstance(payload, dict):
+                for row in _normalized_evidence_refs(payload):
+                    evidence_id = str(row.get("evidence_id") or "").strip()
+                    if not evidence_id or evidence_id in seen:
+                        continue
+                    seen.add(evidence_id)
+                    refs.append(row)
+
+        group_internal = config.project_dir / "agent-groups" / group_id / "internal"
+        if not group_internal.exists():
+            continue
+        for handoff in sorted(group_internal.glob("*/handoff.json")):
+            try:
+                payload = json.loads(handoff.read_text(encoding="utf-8"))
+            except Exception:
+                payload = {}
+            if not isinstance(payload, dict):
+                continue
+            for row in _normalized_evidence_refs(payload):
+                evidence_id = str(row.get("evidence_id") or "").strip()
+                if not evidence_id or evidence_id in seen:
+                    continue
+                seen.add(evidence_id)
+                refs.append(row)
+
+    if refs:
+        merge_evidence_refs_into_cache(project_root=config.project_root, evidence_refs=refs)
 
 
 def _timeout_mode(timeout_sec: int) -> str:

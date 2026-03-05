@@ -1,6 +1,6 @@
 # Full Template and Skill Reference
 
-Generated at: `2026-03-03T16:17:35Z`
+Generated at: `2026-03-05T05:59:56Z`
 Fabric root: `/home/msj/Desktop/playground/agents-inc_dev/agents-inc`
 Include generated projects: `True`
 
@@ -1421,7 +1421,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -1445,7 +1445,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -1469,7 +1469,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -1498,7 +1498,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -1527,7 +1527,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -1556,7 +1556,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -1580,7 +1580,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -1600,7 +1600,7 @@ required_artifacts:
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
   profile_id: standard-evidence-v3
-  specialist_output_schema: specialist-handoff-v3
+  specialist_output_schema: specialist-handoff-v4
   checks:
     web_citations_required: true
     repro_command_required: true
@@ -1676,7 +1676,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -1700,7 +1700,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -1724,7 +1724,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -1753,7 +1753,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -1782,7 +1782,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -1811,7 +1811,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -1835,7 +1835,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -1855,7 +1855,7 @@ required_artifacts:
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
   profile_id: standard-evidence-v3
-  specialist_output_schema: specialist-handoff-v3
+  specialist_output_schema: specialist-handoff-v4
   checks:
     web_citations_required: true
     repro_command_required: true
@@ -1931,7 +1931,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -1955,7 +1955,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -1979,7 +1979,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2008,7 +2008,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2037,7 +2037,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2066,7 +2066,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2090,7 +2090,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2114,7 +2114,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2134,7 +2134,7 @@ required_artifacts:
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
   profile_id: standard-evidence-v3
-  specialist_output_schema: specialist-handoff-v3
+  specialist_output_schema: specialist-handoff-v4
   checks:
     web_citations_required: true
     repro_command_required: true
@@ -2210,7 +2210,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2234,7 +2234,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2258,7 +2258,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2287,7 +2287,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2316,7 +2316,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2345,7 +2345,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2369,7 +2369,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2389,7 +2389,7 @@ required_artifacts:
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
   profile_id: standard-evidence-v3
-  specialist_output_schema: specialist-handoff-v3
+  specialist_output_schema: specialist-handoff-v4
   checks:
     web_citations_required: true
     repro_command_required: true
@@ -2465,7 +2465,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2489,7 +2489,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2513,7 +2513,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2542,7 +2542,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2571,7 +2571,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2600,7 +2600,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2624,7 +2624,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2644,7 +2644,7 @@ required_artifacts:
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
   profile_id: standard-evidence-v3
-  specialist_output_schema: specialist-handoff-v3
+  specialist_output_schema: specialist-handoff-v4
   checks:
     web_citations_required: true
     repro_command_required: true
@@ -2720,7 +2720,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2744,7 +2744,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2768,7 +2768,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2797,7 +2797,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2826,7 +2826,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -2855,7 +2855,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2879,7 +2879,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2903,7 +2903,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -2923,7 +2923,7 @@ required_artifacts:
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
   profile_id: standard-evidence-v3
-  specialist_output_schema: specialist-handoff-v3
+  specialist_output_schema: specialist-handoff-v4
   checks:
     web_citations_required: true
     repro_command_required: true
@@ -3023,12 +3023,12 @@ projects:
     manifest_path: generated/projects/proj-test-alpha/manifest.yaml
     selected_groups:
     - integration-delivery
-    updated_at: '2026-03-03T16:17:35Z'
+    updated_at: '2026-03-05T05:59:55Z'
   proj-test-hpc:
     manifest_path: generated/projects/proj-test-hpc/manifest.yaml
     selected_groups:
     - integration-delivery
-    updated_at: '2026-03-03T16:17:35Z'
+    updated_at: '2026-03-05T05:59:56Z'
 ```
 
 ## 35. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/AGENTS.md`
@@ -3181,7 +3181,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -3206,7 +3206,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -3231,7 +3231,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -3261,7 +3261,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -3291,7 +3291,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -3321,7 +3321,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -3346,7 +3346,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -3367,7 +3367,7 @@ required_artifacts:
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
   profile_id: standard-evidence-v3
-  specialist_output_schema: specialist-handoff-v3
+  specialist_output_schema: specialist-handoff-v4
   checks:
     web_citations_required: true
     repro_command_required: true
@@ -4639,7 +4639,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -4664,7 +4664,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -4689,7 +4689,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -4719,7 +4719,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -4749,7 +4749,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on:
   - agent_id: domain-core-specialist
     required_artifacts:
@@ -4779,7 +4779,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -4804,7 +4804,7 @@ specialists:
     outputs:
     - work.md
     - handoff.json
-    output_schema: specialist-handoff-v2
+    output_schema: specialist-handoff-v4
   depends_on: []
   execution:
     web_search_enabled: true
@@ -4825,7 +4825,7 @@ required_artifacts:
       - exposed/INTEGRATION_NOTES.md
 gate_profile:
   profile_id: standard-evidence-v3
-  specialist_output_schema: specialist-handoff-v3
+  specialist_output_schema: specialist-handoff-v4
   checks:
     web_citations_required: true
     repro_command_required: true

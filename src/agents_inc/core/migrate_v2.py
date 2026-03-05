@@ -105,7 +105,7 @@ def _normalize_specialist(group_id: str, specialist: dict) -> dict:
     contract = specialist.get("contract") if isinstance(specialist.get("contract"), dict) else {}
     contract.setdefault("inputs", ["objective.md", "group-context.json"])
     contract.setdefault("outputs", ["work.md", "handoff.json"])
-    contract.setdefault("output_schema", "specialist-handoff-v2")
+    contract.setdefault("output_schema", "specialist-handoff-v4")
 
     normalized = dict(specialist)
     normalized["agent_id"] = slugify(agent_id)
@@ -243,7 +243,7 @@ def migrate_group_manifest(data: dict) -> dict:
     }
     out["gate_profile"] = data.get("gate_profile") or {
         "profile_id": "standard-evidence-v2",
-        "specialist_output_schema": "specialist-handoff-v2",
+        "specialist_output_schema": "specialist-handoff-v4",
         "checks": {
             "web_citations_required": True,
             "repro_command_required": True,

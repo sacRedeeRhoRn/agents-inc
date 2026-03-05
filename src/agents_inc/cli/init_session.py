@@ -765,7 +765,8 @@ def main() -> int:
                 "project_index": str(context_project_index),
                 "projects_root": str(projects_root),
                 "fabric_root": str(fabric_root),
-            }
+            },
+            path=config_path.parent / "context.yaml",
         )
 
         bootstrap_state_path = config_path.parent / "bootstrap.yaml"

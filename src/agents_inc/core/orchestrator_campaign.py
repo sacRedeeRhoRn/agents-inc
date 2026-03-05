@@ -92,7 +92,7 @@ def _default_web_specialist(group_id: str) -> dict:
         "contract": {
             "inputs": ["objective.md", "group-context.json"],
             "outputs": ["work.md", "handoff.json"],
-            "output_schema": "specialist-handoff-v2",
+            "output_schema": "specialist-handoff-v4",
         },
         "depends_on": [],
         "execution": {

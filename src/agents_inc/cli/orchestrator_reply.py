@@ -104,6 +104,12 @@ def parse_args() -> argparse.Namespace:
         help=f"group head reasoning effort override (default: {DEFAULT_HEAD_REASONING_EFFORT})",
     )
     parser.add_argument(
+        "--web-search-policy",
+        default="web-role-only",
+        choices=["web-role-only", "all-enabled"],
+        help="web search policy for specialist runs",
+    )
+    parser.add_argument(
         "--live-profile",
         default="bounded",
         choices=["bounded", "custom"],
@@ -403,6 +409,7 @@ def main() -> int:
             specialist_reasoning_effort=model_settings["specialist_reasoning_effort"],
             head_model=str(model_settings["head_model"]),
             head_reasoning_effort=model_settings["head_reasoning_effort"],
+            web_search_policy=str(args.web_search_policy or "web-role-only"),
             progress_callback=(_print_live_event_stderr if args.json else _print_live_event_stdout),
         )
         result = run_orchestrator_reply(config)

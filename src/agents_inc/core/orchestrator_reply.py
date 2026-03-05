@@ -29,6 +29,7 @@ from agents_inc.core.negotiation_monitor import NegotiationCycleRecord
 from agents_inc.core.orchestration import report as orchestration_report
 from agents_inc.core.orchestration.cycle_engine import build_cycle_summary
 from agents_inc.core.orchestration.meeting import build_negotiation_monitor
+from agents_inc.core.token_usage import write_turn_token_usage_report
 from agents_inc.core.orchestration.turn_router import (
     resolve_primary_group as resolve_primary_group_router,
 )
@@ -73,6 +74,7 @@ class OrchestratorReplyConfig:
     specialist_reasoning_effort: str | None = DEFAULT_SPECIALIST_REASONING_EFFORT
     head_model: str = DEFAULT_HEAD_MODEL
     head_reasoning_effort: str | None = DEFAULT_HEAD_REASONING_EFFORT
+    web_search_policy: str = "web-role-only"
     progress_callback: Callable[[dict], None] | None = None
 
 
@@ -199,6 +201,13 @@ def _timeout_mode(value: int) -> str:
     except Exception:
         parsed = 0
     return "bounded" if parsed > 0 else "unlimited"
+
+
+def _normalize_web_search_policy(value: str | None) -> str:
+    policy = str(value or "").strip().lower()
+    if policy in {"all-enabled", "web-role-only"}:
+        return policy
+    return "web-role-only"
 
 
 def _copy_latest_artifact(source_path: str, target_path: Path) -> str:
@@ -358,7 +367,36 @@ def _safe_read(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace").strip()
 
 
-def _citation_from_claim(claim: dict) -> List[str]:
+def _build_evidence_lookup(payload: dict) -> Dict[str, dict]:
+    refs = payload.get("evidence_refs")
+    if not isinstance(refs, list):
+        return {}
+    out: Dict[str, dict] = {}
+    for row in refs:
+        if not isinstance(row, dict):
+            continue
+        evidence_id = str(
+            row.get("evidence_id") or row.get("id") or row.get("key") or ""
+        ).strip()
+        if not evidence_id:
+            continue
+        out[evidence_id] = dict(row)
+    return out
+
+
+def _evidence_ids_from_claim(claim: dict) -> List[str]:
+    rows = claim.get("evidence_ids")
+    if not isinstance(rows, list):
+        return []
+    out: List[str] = []
+    for item in rows:
+        text = str(item or "").strip()
+        if text and text not in out:
+            out.append(text)
+    return out
+
+
+def _citation_from_claim(claim: dict, evidence_lookup: Optional[Dict[str, dict]] = None) -> List[str]:
     refs: List[str] = []
     candidates = [
         claim.get("citation"),
@@ -377,6 +415,20 @@ def _citation_from_claim(claim: dict) -> List[str]:
             text = "https://doi.org/" + text[4:].strip()
         if text and text not in refs:
             refs.append(text)
+    if evidence_lookup:
+        for evidence_id in _evidence_ids_from_claim(claim):
+            row = evidence_lookup.get(evidence_id)
+            if not isinstance(row, dict):
+                continue
+            text = str(
+                row.get("citation")
+                or row.get("url")
+                or row.get("source_url")
+                or row.get("doi")
+                or ""
+            ).strip()
+            if text and text not in refs:
+                refs.append(text)
     return refs
 
 
@@ -592,19 +644,38 @@ def _collect_group_contributions(project_dir: Path, groups: List[str], objective
                 if preview and preview not in artifact_preview:
                     artifact_preview.append(preview)
 
-        claims_payload = handoff_payload.get("claims_with_citations")
+        claims_payload = handoff_payload.get("claims")
         if not isinstance(claims_payload, list):
-            claims_payload = handoff_payload.get("claims")
+            claims_payload = handoff_payload.get("claims_with_citations")
         claims: List[dict] = []
         if isinstance(claims_payload, list):
             for item in claims_payload:
                 if isinstance(item, dict):
                     claims.append(item)
+        evidence_lookup = _build_evidence_lookup(handoff_payload)
 
         citation_refs: List[str] = []
         claim_preview_rows: List[dict] = []
+        evidence_preview_rows: List[dict] = []
+        for evidence_id, row in sorted(evidence_lookup.items()):
+            citation = str(
+                row.get("citation")
+                or row.get("url")
+                or row.get("source_url")
+                or row.get("doi")
+                or ""
+            ).strip()
+            evidence_preview_rows.append(
+                {
+                    "evidence_id": evidence_id,
+                    "citation": citation,
+                    "title": str(row.get("title") or "").strip(),
+                    "source_type": str(row.get("source_type") or "").strip(),
+                }
+            )
         for claim in claims:
-            refs = _citation_from_claim(claim)
+            refs = _citation_from_claim(claim, evidence_lookup=evidence_lookup)
+            evidence_ids = _evidence_ids_from_claim(claim)
             for ref in refs:
                 if ref not in citation_refs:
                     citation_refs.append(ref)
@@ -613,6 +684,7 @@ def _collect_group_contributions(project_dir: Path, groups: List[str], objective
                 claim_preview_rows.append(
                     {
                         "text": preview,
+                        "evidence_ids": evidence_ids,
                         "citations": refs,
                     }
                 )
@@ -709,6 +781,7 @@ def _collect_group_contributions(project_dir: Path, groups: List[str], objective
                 "claim_count": len(claim_preview_rows),
                 "citation_refs": citation_refs,
                 "citation_count": len(citation_refs),
+                "evidence_refs": evidence_preview_rows,
                 "response_status": response_status,
                 "objective_response": objective_response,
                 "decision_summary": decision_summary,
@@ -834,9 +907,18 @@ def _render_group_findings(contributions: List[dict]) -> str:
             lines.append("- claim-level published signals:")
             for claim in claim_rows[:5]:
                 text = str(claim.get("text") or "").strip()
+                evidence_ids = claim.get("evidence_ids", [])
+                evidence_text = (
+                    ", ".join(str(item) for item in evidence_ids[:3])
+                    if isinstance(evidence_ids, list) and evidence_ids
+                    else ""
+                )
                 refs = claim.get("citations", [])
                 ref_text = ", ".join(str(item) for item in refs[:2]) if refs else "no-citation"
-                lines.append(f"  - {text} [refs: {ref_text}]")
+                if evidence_text:
+                    lines.append(f"  - {text} [evidence_ids: {evidence_text}] [refs: {ref_text}]")
+                else:
+                    lines.append(f"  - {text} [refs: {ref_text}]")
 
         artifacts = row.get("artifact_preview", [])
         if isinstance(artifacts, list) and artifacts:
@@ -898,9 +980,13 @@ def _render_anticipated_results_table(contributions: List[dict]) -> str:
         if isinstance(claims, list) and claims:
             first = claims[0]
             signal = str(first.get("text") or "").strip()
-            citations = first.get("citations", [])
-            if isinstance(citations, list):
-                refs = [str(item) for item in citations if str(item).strip()]
+            evidence_ids = first.get("evidence_ids", [])
+            if isinstance(evidence_ids, list):
+                refs = [str(item) for item in evidence_ids if str(item).strip()]
+            if not refs:
+                citations = first.get("citations", [])
+                if isinstance(citations, list):
+                    refs = [str(item) for item in citations if str(item).strip()]
 
         if not signal:
             signal = (
@@ -922,14 +1008,15 @@ def _render_anticipated_results_table(contributions: List[dict]) -> str:
 
 def _render_evidence_table(web_rows: List[dict], artifact_citations: List[dict]) -> str:
     lines = [
-        "| Source Type | Provider/Group | Year | Title/Ref | URL |",
-        "|---|---|---:|---|---|",
+        "| Evidence ID | Source Type | Provider/Group | Year | Title/Ref | URL |",
+        "|---|---|---|---:|---|---|",
     ]
 
     for row in web_rows:
         title = str(row.get("title", "")).replace("|", "/")
         lines.append(
-            "| web | {0} | {1} | {2} | {3} |".format(
+            "| {0} | web | {1} | {2} | {3} | {4} |".format(
+                str(row.get("evidence_id") or ""),
                 row.get("provider", ""),
                 row.get("year", "-"),
                 title,
@@ -939,7 +1026,8 @@ def _render_evidence_table(web_rows: List[dict], artifact_citations: List[dict])
 
     for row in artifact_citations:
         lines.append(
-            "| artifact | {0} | - | {1} | {2} |".format(
+            "| {0} | artifact | {1} | - | {2} | {3} |".format(
+                str(row.get("evidence_id") or ""),
                 row.get("group_id", ""),
                 str(row.get("citation") or "").replace("|", "/"),
                 row.get("url", ""),
@@ -947,15 +1035,37 @@ def _render_evidence_table(web_rows: List[dict], artifact_citations: List[dict])
         )
 
     if len(lines) == 2:
-        lines.append("| none | none | - | no evidence rows captured | - |")
+        lines.append("| none | none | none | - | no evidence rows captured | - |")
     return "\n".join(lines)
 
 
 def _collect_artifact_citations(contributions: List[dict]) -> List[dict]:
     rows: List[dict] = []
     seen: set = set()
+    seen_citation: set = set()
     for row in contributions:
         group_id = str(row.get("group_id") or "")
+        evidence_rows = row.get("evidence_refs", [])
+        if isinstance(evidence_rows, list):
+            for evidence in evidence_rows:
+                if not isinstance(evidence, dict):
+                    continue
+                evidence_id = str(evidence.get("evidence_id") or "").strip()
+                citation = str(evidence.get("citation") or "").strip()
+                key = (group_id, evidence_id, citation)
+                if key in seen:
+                    continue
+                seen.add(key)
+                if citation:
+                    seen_citation.add((group_id, citation))
+                rows.append(
+                    {
+                        "group_id": group_id,
+                        "evidence_id": evidence_id,
+                        "citation": citation,
+                        "url": citation if citation.startswith("http") else "",
+                    }
+                )
         refs = row.get("citation_refs", [])
         if not isinstance(refs, list):
             continue
@@ -963,14 +1073,18 @@ def _collect_artifact_citations(contributions: List[dict]) -> List[dict]:
             text = str(ref).strip()
             if not text:
                 continue
-            key = (group_id, text)
+            if (group_id, text) in seen_citation:
+                continue
+            key = (group_id, "", text)
             if key in seen:
                 continue
             seen.add(key)
+            seen_citation.add((group_id, text))
             url = text if text.startswith("http") else ""
             rows.append(
                 {
                     "group_id": group_id,
+                    "evidence_id": "",
                     "citation": text,
                     "url": url,
                 }
@@ -1580,6 +1694,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             config.head_reasoning_effort,
             default=DEFAULT_HEAD_REASONING_EFFORT,
         ),
+        web_search_policy=_normalize_web_search_policy(config.web_search_policy),
         progress_callback=config.progress_callback,
     )
     project_root, project_dir, manifest = _load_project_bundle(config)
@@ -1742,6 +1857,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 specialist_reasoning_effort=config.specialist_reasoning_effort,
                 head_model=config.head_model,
                 head_reasoning_effort=config.head_reasoning_effort,
+                web_search_policy=config.web_search_policy,
                 progress_callback=config.progress_callback,
                 cycle_id=cycle,
             )
@@ -1974,6 +2090,12 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             blocked_reasons.extend(str(item) for item in reasons if str(item).strip())
 
     write_text(turn_dir / "escalations.json", stable_json(unresolved_escalations) + "\n")
+    token_usage_report = write_turn_token_usage_report(turn_dir=turn_dir)
+    token_usage_summary = token_usage_report.get("summary", {})
+    if not isinstance(token_usage_summary, dict):
+        token_usage_summary = {}
+    token_usage_json_path = str(token_usage_report.get("json_path") or "")
+    token_usage_md_path = str(token_usage_report.get("md_path") or "")
 
     evidence_rows: List[dict] = []
     contributions = _collect_group_contributions(
@@ -2064,6 +2186,9 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             "latest_artifacts": latest_artifacts,
             "escalations": unresolved_escalations,
             "escalations_path": str(turn_dir / "escalations.json"),
+            "token_usage_summary": token_usage_summary,
+            "token_usage_json_path": token_usage_json_path,
+            "token_usage_md_path": token_usage_md_path,
         }
         blocked_path = turn_dir / "blocked-reasons.json"
         write_text(blocked_path, stable_json(blocked_payload) + "\n")
@@ -2164,6 +2289,9 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                     "quality_checks": quality.get("checks", {}),
                     "timed_out_specialists": timed_out_specialists,
                     "latest_artifacts": latest_artifacts,
+                    "token_usage_summary": token_usage_summary,
+                    "token_usage_json_path": token_usage_json_path,
+                    "token_usage_md_path": token_usage_md_path,
                 }
             )
             + "\n",
@@ -2210,6 +2338,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 "timed_out_specialists": timed_out_specialists,
                 "escalations": unresolved_escalations,
                 "latest_artifacts": latest_artifacts,
+                "token_usage_summary": token_usage_summary,
                 "paths": {
                     "final_markdown": str(full_report_path),
                     "key_points": str(key_points_path),
@@ -2220,6 +2349,8 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                     "group_head_sessions_latest": str(turn_dir / "group-head-sessions.latest.json"),
                     "specialist_sessions_latest": str(turn_dir / "specialist-sessions.latest.json"),
                     "escalations": str(turn_dir / "escalations.json"),
+                    "token_usage_json": token_usage_json_path,
+                    "token_usage_markdown": token_usage_md_path,
                 },
             }
         )
@@ -2262,5 +2393,8 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         "latest_artifacts": latest_artifacts,
         "escalations": unresolved_escalations,
         "escalations_path": str(turn_dir / "escalations.json"),
+        "token_usage_summary": token_usage_summary,
+        "token_usage_json_path": token_usage_json_path,
+        "token_usage_md_path": token_usage_md_path,
         "cycles": cycle_summaries,
     }

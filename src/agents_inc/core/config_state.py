@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -9,8 +10,39 @@ from agents_inc.core.context_state import load_global_context
 from agents_inc.core.session_state import now_iso
 
 CONFIG_SCHEMA_VERSION = "1.0"
-DEFAULT_CONFIG_PATH = Path.home() / ".agents-inc" / "config.yaml"
-DEFAULT_PROJECTS_ROOT = Path.home() / "codex-projects"
+
+try:
+    import pwd
+except Exception:  # pragma: no cover - non-posix fallback
+    pwd = None  # type: ignore[assignment]
+
+
+def _effective_home() -> Path:
+    return Path.home().expanduser().resolve()
+
+
+def _real_user_home() -> Path:
+    if pwd is None:  # pragma: no cover - non-posix fallback
+        return _effective_home()
+    try:
+        return Path(pwd.getpwuid(os.getuid()).pw_dir).expanduser().resolve()
+    except Exception:  # noqa: BLE001
+        return _effective_home()
+
+
+def _default_config_path() -> Path:
+    return (_effective_home() / ".agents-inc" / "config.yaml").resolve()
+
+
+def _default_projects_root() -> Path:
+    return (_effective_home() / "codex-projects").resolve()
+
+
+def _global_config_candidates() -> set[Path]:
+    return {
+        _default_config_path().resolve(),
+        (_real_user_home() / ".agents-inc" / "config.yaml").resolve(),
+    }
 
 
 def _find_upward_file(relative_path: Path, *, start: Optional[Path] = None) -> Optional[Path]:
@@ -25,21 +57,22 @@ def _find_upward_file(relative_path: Path, *, start: Optional[Path] = None) -> O
 def default_config_path(raw: Optional[str] = None) -> Path:
     if raw:
         return Path(raw).expanduser().resolve()
+    default_path = _default_config_path()
     discovered = _find_upward_file(Path(".agents-inc") / "config.yaml")
-    if discovered is not None and discovered != DEFAULT_CONFIG_PATH.resolve():
+    if discovered is not None and discovered.resolve() not in _global_config_candidates():
         return discovered
     context = load_global_context()
     context_path = str(context.get("config_path") or "").strip()
     if context_path:
         return Path(context_path).expanduser().resolve()
-    return DEFAULT_CONFIG_PATH
+    return default_path
 
 
 def _default_config() -> dict:
     return {
         "schema_version": CONFIG_SCHEMA_VERSION,
         "defaults": {
-            "projects_root": str(DEFAULT_PROJECTS_ROOT),
+            "projects_root": str(_default_projects_root()),
             "last_release_tag": "",
         },
         "updated_at": now_iso(),
@@ -82,7 +115,7 @@ def get_projects_root(config_path: Path) -> Path:
     raw = config.get("defaults", {}).get("projects_root")
     if isinstance(raw, str) and raw.strip():
         return Path(raw).expanduser().resolve()
-    return DEFAULT_PROJECTS_ROOT
+    return _default_projects_root()
 
 
 def set_projects_root(config_path: Path, projects_root: Path) -> dict:
