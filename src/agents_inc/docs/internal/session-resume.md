@@ -10,6 +10,8 @@ Default behavior:
 - resume mode: `auto`
 - source preference: compact snapshot first, then checkpoint rehydrate fallback
 - launch: opens Codex in same terminal at project root
+- if latest checkpoint was saved from a `BLOCKED_*` orchestration turn, resume auto-restarts that
+  same objective once from the next cycle without requiring new user input
 
 ## List Available Sessions
 
@@ -39,6 +41,8 @@ Prepare artifacts without launching Codex:
 agents-inc resume <project-id> --no-launch
 ```
 
+`--no-launch` never triggers auto-restart.
+
 ## Regenerated Artifacts
 Resume refreshes:
 - `kickoff.md`
@@ -50,6 +54,8 @@ Resume also writes:
 - a new compacted snapshot
 - specialist session map refresh (`.agents-inc/state/specialist-sessions.yaml`)
 - response policy state (`.agents-inc/state/response-policy.yaml`)
+- when blocked turns occur, orchestrator automatically writes checkpoint + compacted snapshot
+  with `blocked_resume` metadata used by `agents-inc resume`
 
 ## Turn Execution After Resume
 

@@ -514,6 +514,8 @@ class FabricIntegrationTests(unittest.TestCase):
                 "proj-test-hpc",
                 "--groups",
                 "integration-delivery",
+                "--execution-mode",
+                "full",
                 "--force",
             ]
         )

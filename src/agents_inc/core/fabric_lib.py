@@ -94,6 +94,7 @@ SKILL_REQUIRED_FRONTMATTER_KEYS = {
     "autouse_triggers",
 }
 REQUIRED_FABRIC_DIRS = ["catalog", "templates", "schemas", "generated/projects"]
+VALID_EXECUTION_MODES = {"full", "light"}
 
 
 @dataclass
@@ -163,6 +164,25 @@ def ensure_fabric_root_initialized(fabric_root: Path) -> None:
     project_registry = fabric_root / "catalog" / "project-registry.yaml"
     if not project_registry.exists():
         dump_yaml(project_registry, {"router_skill_name": ROUTER_SKILL_NAME, "projects": {}})
+
+
+def normalize_execution_mode(value: object, *, default: str = "full") -> str:
+    default_mode = str(default or "full").strip().lower()
+    if default_mode not in VALID_EXECUTION_MODES:
+        default_mode = "full"
+    mode = str(value or "").strip().lower()
+    if mode in VALID_EXECUTION_MODES:
+        return mode
+    return default_mode
+
+
+def execution_mode_from_manifest(manifest: dict, *, default: str = "full") -> str:
+    if not isinstance(manifest, dict):
+        return normalize_execution_mode("", default=default)
+    runtime = manifest.get("runtime")
+    if not isinstance(runtime, dict):
+        return normalize_execution_mode("", default=default)
+    return normalize_execution_mode(runtime.get("execution_mode"), default=default)
 
 
 # ── Skill helpers ──────────────────────────────────────────────────────────
@@ -578,6 +598,20 @@ def ensure_project_shape(project: dict, source: str = "<unknown>") -> List[str]:
                 errors.append(f"{source}: visibility.mode must be 'group-only' or 'full'")
             if not isinstance(visibility.get("audit_override"), bool):
                 errors.append(f"{source}: visibility.audit_override must be bool")
+
+    runtime = project.get("runtime")
+    if runtime is not None:
+        if not isinstance(runtime, dict):
+            errors.append(f"{source}: runtime must be map")
+        else:
+            execution_mode = str(runtime.get("execution_mode") or "").strip().lower()
+            if execution_mode and execution_mode not in VALID_EXECUTION_MODES:
+                errors.append(
+                    "{0}: runtime.execution_mode must be one of {1}".format(
+                        source,
+                        ", ".join(sorted(VALID_EXECUTION_MODES)),
+                    )
+                )
 
     groups_map = project.get("groups", {})
     if groups_map and isinstance(groups_map, dict):

@@ -86,6 +86,7 @@ class LayeredRuntimeConfig:
     head_model: str = DEFAULT_HEAD_MODEL
     head_reasoning_effort: str | None = DEFAULT_HEAD_REASONING_EFFORT
     web_search_policy: str = "web-role-only"
+    execution_mode: str = "full"
     progress_callback: Callable[[dict], None] | None = None
     cycle_id: int = 0
 
@@ -144,6 +145,13 @@ def _resolve_task_web_search_enabled(*, config: LayeredRuntimeConfig, task: dict
     return default_enabled and role_name == "web-research"
 
 
+def _resolve_execution_mode(config: LayeredRuntimeConfig) -> str:
+    mode = str(config.execution_mode or "full").strip().lower()
+    if mode in {"light", "full"}:
+        return mode
+    return "full"
+
+
 def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
     layer2_dir = config.turn_dir / "layer2"
     layer3_dir = config.turn_dir / "layer3"
@@ -176,6 +184,7 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
             "head_model": config.head_model,
             "head_reasoning_effort": config.head_reasoning_effort,
             "web_search_policy": str(config.web_search_policy or "web-role-only"),
+            "execution_mode": _resolve_execution_mode(config),
         },
         "created_at": now_iso(),
     }
@@ -184,6 +193,7 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
     group_head_sessions: Dict[str, dict] = {}
     specialist_sessions: Dict[str, dict] = {}
 
+    runtime_mode = _resolve_execution_mode(config)
     for group_id in config.selected_groups:
         group_manifest = config.group_manifests[group_id]
         group_head_sessions[group_id] = {
@@ -193,31 +203,34 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
             "finished_at": "",
             "attempts": 0,
             "error": "",
-            "specialist_count": len(group_manifest.get("specialists", [])),
+            "specialist_count": (
+                len(group_manifest.get("specialists", [])) if runtime_mode == "full" else 0
+            ),
             "codex_home": "",
             "visible_skills": [],
             "mount_status": {},
         }
         specialist_sessions[group_id] = {}
-        for specialist in group_manifest.get("specialists", []):
-            aid = str(specialist.get("agent_id") or "")
-            if not aid:
-                continue
-            specialist_sessions[group_id][aid] = {
-                "session_code": f"{config.project_id}::{group_id}::{aid}::000001",
-                "status": "PENDING",
-                "attempts": 0,
-                "started_at": "",
-                "finished_at": "",
-                "error": "",
-                "role": str(specialist.get("role") or "domain-core"),
-                "codex_home": "",
-                "visible_skills": [],
-                "mount_status": {},
-                "snapshot_work_path": "",
-                "snapshot_handoff_path": "",
-                "snapshot_meta_path": "",
-            }
+        if runtime_mode == "full":
+            for specialist in group_manifest.get("specialists", []):
+                aid = str(specialist.get("agent_id") or "")
+                if not aid:
+                    continue
+                specialist_sessions[group_id][aid] = {
+                    "session_code": f"{config.project_id}::{group_id}::{aid}::000001",
+                    "status": "PENDING",
+                    "attempts": 0,
+                    "started_at": "",
+                    "finished_at": "",
+                    "error": "",
+                    "role": str(specialist.get("role") or "domain-core"),
+                    "codex_home": "",
+                    "visible_skills": [],
+                    "mount_status": {},
+                    "snapshot_work_path": "",
+                    "snapshot_handoff_path": "",
+                    "snapshot_meta_path": "",
+                }
 
     write_text(layer3_dir / "group-head-sessions.json", stable_json(group_head_sessions) + "\n")
     write_text(layer4_dir / "specialist-sessions.json", stable_json(specialist_sessions) + "\n")
@@ -313,7 +326,27 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
 
             for future in done:
                 group_id = future_map[future]
-                result = future.result()
+                try:
+                    result = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    error_text = str(exc).strip() or "group runtime exception"
+                    result = {
+                        "status": "BLOCKED",
+                        "started_at": now_iso(),
+                        "finished_at": now_iso(),
+                        "error": error_text,
+                        "timed_out_specialists": [],
+                        "escalations": [],
+                        "specialist_failures": [],
+                    }
+                    ledger_rows.append(
+                        {
+                            "ts": now_iso(),
+                            "event": "group_runtime_exception",
+                            "group_id": group_id,
+                            "error": error_text,
+                        }
+                    )
                 group_results[group_id] = result
                 _emit_progress(
                     config,
@@ -454,7 +487,14 @@ def _run_group(
     started_at = now_iso()
     group_manifest = config.group_manifests[group_id]
     group_objective = str((config.group_objectives or {}).get(group_id) or config.message)
-    dispatch = build_dispatch_plan(config.project_id, group_id, group_objective, group_manifest)
+    execution_mode = _resolve_execution_mode(config)
+    dispatch = build_dispatch_plan(
+        config.project_id,
+        group_id,
+        group_objective,
+        group_manifest,
+        execution_mode=execution_mode,
+    )
 
     phase_outputs: Dict[str, SpecialistResult] = {}
     group_error = ""
@@ -462,98 +502,146 @@ def _run_group(
     group_escalations: List[dict] = []
     specialist_failures: List[dict] = []
 
-    for phase in dispatch.get("phases", []):
-        if _abort_requested(config):
-            group_error = "abort requested"
-            ledger_rows.append(
-                {
-                    "ts": now_iso(),
-                    "event": "group_abort_requested",
-                    "group_id": group_id,
-                }
+    if execution_mode == "full":
+        for phase in dispatch.get("phases", []):
+            if _abort_requested(config):
+                group_error = "abort requested"
+                ledger_rows.append(
+                    {
+                        "ts": now_iso(),
+                        "event": "group_abort_requested",
+                        "group_id": group_id,
+                    }
+                )
+                break
+            tasks = phase.get("tasks", [])
+            if not isinstance(tasks, list):
+                continue
+            max_workers = (
+                len(tasks)
+                if int(config.max_parallel) <= 0
+                else max(1, min(int(config.max_parallel), len(tasks)))
             )
-            break
-        tasks = phase.get("tasks", [])
-        if not isinstance(tasks, list):
-            continue
-        max_workers = (
-            len(tasks)
-            if int(config.max_parallel) <= 0
-            else max(1, min(int(config.max_parallel), len(tasks)))
-        )
-        with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            future_map = {
-                pool.submit(
-                    _run_specialist_with_retries,
-                    config,
-                    group_id,
-                    group_objective,
-                    task,
-                    runner,
-                    specialist_sessions,
-                    layer4_dir,
-                    ledger_rows,
-                ): task
-                for task in tasks
-            }
-            for future in as_completed(future_map):
-                result = future.result()
-                phase_outputs[result.specialist_id] = result
-                if result.timed_out:
-                    timed_out_specialists.append(
-                        {
+            with ThreadPoolExecutor(max_workers=max_workers) as pool:
+                future_map = {
+                    pool.submit(
+                        _run_specialist_with_retries,
+                        config,
+                        group_id,
+                        group_objective,
+                        task,
+                        runner,
+                        specialist_sessions,
+                        layer4_dir,
+                        ledger_rows,
+                    ): task
+                    for task in tasks
+                }
+                for future in as_completed(future_map):
+                    task = future_map[future]
+                    specialist_id = str(task.get("agent_id") or "")
+                    role = str(task.get("role") or "domain-core")
+                    try:
+                        result = future.result()
+                    except Exception as exc:  # noqa: BLE001
+                        error_text = str(exc).strip() or "specialist runtime exception"
+                        if specialist_id in specialist_sessions[group_id]:
+                            specialist_sessions[group_id][specialist_id]["status"] = "FAILED"
+                            specialist_sessions[group_id][specialist_id]["finished_at"] = now_iso()
+                            specialist_sessions[group_id][specialist_id]["error"] = error_text
+                        ledger_rows.append(
+                            {
+                                "ts": now_iso(),
+                                "event": "specialist_runtime_exception",
+                                "group_id": group_id,
+                                "specialist_id": specialist_id,
+                                "error": error_text,
+                            }
+                        )
+                        result = SpecialistResult(
+                            success=False,
+                            group_id=group_id,
+                            specialist_id=specialist_id or "unknown-specialist",
+                            role=role,
+                            attempt=0,
+                            work_path="",
+                            handoff_path="",
+                            raw_log_path="",
+                            redacted_log_path="",
+                            codex_home="",
+                            visible_skills=[],
+                            mount_status={},
+                            timed_out=False,
+                            error=error_text,
+                            escalation_request=None,
+                        )
+                    phase_outputs[result.specialist_id] = result
+                    if result.timed_out:
+                        timed_out_specialists.append(
+                            {
+                                "group_id": group_id,
+                                "specialist_id": result.specialist_id,
+                                "attempts": result.attempt,
+                                "raw_log_path": result.raw_log_path,
+                                "redacted_log_path": result.redacted_log_path,
+                            }
+                        )
+                    if isinstance(result.escalation_request, dict):
+                        group_escalations.append(result.escalation_request)
+                    if not result.success:
+                        failure_entry = {
                             "group_id": group_id,
                             "specialist_id": result.specialist_id,
+                            "role": result.role,
                             "attempts": result.attempt,
-                            "raw_log_path": result.raw_log_path,
-                            "redacted_log_path": result.redacted_log_path,
+                            "timed_out": bool(result.timed_out),
+                            "error": str(
+                                result.error or f"specialist '{result.specialist_id}' failed"
+                            ),
                         }
-                    )
-                if isinstance(result.escalation_request, dict):
-                    group_escalations.append(result.escalation_request)
-                if not result.success:
-                    failure_entry = {
-                        "group_id": group_id,
-                        "specialist_id": result.specialist_id,
-                        "role": result.role,
-                        "attempts": result.attempt,
-                        "timed_out": bool(result.timed_out),
-                        "error": str(result.error or f"specialist '{result.specialist_id}' failed"),
-                    }
-                    if isinstance(result.escalation_request, dict):
-                        failure_entry["escalation_type"] = str(
-                            result.escalation_request.get("type", "custom")
+                        if isinstance(result.escalation_request, dict):
+                            failure_entry["escalation_type"] = str(
+                                result.escalation_request.get("type", "custom")
+                            )
+                        specialist_failures.append(failure_entry)
+                    if not result.success and not group_error:
+                        if isinstance(result.escalation_request, dict):
+                            group_error = (
+                                f"specialist '{result.specialist_id}' requested escalation "
+                                f"({result.escalation_request.get('type', 'custom')})"
+                            )
+                        elif result.timed_out:
+                            group_error = (
+                                f"specialist '{result.specialist_id}' timed out after "
+                                f"{result.attempt} attempt(s)"
+                            )
+                        else:
+                            group_error = result.error or f"specialist '{result.specialist_id}' failed"
+                    if _abort_requested(config) and not group_error:
+                        group_error = "abort requested"
+                        ledger_rows.append(
+                            {
+                                "ts": now_iso(),
+                                "event": "group_abort_requested",
+                                "group_id": group_id,
+                            }
                         )
-                    specialist_failures.append(failure_entry)
-                if not result.success and not group_error:
-                    if isinstance(result.escalation_request, dict):
-                        group_error = (
-                            f"specialist '{result.specialist_id}' requested escalation "
-                            f"({result.escalation_request.get('type', 'custom')})"
-                        )
-                    elif result.timed_out:
-                        group_error = (
-                            f"specialist '{result.specialist_id}' timed out after "
-                            f"{result.attempt} attempt(s)"
-                        )
-                    else:
-                        group_error = result.error or f"specialist '{result.specialist_id}' failed"
-                if _abort_requested(config) and not group_error:
-                    group_error = "abort requested"
-                    ledger_rows.append(
-                        {
-                            "ts": now_iso(),
-                            "event": "group_abort_requested",
-                            "group_id": group_id,
-                        }
-                    )
-                    for pending in future_map:
-                        if not pending.done():
-                            pending.cancel()
-                    break
+                        for pending in future_map:
+                            if not pending.done():
+                                pending.cancel()
+                        break
 
-        if group_error:
-            break
+            if group_error:
+                break
+    elif _abort_requested(config):
+        group_error = "abort requested"
+        ledger_rows.append(
+            {
+                "ts": now_iso(),
+                "event": "group_abort_requested",
+                "group_id": group_id,
+            }
+        )
 
     group_layer3 = layer3_dir / group_id
     group_layer3.mkdir(parents=True, exist_ok=True)
@@ -584,6 +672,7 @@ def _run_group(
         objective=group_objective,
         dispatch=dispatch,
         phase_outputs=phase_outputs,
+        execution_mode=execution_mode,
         runner=runner,
         layer3_dir=layer3_dir,
         ledger_rows=ledger_rows,
@@ -652,9 +741,14 @@ def _run_group(
             "domain": "example.org",
         }
         evidence_refs.append(fallback_ref)
+        fallback_claim = (
+            f"{group_id} completed direct group-head objective execution."
+            if execution_mode == "light"
+            else f"{group_id} completed all scheduled specialist tasks."
+        )
         claims.append(
             {
-                "claim": f"{group_id} completed all scheduled specialist tasks.",
+                "claim": fallback_claim,
                 "evidence_ids": [str(fallback_ref["evidence_id"])],
             }
         )
@@ -680,10 +774,15 @@ def _run_group(
 
     summary_text = head_result.work_text.strip()
     if not summary_text:
+        summary_title = (
+            "Group `{0}` completed head-only objective execution.".format(group_id)
+            if execution_mode == "light"
+            else "Group `{0}` completed layered specialist execution.".format(group_id)
+        )
         summary_lines = [
             "# Summary",
             "",
-            f"Group `{group_id}` completed layered specialist execution.",
+            summary_title,
             f"- specialist_count: {len(phase_outputs)}",
             f"- citation_refs: {citation_count}",
             f"- produced_artifacts: {len(handoff_payload['produced_artifacts'])}",
@@ -1279,6 +1378,7 @@ def _run_head_with_retries(
     objective: str,
     dispatch: dict,
     phase_outputs: Dict[str, SpecialistResult],
+    execution_mode: str,
     runner: AgentSessionRunner,
     layer3_dir: Path,
     ledger_rows: List[dict],
@@ -1322,6 +1422,7 @@ def _run_head_with_retries(
         group_id=group_id,
         dispatch=dispatch,
         phase_outputs=phase_outputs,
+        execution_mode=execution_mode,
     )
     head_timeout_sec = _resolve_head_timeout_sec(config.agent_timeout_sec)
 
@@ -1336,7 +1437,7 @@ def _run_head_with_retries(
                 raw_log_path=raw_log_path,
                 redacted_log_path=redacted_log_path,
                 timeout_sec=head_timeout_sec,
-                web_search=False,
+                web_search=(execution_mode == "light"),
                 codex_home=codex_home,
                 # Heads must start fresh each run to avoid stale cross-turn context bloat.
                 thread_id=None,
@@ -1569,7 +1670,55 @@ def _build_head_prompt(
     group_id: str,
     dispatch: dict,
     phase_outputs: Dict[str, SpecialistResult],
+    execution_mode: str,
 ) -> str:
+    head_skill = str(dispatch.get("head_skill") or "").strip()
+    activation = (
+        f"Activate and follow the `${head_skill}` skill if available, then proceed.\n"
+        if head_skill
+        else ""
+    )
+    if execution_mode == "light":
+        head_task_brief = dispatch.get("head_task_brief", {})
+        if not isinstance(head_task_brief, dict):
+            head_task_brief = {}
+        return activation + (
+            "You are the group head agent in a layered multi-agent runtime. "
+            "Execute this group objective directly without delegating to specialists.\n"
+            f"Objective: {objective}\n"
+            f"Group: {group_id}\n"
+            f"Dispatch metadata: {json.dumps({'head_agent': dispatch.get('head_agent'), 'head_skill': dispatch.get('head_skill'), 'execution_mode': 'light'}, ensure_ascii=True)}\n"
+            f"Group brief (canonical): {json.dumps(head_task_brief, ensure_ascii=True)}\n"
+            "Rules:\n"
+            "1. Directly solve the group objective and produce an evidence-backed answer.\n"
+            "2. Web search is enabled for this run; cite sources for externally derived claims.\n"
+            "3. Publish only group-level artifacts and citations.\n"
+            "4. Set response_status to ANSWERED only when this group directly answers the objective.\n"
+            "5. If evidence is insufficient, set response_status to BLOCKED and explain why.\n"
+            "6. objective_coverage is a 0..1 score for how fully this group addressed the objective.\n"
+            "Return ONLY these exact blocks:\n"
+            "BEGIN_WORK\n"
+            "<group summary markdown>\n"
+            "END_WORK\n"
+            "BEGIN_HANDOFF_JSON\n"
+            "{\n"
+            '  "schema_version": "4.0",\n'
+            '  "status": "COMPLETE",\n'
+            '  "response_status": "ANSWERED",\n'
+            '  "objective_response": "direct answer for this group",\n'
+            '  "decision_summary": "direct decision in one to two sentences",\n'
+            '  "recommended_actions": ["next action 1"],\n'
+            '  "objective_coverage": 0.9,\n'
+            '  "claims": [{"claim": "...", "evidence_ids": ["ev_..."]}],\n'
+            '  "evidence_refs": [{"evidence_id": "ev_...", "citation": "https://...", "title": "...", "source_type": "web"}],\n'
+            '  "artifacts": [{"path": "...", "title": "..."}],\n'
+            '  "produced_artifacts": ["..."],\n'
+            '  "dependencies_satisfied": true,\n'
+            '  "integration_notes": "# Integration Notes\\n\\n- ..."\n'
+            "}\n"
+            "END_HANDOFF_JSON\n"
+        )
+
     input_rows: List[dict] = []
     for specialist_id, output in sorted(phase_outputs.items())[:HEAD_PROMPT_MAX_SPECIALISTS]:
         handoff_path = Path(output.handoff_path)
@@ -1637,12 +1786,6 @@ def _build_head_prompt(
             }
         )
 
-    head_skill = str(dispatch.get("head_skill") or "").strip()
-    activation = (
-        f"Activate and follow the `${head_skill}` skill if available, then proceed.\n"
-        if head_skill
-        else ""
-    )
     return activation + (
         "You are the group head agent in a layered multi-agent runtime. "
         "Merge specialist outputs into one group-level exposed handoff.\n"

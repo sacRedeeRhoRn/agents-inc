@@ -317,25 +317,21 @@ class OrchestratorReplyTests(unittest.TestCase):
                 orchestrator_plan.get("settings", {}).get("web_search_policy"),
                 "web-role-only",
             )
+            self.assertEqual(
+                orchestrator_plan.get("settings", {}).get("execution_mode"),
+                "light",
+            )
 
             specialist_sessions = json.loads(
                 (
                     turn_dir / "cycles" / "cycle-0001" / "layer4" / "specialist-sessions.json"
                 ).read_text(encoding="utf-8")
             )
-            found_mount_status = False
-            for group_payload in specialist_sessions.values():
-                if not isinstance(group_payload, dict):
-                    continue
-                for specialist_payload in group_payload.values():
-                    if not isinstance(specialist_payload, dict):
-                        continue
-                    mount_status = specialist_payload.get("mount_status")
-                    if isinstance(mount_status, dict):
-                        found_mount_status = True
-                        self.assertIn("references_source", mount_status)
-                        self.assertIn("mode", mount_status)
-            self.assertTrue(found_mount_status)
+            self.assertTrue(all(isinstance(payload, dict) for payload in specialist_sessions.values()))
+            self.assertTrue(
+                all(len(payload) == 0 for payload in specialist_sessions.values()),
+                "light mode should not run specialist sessions",
+            )
 
     def test_blocked_payload_includes_timed_out_specialists(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -423,6 +419,22 @@ class OrchestratorReplyTests(unittest.TestCase):
             checks = negotiation_monitor.get("checks", {})
             self.assertIsInstance(checks, dict)
             self.assertFalse(bool(checks.get("meeting_cycles_executed_gte_1")))
+            auto_checkpoint = payload.get("auto_checkpoint", {})
+            self.assertIsInstance(auto_checkpoint, dict)
+            self.assertTrue(str(auto_checkpoint.get("checkpoint_id") or ""))
+
+            project_root = fabric_root / "generated" / "projects" / project_id
+            latest_checkpoint = yaml.safe_load(
+                (project_root / ".agents-inc" / "state" / "latest-checkpoint.yaml").read_text(
+                    encoding="utf-8"
+                )
+            )
+            checkpoint_path = Path(str(latest_checkpoint.get("checkpoint_path") or ""))
+            checkpoint_payload = yaml.safe_load(checkpoint_path.read_text(encoding="utf-8"))
+            blocked_resume = checkpoint_payload.get("blocked_resume", {})
+            self.assertTrue(bool(blocked_resume.get("enabled")))
+            self.assertEqual(blocked_resume.get("blocked_status"), "BLOCKED_LAYERED_RUNTIME")
+            self.assertEqual(int(blocked_resume.get("resume_from_cycle", 0)), 1)
 
     def test_blocked_payload_includes_escalations(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -589,6 +601,87 @@ class OrchestratorReplyTests(unittest.TestCase):
             self.assertEqual(runtime_config.specialist_model, "gpt-5.3-codex-spark")
             self.assertEqual(runtime_config.head_model, "gpt-5.3-codex")
             self.assertEqual(runtime_config.head_reasoning_effort, "xhigh")
+            self.assertEqual(runtime_config.execution_mode, "light")
+
+    def test_resume_continuation_starts_from_next_cycle(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fabric_root = Path(td) / "agent_group_fabric"
+            ensure_fabric_root_initialized(fabric_root)
+            project_id = "proj-resume-cycle-continuation"
+            with patch.object(
+                sys,
+                "argv",
+                [
+                    "agents-inc new-project",
+                    "--fabric-root",
+                    str(fabric_root),
+                    "--project-id",
+                    project_id,
+                    "--groups",
+                    "developer,quality-assurance",
+                    "--force",
+                ],
+            ):
+                code = new_project_cli.main()
+            self.assertEqual(code, 0)
+
+            def _fake_runtime(runtime_config):  # type: ignore[no-untyped-def]
+                wait_state = runtime_config.turn_dir / "wait-state.json"
+                ledger = runtime_config.turn_dir / "cooperation-ledger.ndjson"
+                head_sessions = runtime_config.turn_dir / "layer3" / "group-head-sessions.json"
+                specialist_sessions = runtime_config.turn_dir / "layer4" / "specialist-sessions.json"
+                wait_state.parent.mkdir(parents=True, exist_ok=True)
+                head_sessions.parent.mkdir(parents=True, exist_ok=True)
+                specialist_sessions.parent.mkdir(parents=True, exist_ok=True)
+                wait_state.write_text(
+                    json.dumps({"all_groups_complete": False}, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                ledger.write_text("", encoding="utf-8")
+                head_sessions.write_text("{}\n", encoding="utf-8")
+                specialist_sessions.write_text("{}\n", encoding="utf-8")
+                return {
+                    "blocked": True,
+                    "blocked_groups": ["developer"],
+                    "reasons": ["resume continuation probe"],
+                    "timed_out_specialists": [],
+                    "wait_state_path": str(wait_state),
+                    "cooperation_ledger_path": str(ledger),
+                    "group_head_sessions_path": str(head_sessions),
+                    "specialist_sessions_path": str(specialist_sessions),
+                }
+
+            turn_dir = Path(td) / "resume-turn"
+            with patch("agents_inc.core.orchestrator_reply.run_layered_runtime", _fake_runtime):
+                with self.assertRaises(FabricError):
+                    run_orchestrator_reply(
+                        OrchestratorReplyConfig(
+                            fabric_root=fabric_root,
+                            project_id=project_id,
+                            message="continue from blocked cycle",
+                            group="auto",
+                            output_dir=turn_dir,
+                            resume_from_cycle=5,
+                            resume_group_objectives={
+                                "developer": "resume objective developer",
+                                "quality-assurance": "resume objective qa",
+                            },
+                            resume_previous_cycle_summaries=[
+                                {"cycle_id": 1},
+                                {"cycle_id": 2},
+                                {"cycle_id": 3},
+                                {"cycle_id": 4},
+                                {"cycle_id": 5},
+                            ],
+                        )
+                    )
+
+            self.assertTrue((turn_dir / "cycles" / "cycle-0006").exists())
+            payload = json.loads((turn_dir / "blocked-reasons.json").read_text(encoding="utf-8"))
+            self.assertEqual(int(payload.get("cycles_executed", 0)), 6)
+            auto_checkpoint = payload.get("auto_checkpoint", {})
+            self.assertIsInstance(auto_checkpoint, dict)
+            self.assertTrue(str(auto_checkpoint.get("checkpoint_id") or ""))
 
 
 if __name__ == "__main__":

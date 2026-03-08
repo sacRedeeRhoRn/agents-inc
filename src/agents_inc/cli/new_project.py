@@ -22,6 +22,7 @@ from agents_inc.core.fabric_lib import (
     resolve_fabric_root,
     select_groups,
     slugify,
+    normalize_execution_mode,
     upsert_project_registry_entry,
     write_text,
 )
@@ -51,6 +52,12 @@ def parse_args() -> argparse.Namespace:
         default="group-only",
         choices=["group-only", "full"],
         help="default artifact exposure mode",
+    )
+    parser.add_argument(
+        "--execution-mode",
+        default="light",
+        choices=["light", "full"],
+        help="project runtime execution mode",
     )
     parser.add_argument(
         "--audit-override",
@@ -483,6 +490,9 @@ def main() -> int:
             "schema_version": "3.0",
             "project_id": project_id,
             "selected_groups": selected_groups,
+            "runtime": {
+                "execution_mode": normalize_execution_mode(args.execution_mode, default="light"),
+            },
             "install_targets": {
                 "codex_skill_dir": args.target_skill_dir,
             },

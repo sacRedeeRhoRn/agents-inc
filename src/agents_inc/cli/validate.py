@@ -6,6 +6,7 @@ from typing import List
 
 from agents_inc.core.fabric_lib import (
     build_dispatch_plan,
+    execution_mode_from_manifest,
     ensure_fabric_root_initialized,
     ensure_group_shape,
     ensure_project_shape,
@@ -152,6 +153,7 @@ def validate_project(fabric_root: Path, project_dir: Path) -> List[str]:
     errors.extend(ensure_project_shape(manifest, source=str(manifest_path)))
 
     groups_map = manifest.get("groups", {})
+    execution_mode = execution_mode_from_manifest(manifest, default="full")
     if not isinstance(groups_map, dict):
         return errors
 
@@ -243,12 +245,14 @@ def validate_project(fabric_root: Path, project_dir: Path) -> List[str]:
                 group_id,
                 "validation objective",
                 group_manifest,
+                execution_mode=execution_mode,
             )
             second = build_dispatch_plan(
                 manifest["project_id"],
                 group_id,
                 "validation objective",
                 group_manifest,
+                execution_mode=execution_mode,
             )
             if stable_json(first) != stable_json(second):
                 errors.append(

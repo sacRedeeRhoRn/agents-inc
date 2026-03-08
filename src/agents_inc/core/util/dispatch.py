@@ -101,12 +101,74 @@ def resolve_task_execution(group_manifest: dict, specialist: dict) -> dict:
 
 
 def build_dispatch_plan(
-    project_id: str, group_id: str, objective: str, group_manifest: dict
+    project_id: str,
+    group_id: str,
+    objective: str,
+    group_manifest: dict,
+    execution_mode: str = "full",
 ) -> dict:
     """Build a topologically-sorted dispatch plan for a group's specialists.
 
     Raises FabricError on cyclic or unsatisfiable dependencies.
     """
+    mode = str(execution_mode or "full").strip().lower()
+    if mode not in {"full", "light"}:
+        mode = "full"
+
+    head = group_manifest.get("head", {})
+    if not isinstance(head, dict):
+        raise FabricError(f"group '{group_id}' head config is invalid")
+
+    interaction = group_manifest.get("interaction", {})
+    session_mode = "interactive-separated"
+    if isinstance(interaction, dict) and interaction.get("mode"):
+        session_mode = str(interaction["mode"])
+
+    if mode == "light":
+        specialist_focus = []
+        specialists = group_manifest.get("specialists", [])
+        if isinstance(specialists, list):
+            for specialist in specialists:
+                if not isinstance(specialist, dict):
+                    continue
+                role = str(specialist.get("role") or "").strip()
+                focus = str(specialist.get("focus") or "").strip()
+                if role or focus:
+                    specialist_focus.append(
+                        {
+                            "role": role or "domain-core",
+                            "focus": focus,
+                        }
+                    )
+
+        return {
+            "project_id": project_id,
+            "group_id": group_id,
+            "objective": objective,
+            "dispatch_mode": "head-only",
+            "execution_mode": "light",
+            "session_mode": session_mode,
+            "schema_version": SCHEMA_VERSION,
+            "head_agent": str(head.get("agent_id") or "head-controller"),
+            "head_skill": str(head.get("effective_skill_name") or head.get("skill_name") or ""),
+            "specialist_output_schema": str(
+                group_manifest.get("gate_profile", {}).get(
+                    "specialist_output_schema", "specialist-handoff-v4"
+                )
+            ),
+            "group_web_search_default": bool(
+                group_manifest.get("execution_defaults", {}).get("web_search_enabled", True)
+            ),
+            "gate_profile": group_manifest.get("gate_profile", {}),
+            "quality_gates": group_manifest.get("quality_gates", {}),
+            "head_task_brief": {
+                "purpose": str(group_manifest.get("purpose") or "").strip(),
+                "head_mission": str(head.get("mission") or "").strip(),
+                "specialist_focus": specialist_focus[:12],
+            },
+            "phases": [],
+        }
+
     specialists = group_manifest.get("specialists", [])
     if not specialists:
         raise FabricError(f"group '{group_id}' has no specialists")
@@ -178,21 +240,17 @@ def build_dispatch_plan(
         completed.update(ready)
         remaining.difference_update(ready)
 
-    interaction = group_manifest.get("interaction", {})
-    session_mode = "interactive-separated"
-    if isinstance(interaction, dict) and interaction.get("mode"):
-        session_mode = str(interaction["mode"])
-
     return {
         "project_id": project_id,
         "group_id": group_id,
         "objective": objective,
         "dispatch_mode": "hybrid",
+        "execution_mode": "full",
         "session_mode": session_mode,
         "schema_version": SCHEMA_VERSION,
-        "head_agent": group_manifest["head"]["agent_id"],
-        "head_skill": group_manifest["head"].get(
-            "effective_skill_name", group_manifest["head"]["skill_name"]
+        "head_agent": head["agent_id"],
+        "head_skill": head.get(
+            "effective_skill_name", head["skill_name"]
         ),
         "specialist_output_schema": str(
             group_manifest.get("gate_profile", {}).get(

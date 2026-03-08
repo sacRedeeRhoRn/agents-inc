@@ -237,6 +237,74 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             self.assertIn("runtime_heartbeat", event_names)
             self.assertIn("runtime_group_done", event_names)
 
+    def test_runtime_group_exception_is_blocked_not_crash(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_root = root / "project-root"
+            project_dir = root / "project-dir"
+            turn_dir = root / "turn-001"
+            project_root.mkdir(parents=True, exist_ok=True)
+            project_dir.mkdir(parents=True, exist_ok=True)
+            turn_dir.mkdir(parents=True, exist_ok=True)
+
+            developer_manifest = yaml.safe_load(
+                (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+            )
+            self.assertIsInstance(developer_manifest, dict)
+            runtime_config = LayeredRuntimeConfig(
+                project_id="proj-group-exc",
+                project_root=project_root,
+                project_dir=project_dir,
+                turn_dir=turn_dir,
+                message="test group exception handling",
+                selected_groups=["developer"],
+                group_manifests={"developer": deepcopy(developer_manifest)},
+            )
+
+            with patch(
+                "agents_inc.core.layered_runtime._run_group",
+                side_effect=ValueError("'' does not appear to be an IPv4 or IPv6 address"),
+            ):
+                result = run_layered_runtime(runtime_config)
+
+            self.assertTrue(bool(result.get("blocked")))
+            reason_text = "\n".join(str(item) for item in result.get("reasons", []))
+            self.assertIn("does not appear to be an IPv4 or IPv6 address", reason_text)
+
+    def test_runtime_specialist_exception_is_blocked_not_crash(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_root = root / "project-root"
+            project_dir = root / "project-dir"
+            turn_dir = root / "turn-001"
+            project_root.mkdir(parents=True, exist_ok=True)
+            project_dir.mkdir(parents=True, exist_ok=True)
+            turn_dir.mkdir(parents=True, exist_ok=True)
+
+            developer_manifest = yaml.safe_load(
+                (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+            )
+            self.assertIsInstance(developer_manifest, dict)
+            runtime_config = LayeredRuntimeConfig(
+                project_id="proj-specialist-exc",
+                project_root=project_root,
+                project_dir=project_dir,
+                turn_dir=turn_dir,
+                message="test specialist exception handling",
+                selected_groups=["developer"],
+                group_manifests={"developer": deepcopy(developer_manifest)},
+            )
+
+            with patch(
+                "agents_inc.core.layered_runtime._run_specialist_with_retries",
+                side_effect=ValueError("'' does not appear to be an IPv4 or IPv6 address"),
+            ):
+                result = run_layered_runtime(runtime_config)
+
+            self.assertTrue(bool(result.get("blocked")))
+            reason_text = "\n".join(str(item) for item in result.get("reasons", []))
+            self.assertIn("does not appear to be an IPv4 or IPv6 address", reason_text)
+
     def test_final_gate_failure_soft_passes_specialist_and_group(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -451,12 +519,76 @@ class LayeredRuntimeMountTests(unittest.TestCase):
                 group_id="developer",
                 dispatch={"head_agent": "head", "head_skill": "dev-head"},
                 phase_outputs=phase_outputs,  # type: ignore[arg-type]
+                execution_mode="full",
             )
             self.assertIn("Do not perform web searches", prompt)
             self.assertIn("Specialist summaries (canonical)", prompt)
             self.assertIn("web-research-specialist", prompt)
             self.assertIn('"response_status": "ANSWERED"', prompt)
             self.assertIn('"objective_coverage": 0.9', prompt)
+
+    def test_build_head_prompt_light_mode_direct_execution(self) -> None:
+        prompt = _build_head_prompt(
+            objective="test light mode objective",
+            group_id="developer",
+            dispatch={
+                "head_agent": "head",
+                "head_skill": "dev-head",
+                "head_task_brief": {"purpose": "build direct answer"},
+            },
+            phase_outputs={},  # type: ignore[arg-type]
+            execution_mode="light",
+        )
+        self.assertIn("Execute this group objective directly", prompt)
+        self.assertIn("Web search is enabled", prompt)
+        self.assertNotIn("Specialist summaries (canonical)", prompt)
+
+    def test_light_mode_runs_head_only(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_root = root / "project-root"
+            project_dir = root / "project-dir"
+            turn_dir = root / "turn-001"
+            project_root.mkdir(parents=True, exist_ok=True)
+            project_dir.mkdir(parents=True, exist_ok=True)
+            turn_dir.mkdir(parents=True, exist_ok=True)
+
+            group_manifest = yaml.safe_load(
+                (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+            )
+            self.assertIsInstance(group_manifest, dict)
+            runtime_config = LayeredRuntimeConfig(
+                project_id="proj-light-head-only",
+                project_root=project_root,
+                project_dir=project_dir,
+                turn_dir=turn_dir,
+                message="test light mode",
+                selected_groups=["developer"],
+                group_manifests={"developer": deepcopy(group_manifest)},
+                execution_mode="light",
+            )
+
+            captured = []
+            original_run = AgentSessionRunner.run
+
+            def _capture_run(self, config):  # type: ignore[no-untyped-def]
+                captured.append(config)
+                return original_run(self, config)
+
+            with patch.dict("os.environ", {"AGENTS_INC_BACKEND": "mock"}, clear=False):
+                with patch.object(AgentSessionRunner, "run", _capture_run):
+                    result = run_layered_runtime(runtime_config)
+
+            self.assertFalse(bool(result.get("blocked")))
+            specialist_runs = [cfg for cfg in captured if "/head" not in str(cfg.session_label)]
+            head_runs = [cfg for cfg in captured if "/head" in str(cfg.session_label)]
+            self.assertEqual(len(specialist_runs), 0)
+            self.assertEqual(len(head_runs), 1)
+            self.assertTrue(bool(head_runs[0].web_search))
+            orchestrator_plan = json.loads(
+                (turn_dir / "layer2" / "orchestrator-plan.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(orchestrator_plan["settings"].get("execution_mode"), "light")
 
 
 if __name__ == "__main__":

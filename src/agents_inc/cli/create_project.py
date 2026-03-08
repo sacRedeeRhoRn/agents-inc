@@ -7,6 +7,8 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Set
 
+import yaml
+
 from agents_inc.cli.install_skills import install_project_skills
 from agents_inc.core.codex_home import (
     ensure_project_codex_home,
@@ -17,6 +19,7 @@ from agents_inc.core.config_state import default_config_path, get_projects_root,
 from agents_inc.core.fabric_lib import (
     FabricError,
     ensure_fabric_root_initialized,
+    execution_mode_from_manifest,
     ensure_json_serializable,
     load_group_catalog,
     now_iso,
@@ -54,6 +57,12 @@ def parse_args() -> argparse.Namespace:
         "--force",
         action="store_true",
         help="overwrite existing generated project bundle if present",
+    )
+    parser.add_argument(
+        "--execution-mode",
+        default="light",
+        choices=["light", "full"],
+        help="project runtime execution mode for generated manifest",
     )
     return parser.parse_args()
 
@@ -146,6 +155,7 @@ def _run_new_project_bundle(
     project_id: str,
     selected_groups: List[str],
     target_skill_dir: Path,
+    execution_mode: str,
     force: bool,
 ) -> None:
     argv = [
@@ -161,6 +171,8 @@ def _run_new_project_bundle(
         "--audit-override",
         "--target-skill-dir",
         str(target_skill_dir),
+        "--execution-mode",
+        str(execution_mode),
     ]
     if force:
         argv.append("--force")
@@ -260,19 +272,30 @@ def main() -> int:
             project_id=project_id,
             selected_groups=selected_groups,
             target_skill_dir=target_skill_dir,
+            execution_mode=str(args.execution_mode or "light"),
             force=bool(args.force),
         )
-        ensure_response_policy(project_root)
-        upsert_specialist_sessions(
-            project_root=project_root,
-            project_fabric_root=project_fabric_root,
-            project_id=project_id,
-            selected_groups=selected_groups,
+        project_manifest = (
+            project_fabric_root / "generated" / "projects" / project_id / "manifest.yaml"
         )
+        manifest_payload = {}
+        if project_manifest.exists():
+            loaded = yaml.safe_load(project_manifest.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                manifest_payload = loaded
+        execution_mode = execution_mode_from_manifest(manifest_payload, default="light")
+        ensure_response_policy(project_root)
+        if execution_mode == "full":
+            upsert_specialist_sessions(
+                project_root=project_root,
+                project_fabric_root=project_fabric_root,
+                project_id=project_id,
+                selected_groups=selected_groups,
+            )
         activation = save_skill_activation_state(
             project_root,
             active_head_groups=selected_groups,
-            active_specialist_groups=selected_groups,
+            active_specialist_groups=(selected_groups if execution_mode == "full" else []),
         )
         install_result = install_project_skills(
             fabric_root=project_fabric_root,
@@ -281,7 +304,7 @@ def main() -> int:
             sync=True,
             head_groups=activation["active_head_groups"],
             specialist_groups=activation["active_specialist_groups"],
-            include_specialists=True,
+            include_specialists=(execution_mode == "full"),
         )
         if not args.json:
             print(
@@ -336,6 +359,9 @@ def main() -> int:
                 "path": str(skill_activation_state_path(project_root)),
                 "active_head_groups": activation["active_head_groups"],
                 "active_specialist_groups": activation["active_specialist_groups"],
+            },
+            "runtime": {
+                "execution_mode": execution_mode,
             },
         }
         if args.json:

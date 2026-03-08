@@ -16,6 +16,7 @@ from agents_inc.core.fabric_lib import (
     FabricError,
     build_dispatch_plan,
     dump_yaml,
+    execution_mode_from_manifest,
     gate_specialist_output,
     load_project_manifest,
     load_yaml,
@@ -741,6 +742,7 @@ class LongRunRunner:
         group_manifest_by_group: Dict[str, dict] = {}
         plan_dir = self.output_dir / "dispatch-plans"
         plan_dir.mkdir(parents=True, exist_ok=True)
+        execution_mode = execution_mode_from_manifest(manifest, default="full")
 
         for group_id in self.config.groups:
             group_entry = groups_map.get(group_id)
@@ -756,6 +758,7 @@ class LongRunRunner:
                 group_id,
                 self.config.task,
                 group_manifest,
+                execution_mode=execution_mode,
             )
 
             dispatch_by_group[group_id] = dispatch

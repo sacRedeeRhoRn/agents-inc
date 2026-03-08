@@ -103,6 +103,74 @@ class CLIV5Tests(unittest.TestCase):
             selected = manifest.get("selected_groups", [])
             self.assertIn("developer", selected)
             self.assertIn("quality-assurance", selected)
+            runtime = manifest.get("runtime", {})
+            self.assertIsInstance(runtime, dict)
+            self.assertEqual(runtime.get("execution_mode"), "light")
+            skill_activation = load_yaml(
+                projects_root / "proj-v5" / ".agents-inc" / "state" / "skill-activation.yaml"
+            )
+            self.assertIsInstance(skill_activation, dict)
+            self.assertEqual(skill_activation.get("active_head_groups"), selected)
+            self.assertEqual(skill_activation.get("active_specialist_groups"), [])
+
+    def test_create_project_full_mode_activates_specialists(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fabric_root = Path(td) / "fabric"
+            projects_root = Path(td) / "projects"
+            config_path = Path(td) / ".agents-inc" / "config.yaml"
+            with patch(
+                "agents_inc.cli.create_project.run_orchestrator_chat",
+                return_value={
+                    "thread_id": "thread-123",
+                    "chat_log_path": str(Path(td) / "chat.log"),
+                },
+            ):
+                with patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "agents-inc-create",
+                        "proj-v5-full",
+                        "--fabric-root",
+                        str(fabric_root),
+                        "--projects-root",
+                        str(projects_root),
+                        "--config-path",
+                        str(config_path),
+                        "--groups",
+                        "developer,quality-assurance",
+                        "--execution-mode",
+                        "full",
+                        "--no-launch",
+                        "--json",
+                    ],
+                ):
+                    code = create_cli.main()
+            self.assertEqual(code, 0)
+            manifest = load_yaml(
+                projects_root
+                / "proj-v5-full"
+                / "agent_group_fabric"
+                / "generated"
+                / "projects"
+                / "proj-v5-full"
+                / "manifest.yaml"
+            )
+            self.assertIsInstance(manifest, dict)
+            runtime = manifest.get("runtime", {})
+            self.assertIsInstance(runtime, dict)
+            self.assertEqual(runtime.get("execution_mode"), "full")
+            selected = manifest.get("selected_groups", [])
+            skill_activation = load_yaml(
+                projects_root
+                / "proj-v5-full"
+                / ".agents-inc"
+                / "state"
+                / "skill-activation.yaml"
+            )
+            self.assertIsInstance(skill_activation, dict)
+            self.assertEqual(skill_activation.get("active_head_groups"), selected)
+            self.assertEqual(skill_activation.get("active_specialist_groups"), selected)
 
     def test_create_project_respects_custom_group_from_source_fabric(self) -> None:
         with tempfile.TemporaryDirectory() as td:

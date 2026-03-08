@@ -10,6 +10,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 from agents_inc.core.fabric_lib import (
     FabricError,
     build_dispatch_plan,
+    execution_mode_from_manifest,
     load_yaml,
     slugify,
     stable_json,
@@ -44,7 +45,15 @@ from agents_inc.core.response_policy import (
     strip_non_group_prefix,
     upsert_specialist_sessions,
 )
-from agents_inc.core.session_state import load_checkpoint, now_iso, resolve_state_project_root
+from agents_inc.core.orchestrator_state import mark_orchestrator_saved
+from agents_inc.core.session_compaction import compact_session
+from agents_inc.core.session_state import (
+    default_project_index_path,
+    load_checkpoint,
+    now_iso,
+    resolve_state_project_root,
+    write_checkpoint,
+)
 from agents_inc.core.util.edges import resolve_handoff_edges
 
 OBJECTIVE_COVERAGE_THRESHOLD = 0.8
@@ -76,6 +85,10 @@ class OrchestratorReplyConfig:
     head_reasoning_effort: str | None = DEFAULT_HEAD_REASONING_EFFORT
     web_search_policy: str = "web-role-only"
     progress_callback: Callable[[dict], None] | None = None
+    project_index_path: Path | None = None
+    resume_from_cycle: int = 0
+    resume_group_objectives: Dict[str, str] | None = None
+    resume_previous_cycle_summaries: List[dict] | None = None
 
 
 def _turn_id() -> str:
@@ -145,7 +158,11 @@ def _resolve_primary_group(groups: List[str], requested_group: str) -> str:
 
 
 def _build_group_objective_cards(
-    *, base_objective: str, selected_groups: List[str], group_manifests: Dict[str, dict]
+    *,
+    base_objective: str,
+    selected_groups: List[str],
+    group_manifests: Dict[str, dict],
+    execution_mode: str,
 ) -> Dict[str, str]:
     cards: Dict[str, str] = {}
     for group_id in selected_groups:
@@ -182,9 +199,29 @@ def _build_group_objective_cards(
             [
                 "",
                 "Group outputs required this cycle:",
-                "- specialist internal work/handoff artifacts",
-                "- group exposed summary/handoff/integration notes",
-                "- claim-level citations for published assertions",
+            ]
+        )
+        if execution_mode == "light":
+            lines.extend(
+                [
+                    "- head-controller executes group objective directly (no specialist delegation)",
+                    "- group exposed summary/handoff/integration notes",
+                    "- claim-level citations for published assertions",
+                ]
+            )
+        else:
+            lines.extend(
+                [
+                    "- specialist internal work/handoff artifacts",
+                    "- group exposed summary/handoff/integration notes",
+                    "- claim-level citations for published assertions",
+                ]
+            )
+        lines.extend(
+            [
+                "",
+                "Execution mode:",
+                f"- {execution_mode}",
             ]
         )
         cards[group_id] = "\n".join(lines).strip()
@@ -249,15 +286,172 @@ def _load_constraints(project_root: Path) -> dict:
     return {}
 
 
+def _load_latest_router_call(project_root: Path) -> str:
+    try:
+        checkpoint = load_checkpoint(project_root, "latest")
+    except Exception:
+        return ""
+    return str(checkpoint.get("router_call") or "").strip()
+
+
+def _normalize_resume_group_objectives(
+    *,
+    selected_groups: List[str],
+    default_objectives: Dict[str, str],
+    resume_objectives: Dict[str, str] | None,
+) -> Dict[str, str]:
+    if not isinstance(resume_objectives, dict):
+        return dict(default_objectives)
+    resolved: Dict[str, str] = {}
+    for group_id in selected_groups:
+        candidate = resume_objectives.get(group_id)
+        if isinstance(candidate, str) and candidate.strip():
+            resolved[group_id] = candidate
+            continue
+        resolved[group_id] = str(default_objectives.get(group_id) or "")
+    return resolved
+
+
+def _normalize_resume_cycle_summaries(
+    resume_rows: List[dict] | None,
+) -> Tuple[List[dict], int]:
+    rows: List[dict] = []
+    max_cycle_id = 0
+    if not isinstance(resume_rows, list):
+        return rows, max_cycle_id
+    for item in resume_rows:
+        if not isinstance(item, dict):
+            continue
+        copied = dict(item)
+        rows.append(copied)
+        try:
+            cycle_id = int(copied.get("cycle_id", 0) or 0)
+        except Exception:
+            cycle_id = 0
+        if cycle_id > max_cycle_id:
+            max_cycle_id = cycle_id
+    return rows, max_cycle_id
+
+
+def _auto_checkpoint_blocked_turn(
+    *,
+    config: OrchestratorReplyConfig,
+    project_root: Path,
+    project_id: str,
+    selected_groups: List[str],
+    primary_group: str,
+    turn_dir: Path,
+    block_status: str,
+    blocked_reasons: List[str],
+    blocked_reasons_path: Path,
+    blocked_report_path: Path,
+    latest_artifacts: Dict[str, str],
+    group_objectives: Dict[str, str],
+    cycle_summaries: List[dict],
+    cycles_executed: int,
+) -> dict:
+    try:
+        index_path = default_project_index_path(
+            str(config.project_index_path) if config.project_index_path else None
+        )
+        constraints = _load_constraints(project_root)
+        router_call = _load_latest_router_call(project_root)
+        checkpoint_latest_artifacts = dict(latest_artifacts)
+        checkpoint_latest_artifacts.update(
+            {
+                "turn_dir": str(turn_dir),
+                "blocked_reasons": str(blocked_reasons_path),
+                "blocked_report": str(blocked_report_path),
+                "delegation_ledger": str(turn_dir / "delegation-ledger.json"),
+                "evidence_index": str(turn_dir / "group-evidence-index.json"),
+                "quality_report": str(turn_dir / "final-answer-quality.json"),
+            }
+        )
+        blocked_resume = {
+            "enabled": True,
+            "blocked_status": block_status,
+            "objective": config.message,
+            "turn_dir": str(turn_dir),
+            "resume_from_cycle": max(0, int(cycles_executed)),
+            "group_objectives": group_objectives,
+            "cycle_summaries": cycle_summaries,
+            "blocked_reasons_path": str(blocked_reasons_path),
+            "blocked_report_path": str(blocked_report_path),
+            "updated_at": now_iso(),
+        }
+        payload = {
+            "project_id": project_id,
+            "project_root": str(project_root),
+            "fabric_root": str(config.fabric_root),
+            "task": config.message,
+            "constraints": constraints,
+            "selected_groups": selected_groups,
+            "primary_group": primary_group,
+            "group_order_recommendation": selected_groups,
+            "router_call": router_call,
+            "latest_artifacts": checkpoint_latest_artifacts,
+            "pending_actions": [
+                f"Review blocked report: {blocked_report_path}",
+                (
+                    "Resume with `agents-inc resume {0}` to auto-restart from cycle {1}.".format(
+                        project_id,
+                        max(0, int(cycles_executed) + 1),
+                    )
+                ),
+            ],
+            "blocked_resume": blocked_resume,
+            "blocked_summary": {
+                "status": block_status,
+                "reasons": blocked_reasons,
+                "cycles_executed": max(0, int(cycles_executed)),
+            },
+            "updated_at": now_iso(),
+        }
+        checkpoint = write_checkpoint(
+            project_root=project_root,
+            payload=payload,
+            project_index_path=index_path,
+        )
+        compact = compact_session(
+            project_root=project_root,
+            payload={
+                **payload,
+                "latest_checkpoint_id": str(checkpoint["checkpoint_id"]),
+                "latest_checkpoint_path": str(checkpoint["checkpoint_path"]),
+            },
+            selected_groups=selected_groups,
+        )
+        mark_orchestrator_saved(
+            project_root,
+            project_id=project_id,
+            checkpoint_id=str(checkpoint["checkpoint_id"]),
+        )
+        return {
+            "checkpoint_id": str(checkpoint["checkpoint_id"]),
+            "checkpoint_path": str(checkpoint["checkpoint_path"]),
+            "compact_id": str(compact["compact_id"]),
+            "compact_path": str(compact["compact_path"]),
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc)}
+
+
 def _build_delegation_ledger(
     *,
     project_id: str,
     message: str,
     group_manifests: Dict[str, dict],
+    execution_mode: str,
 ) -> dict:
     rows = []
     for group_id in sorted(group_manifests.keys()):
-        dispatch = build_dispatch_plan(project_id, group_id, message, group_manifests[group_id])
+        dispatch = build_dispatch_plan(
+            project_id,
+            group_id,
+            message,
+            group_manifests[group_id],
+            execution_mode=execution_mode,
+        )
         rows.append(
             {
                 "group_id": group_id,
@@ -1696,10 +1890,25 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         ),
         web_search_policy=_normalize_web_search_policy(config.web_search_policy),
         progress_callback=config.progress_callback,
+        project_index_path=(
+            Path(str(config.project_index_path)).expanduser().resolve()
+            if config.project_index_path is not None
+            else None
+        ),
+        resume_from_cycle=max(0, int(config.resume_from_cycle or 0)),
+        resume_group_objectives=(
+            dict(config.resume_group_objectives) if isinstance(config.resume_group_objectives, dict) else None
+        ),
+        resume_previous_cycle_summaries=(
+            list(config.resume_previous_cycle_summaries)
+            if isinstance(config.resume_previous_cycle_summaries, list)
+            else None
+        ),
     )
     project_root, project_dir, manifest = _load_project_bundle(config)
     policy = ensure_response_policy(project_root)
     selected_groups = selected_groups_from_manifest(manifest)
+    execution_mode = execution_mode_from_manifest(manifest, default="full")
     primary_group = resolve_primary_group_router(selected_groups, config.group)
     upsert_specialist_sessions(
         project_root=project_root,
@@ -1715,6 +1924,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     mode_payload = {
         "schema_version": "3.0",
         "mode": mode,
+        "execution_mode": execution_mode,
         "non_group_prefix": policy.get("non_group_prefix", "[non-group]"),
         "group": primary_group,
         "require_negotiation": bool(config.require_negotiation),
@@ -1763,6 +1973,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         project_id=config.project_id,
         message=config.message,
         group_manifests=group_manifests,
+        execution_mode=execution_mode,
     )
     handoff_edges = manifest.get("handoff_edges") or []
     if not isinstance(handoff_edges, list):
@@ -1773,10 +1984,19 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     )
     write_text(turn_dir / "negotiation-sequence.md", negotiation_text)
 
-    group_objectives = _build_group_objective_cards(
+    default_group_objectives = _build_group_objective_cards(
         base_objective=config.message,
         selected_groups=selected_groups,
         group_manifests=group_manifests,
+        execution_mode=execution_mode,
+    )
+    group_objectives = _normalize_resume_group_objectives(
+        selected_groups=selected_groups,
+        default_objectives=default_group_objectives,
+        resume_objectives=config.resume_group_objectives,
+    )
+    resume_cycle_summaries, resume_cycle_max = _normalize_resume_cycle_summaries(
+        config.resume_previous_cycle_summaries
     )
     _emit_progress(
         config,
@@ -1786,12 +2006,14 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             "selected_groups": selected_groups,
             "max_cycles": config.max_cycles,
             "heartbeat_sec": config.heartbeat_sec,
+            "execution_mode": execution_mode,
         },
     )
     blocked_reasons: List[str] = []
     block_status = ""
-    cycle = 0
-    cycle_summaries: List[dict] = []
+    cycle = max(0, int(config.resume_from_cycle or 0), resume_cycle_max)
+    last_completed_cycle = cycle
+    cycle_summaries: List[dict] = list(resume_cycle_summaries)
     meeting_outputs: List[dict] = []
     cycle_records: List[NegotiationCycleRecord] = []
     runtime_result = {}
@@ -1800,13 +2022,14 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     latest_artifacts: Dict[str, str] = {}
 
     while True:
-        cycle += 1
-        if config.max_cycles > 0 and cycle > config.max_cycles:
+        next_cycle = cycle + 1
+        if config.max_cycles > 0 and next_cycle > config.max_cycles:
             block_status = "BLOCKED_MAX_CYCLES"
             blocked_reasons.append(
                 f"max cycle limit reached before unanimous satisfaction: {config.max_cycles}"
             )
             break
+        cycle = next_cycle
 
         _emit_progress(
             config,
@@ -1860,6 +2083,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 web_search_policy=config.web_search_policy,
                 progress_callback=config.progress_callback,
                 cycle_id=cycle,
+                execution_mode=execution_mode,
             )
         )
         latest_artifacts = _write_turn_latest_artifacts(turn_dir, runtime_result)
@@ -1890,6 +2114,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 latest_artifacts=latest_artifacts,
             )
         )
+        last_completed_cycle = max(last_completed_cycle, cycle)
         if runtime_result.get("blocked"):
             write_text(
                 cycle_layer2 / "refined-group-objectives.json",
@@ -2159,7 +2384,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         )
         quality["block_status"] = block_status
         quality["block_reasons"] = blocked_reasons
-        quality["cycles_executed"] = cycle
+        quality["cycles_executed"] = last_completed_cycle
         quality["agent_timeout_sec"] = config.agent_timeout_sec
         quality["agent_timeout_mode"] = _timeout_mode(config.agent_timeout_sec)
         quality["timed_out_specialist_count"] = len(timed_out_specialists)
@@ -2176,7 +2401,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
             "missing_groups": delegation.get("missing_groups", []),
             "web_evidence_url_count": len(evidence_rows),
             "artifact_citation_count": len(artifact_citations),
-            "cycles_executed": cycle,
+            "cycles_executed": last_completed_cycle,
             "agent_timeout_sec": config.agent_timeout_sec,
             "agent_timeout_mode": _timeout_mode(config.agent_timeout_sec),
             "timed_out_specialists": timed_out_specialists,
@@ -2206,6 +2431,25 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         )
         blocked_report_path = turn_dir / "blocked-report.md"
         write_text(blocked_report_path, blocked_report)
+        auto_checkpoint = _auto_checkpoint_blocked_turn(
+            config=config,
+            project_root=project_root,
+            project_id=config.project_id,
+            selected_groups=selected_groups,
+            primary_group=primary_group,
+            turn_dir=turn_dir,
+            block_status=block_status,
+            blocked_reasons=blocked_reasons,
+            blocked_reasons_path=blocked_path,
+            blocked_report_path=blocked_report_path,
+            latest_artifacts=latest_artifacts,
+            group_objectives=group_objectives,
+            cycle_summaries=cycle_summaries,
+            cycles_executed=last_completed_cycle,
+        )
+        if auto_checkpoint:
+            blocked_payload["auto_checkpoint"] = auto_checkpoint
+            write_text(blocked_path, stable_json(blocked_payload) + "\n")
         raise FabricError(
             "BLOCKED[{0}] blocked_report={1} blocked_reasons={2}".format(
                 block_status,
@@ -2256,7 +2500,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         contributions=contributions,
         turn_dir=turn_dir,
     )
-    quality["cycles_executed"] = cycle
+    quality["cycles_executed"] = last_completed_cycle
     quality["meeting_cycles"] = len(meeting_outputs)
     quality["agent_timeout_sec"] = config.agent_timeout_sec
     quality["agent_timeout_mode"] = _timeout_mode(config.agent_timeout_sec)
@@ -2276,26 +2520,23 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         quality["block_reasons"] = ["group-mode final answer failed quality checks"]
         write_text(turn_dir / "final-answer-quality.json", stable_json(quality) + "\n")
         blocked_path = turn_dir / "blocked-reasons.json"
-        write_text(
-            blocked_path,
-            stable_json(
-                {
-                    "schema_version": "3.1",
-                    "status": "BLOCKED_QUALITY_GATE",
-                    "project_id": config.project_id,
-                    "group": primary_group,
-                    "generated_at": now_iso(),
-                    "reasons": ["group-mode final answer failed quality checks"],
-                    "quality_checks": quality.get("checks", {}),
-                    "timed_out_specialists": timed_out_specialists,
-                    "latest_artifacts": latest_artifacts,
-                    "token_usage_summary": token_usage_summary,
-                    "token_usage_json_path": token_usage_json_path,
-                    "token_usage_md_path": token_usage_md_path,
-                }
-            )
-            + "\n",
-        )
+        blocked_payload = {
+            "schema_version": "3.1",
+            "status": "BLOCKED_QUALITY_GATE",
+            "project_id": config.project_id,
+            "group": primary_group,
+            "generated_at": now_iso(),
+            "reasons": ["group-mode final answer failed quality checks"],
+            "quality_checks": quality.get("checks", {}),
+            "timed_out_specialists": timed_out_specialists,
+            "latest_artifacts": latest_artifacts,
+            "token_usage_summary": token_usage_summary,
+            "token_usage_json_path": token_usage_json_path,
+            "token_usage_md_path": token_usage_md_path,
+            "cycles_executed": last_completed_cycle,
+            "cycle_summaries": cycle_summaries,
+        }
+        write_text(blocked_path, stable_json(blocked_payload) + "\n")
         blocked_report_path = turn_dir / "blocked-report.md"
         write_text(
             blocked_report_path,
@@ -2312,6 +2553,25 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 escalations=unresolved_escalations,
             ),
         )
+        auto_checkpoint = _auto_checkpoint_blocked_turn(
+            config=config,
+            project_root=project_root,
+            project_id=config.project_id,
+            selected_groups=selected_groups,
+            primary_group=primary_group,
+            turn_dir=turn_dir,
+            block_status="BLOCKED_QUALITY_GATE",
+            blocked_reasons=["group-mode final answer failed quality checks"],
+            blocked_reasons_path=blocked_path,
+            blocked_report_path=blocked_report_path,
+            latest_artifacts=latest_artifacts,
+            group_objectives=group_objectives,
+            cycle_summaries=cycle_summaries,
+            cycles_executed=last_completed_cycle,
+        )
+        if auto_checkpoint:
+            blocked_payload["auto_checkpoint"] = auto_checkpoint
+            write_text(blocked_path, stable_json(blocked_payload) + "\n")
         raise FabricError(
             "BLOCKED[BLOCKED_QUALITY_GATE] blocked_report={0} blocked_reasons={1}".format(
                 blocked_report_path,
@@ -2366,12 +2626,12 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     write_text(key_points_path, key_points)
     _emit_progress(
         config,
-        {
-            "event": "turn_completed",
-            "project_id": config.project_id,
-            "cycles_executed": cycle,
-        },
-    )
+            {
+                "event": "turn_completed",
+                "project_id": config.project_id,
+                "cycles_executed": last_completed_cycle,
+            },
+        )
 
     return {
         "mode": mode,

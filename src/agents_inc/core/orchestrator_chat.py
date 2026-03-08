@@ -4,7 +4,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Optional
 
 from agents_inc.core.codex_app_client import CodexAppClient, CodexAppServerError
 from agents_inc.core.codex_home import codex_launch_env
@@ -28,6 +28,13 @@ class OrchestratorChatConfig:
     resume_thread_id: str = ""
     no_launch: bool = False
     sync_orchestrated_to_direct_thread: bool = True
+    project_index_path: Path | None = None
+    auto_restart_checkpoint_id: str = ""
+    auto_restart_objective: str = ""
+    auto_restart_turn_dir: str = ""
+    auto_restart_from_cycle: int = 0
+    auto_restart_group_objectives: Dict[str, str] | None = None
+    auto_restart_cycle_summaries: List[dict] | None = None
 
 
 def _append_chat_line(path: Path, speaker: str, text: str) -> None:
@@ -70,6 +77,29 @@ def _load_blocked_reasons(path: str, *, limit: int = 6) -> List[str]:
         if len(out) >= limit:
             break
     return out
+
+
+def _normalize_resume_objectives(value: Dict[str, str] | None) -> Dict[str, str] | None:
+    if not isinstance(value, dict):
+        return None
+    out: Dict[str, str] = {}
+    for raw_key, raw_value in value.items():
+        key = str(raw_key or "").strip()
+        text = str(raw_value or "")
+        if not key or not text.strip():
+            continue
+        out[key] = text
+    return out or None
+
+
+def _normalize_resume_cycle_summaries(value: List[dict] | None) -> List[dict] | None:
+    if not isinstance(value, list):
+        return None
+    out: List[dict] = []
+    for item in value:
+        if isinstance(item, dict):
+            out.append(dict(item))
+    return out or None
 
 
 def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
@@ -138,6 +168,119 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
         print(f"thread_id: {thread_id}")
         print(f"prefix for orchestration: {config.orchestration_prefix}")
         print("type '/quit' to exit")
+
+        def _run_orchestrated_objective(
+            objective: str,
+            *,
+            output_dir: Optional[Path] = None,
+            resume_from_cycle: int = 0,
+            resume_group_objectives: Dict[str, str] | None = None,
+            resume_cycle_summaries: List[dict] | None = None,
+        ) -> str:
+            def _print_live_event(event: dict) -> None:
+                line = format_progress_event(event)
+                if not line:
+                    return
+                print("agents-inc-live>", flush=True)
+                print(line, flush=True)
+                _append_chat_line(chat_log_path, "agents-inc-live", line)
+
+            try:
+                result = run_orchestrator_reply(
+                    OrchestratorReplyConfig(
+                        fabric_root=config.fabric_root,
+                        project_id=config.project_id,
+                        message=objective,
+                        group="",
+                        output_dir=output_dir,
+                        progress_callback=_print_live_event,
+                        project_index_path=config.project_index_path,
+                        resume_from_cycle=max(0, int(resume_from_cycle or 0)),
+                        resume_group_objectives=resume_group_objectives,
+                        resume_previous_cycle_summaries=resume_cycle_summaries,
+                    )
+                )
+            except Exception as exc:  # noqa: BLE001
+                blocked = _parse_blocked_error(str(exc))
+                if blocked:
+                    print("agents-inc>")
+                    print(f"blocked: {blocked['status']}")
+                    top_reasons = _load_blocked_reasons(blocked.get("blocked_reasons", ""))
+                    if top_reasons:
+                        print("top blockers:")
+                        for row in top_reasons:
+                            print(f"- {row}")
+                    print(f"blocked report: {blocked['blocked_report']}")
+                    print("session remains active; adjust objective/constraints and retry.")
+                    _append_chat_line(
+                        chat_log_path,
+                        "agents-inc",
+                        "blocked: {0} | report: {1}".format(
+                            blocked["status"], blocked["blocked_report"]
+                        ),
+                    )
+                    return "blocked"
+                message = str(exc).strip() or "unknown orchestration error"
+                print("agents-inc>")
+                print(f"orchestration error: {message}")
+                print("session remains active; fix and retry.")
+                _append_chat_line(chat_log_path, "agents-inc-error", message)
+                return "error"
+            final_answer_path = Path(str(result.get("final_answer_path") or "")).expanduser()
+            answer = (
+                read_text(final_answer_path).strip()
+                if final_answer_path.exists()
+                else "orchestrator completed with no final answer artifact"
+            )
+            print("agents-inc>")
+            print(answer)
+            _append_chat_line(chat_log_path, "agents-inc", answer)
+            if config.sync_orchestrated_to_direct_thread:
+                sync_note = (
+                    "The following response was produced via /agents-inc orchestration. "
+                    "Keep this as project context.\n\n"
+                    f"{answer}"
+                )
+                try:
+                    client.run_turn(thread_id=thread_id, text=sync_note, timeout_sec=0.0)
+                except CodexAppServerError:
+                    # Non-fatal: orchestration output is still preserved in artifacts/log.
+                    pass
+            return "completed"
+
+        auto_checkpoint_id = str(config.auto_restart_checkpoint_id or "").strip()
+        auto_objective = str(config.auto_restart_objective or "").strip()
+        if auto_checkpoint_id and auto_objective:
+            auto_turn_dir = str(config.auto_restart_turn_dir or "").strip()
+            auto_output_dir = (
+                Path(auto_turn_dir).expanduser().resolve() if auto_turn_dir else None
+            )
+            resume_objectives = _normalize_resume_objectives(config.auto_restart_group_objectives)
+            resume_cycle_summaries = _normalize_resume_cycle_summaries(
+                config.auto_restart_cycle_summaries
+            )
+            start_cycle = max(0, int(config.auto_restart_from_cycle or 0))
+            auto_line = (
+                "live: auto-resume from checkpoint={0} | restart_cycle={1}".format(
+                    auto_checkpoint_id,
+                    start_cycle + 1,
+                )
+            )
+            print("agents-inc-live>", flush=True)
+            print(auto_line, flush=True)
+            _append_chat_line(chat_log_path, "agents-inc-live", auto_line)
+            auto_status = _run_orchestrated_objective(
+                auto_objective,
+                output_dir=auto_output_dir,
+                resume_from_cycle=start_cycle,
+                resume_group_objectives=resume_objectives,
+                resume_cycle_summaries=resume_cycle_summaries,
+            )
+            state["last_auto_resume_checkpoint_id"] = auto_checkpoint_id
+            state["last_auto_resume_status"] = auto_status
+            state["last_auto_resume_at"] = now_iso()
+            save_orchestrator_state(project_root, state)
+
         while True:
             try:
                 raw = input("you> ")
@@ -154,71 +297,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                 if not objective:
                     print("agents-inc> provide a request after the orchestration prefix")
                     continue
-
-                def _print_live_event(event: dict) -> None:
-                    line = format_progress_event(event)
-                    if not line:
-                        return
-                    print("agents-inc-live>", flush=True)
-                    print(line, flush=True)
-                    _append_chat_line(chat_log_path, "agents-inc-live", line)
-
-                try:
-                    result = run_orchestrator_reply(
-                        OrchestratorReplyConfig(
-                            fabric_root=config.fabric_root,
-                            project_id=config.project_id,
-                            message=objective,
-                            group="",
-                            progress_callback=_print_live_event,
-                        )
-                    )
-                except Exception as exc:  # noqa: BLE001
-                    blocked = _parse_blocked_error(str(exc))
-                    if blocked:
-                        print("agents-inc>")
-                        print(f"blocked: {blocked['status']}")
-                        top_reasons = _load_blocked_reasons(blocked.get("blocked_reasons", ""))
-                        if top_reasons:
-                            print("top blockers:")
-                            for row in top_reasons:
-                                print(f"- {row}")
-                        print(f"blocked report: {blocked['blocked_report']}")
-                        print("session remains active; adjust objective/constraints and retry.")
-                        _append_chat_line(
-                            chat_log_path,
-                            "agents-inc",
-                            "blocked: {0} | report: {1}".format(
-                                blocked["status"], blocked["blocked_report"]
-                            ),
-                        )
-                        continue
-                    message = str(exc).strip() or "unknown orchestration error"
-                    print("agents-inc>")
-                    print(f"orchestration error: {message}")
-                    print("session remains active; fix and retry.")
-                    _append_chat_line(chat_log_path, "agents-inc-error", message)
-                    continue
-                final_answer_path = Path(str(result.get("final_answer_path") or "")).expanduser()
-                answer = (
-                    read_text(final_answer_path).strip()
-                    if final_answer_path.exists()
-                    else "orchestrator completed with no final answer artifact"
-                )
-                print("agents-inc>")
-                print(answer)
-                _append_chat_line(chat_log_path, "agents-inc", answer)
-                if config.sync_orchestrated_to_direct_thread:
-                    sync_note = (
-                        "The following response was produced via /agents-inc orchestration. "
-                        "Keep this as project context.\n\n"
-                        f"{answer}"
-                    )
-                    try:
-                        client.run_turn(thread_id=thread_id, text=sync_note, timeout_sec=0.0)
-                    except CodexAppServerError:
-                        # Non-fatal: orchestration output is still preserved in artifacts/log.
-                        pass
+                _run_orchestrated_objective(objective)
                 continue
 
             print("codex-live> processing direct turn...", flush=True)

@@ -9,6 +9,7 @@ from agents_inc.core.config_state import default_config_path, get_projects_root
 from agents_inc.core.fabric_lib import (
     FabricError,
     build_dispatch_plan,
+    execution_mode_from_manifest,
     ensure_fabric_root_initialized,
     load_project_manifest,
     load_yaml,
@@ -155,9 +156,14 @@ def main() -> int:
         group_manifest = load_yaml(group_manifest_path)
         if not isinstance(group_manifest, dict):
             raise FabricError(f"invalid group manifest: {group_manifest_path}")
+        execution_mode = execution_mode_from_manifest(manifest, default="full")
 
         dispatch = build_dispatch_plan(
-            manifest["project_id"], group_id, args.objective, group_manifest
+            manifest["project_id"],
+            group_id,
+            args.objective,
+            group_manifest,
+            execution_mode=execution_mode,
         )
 
         multi_agent_root = args.multi_agent_root or str(fabric_root.parent)

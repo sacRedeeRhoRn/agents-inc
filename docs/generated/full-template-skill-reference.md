@@ -1,6 +1,6 @@
 # Full Template and Skill Reference
 
-Generated at: `2026-03-05T05:59:56Z`
+Generated at: `2026-03-08T07:28:44Z`
 Fabric root: `/home/msj/Desktop/playground/agents-inc_dev/agents-inc`
 Include generated projects: `True`
 
@@ -1239,6 +1239,13 @@ properties:
         enum: [group-only, full]
       audit_override:
         type: boolean
+  runtime:
+    type: object
+    required: [execution_mode]
+    properties:
+      execution_mode:
+        type: string
+        enum: [light, full]
   groups:
     type: object
     additionalProperties:
@@ -3023,12 +3030,12 @@ projects:
     manifest_path: generated/projects/proj-test-alpha/manifest.yaml
     selected_groups:
     - integration-delivery
-    updated_at: '2026-03-05T05:59:55Z'
+    updated_at: '2026-03-08T07:28:43Z'
   proj-test-hpc:
     manifest_path: generated/projects/proj-test-hpc/manifest.yaml
     selected_groups:
     - integration-delivery
-    updated_at: '2026-03-05T05:59:56Z'
+    updated_at: '2026-03-08T07:28:44Z'
 ```
 
 ## 35. `generated/projects/proj-test-alpha/agent-groups/integration-delivery/AGENTS.md`
@@ -4450,6 +4457,8 @@ schema_version: '3.0'
 project_id: proj-test-alpha
 selected_groups:
 - integration-delivery
+runtime:
+  execution_mode: light
 install_targets:
   codex_skill_dir: /home/msj/.codex/skills/local
 router_skill_name: research-router
@@ -5908,6 +5917,8 @@ schema_version: '3.0'
 project_id: proj-test-hpc
 selected_groups:
 - integration-delivery
+runtime:
+  execution_mode: full
 install_targets:
   codex_skill_dir: /home/msj/.codex/skills/local
 router_skill_name: research-router

@@ -411,6 +411,7 @@ def main() -> int:
             head_reasoning_effort=model_settings["head_reasoning_effort"],
             web_search_policy=str(args.web_search_policy or "web-role-only"),
             progress_callback=(_print_live_event_stderr if args.json else _print_live_event_stdout),
+            project_index_path=default_project_index_path(args.project_index),
         )
         result = run_orchestrator_reply(config)
         if args.json:

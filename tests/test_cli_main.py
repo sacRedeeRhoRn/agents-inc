@@ -168,6 +168,105 @@ class CLIMainTests(unittest.TestCase):
             self.assertEqual(code, 0)
             run_chat.assert_called_once()
 
+    def test_resume_cli_forwards_auto_restart_from_blocked_checkpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "proj-test"
+            project_root.mkdir(parents=True, exist_ok=True)
+            with patch(
+                "agents_inc.cli.resume.resolve_project_context",
+                return_value=(
+                    project_root / "agent_group_fabric",
+                    project_root,
+                    project_root,
+                    project_root / "manifest.yaml",
+                    {"project_id": "proj-test"},
+                ),
+            ):
+                with patch(
+                    "agents_inc.cli.resume.load_orchestrator_state",
+                    return_value={"thread_id": "thread-prev", "last_auto_resume_checkpoint_id": ""},
+                ):
+                    with patch(
+                        "agents_inc.cli.resume.load_checkpoint",
+                        return_value={
+                            "checkpoint_id": "20260308T010000Z-000003",
+                            "blocked_resume": {
+                                "enabled": True,
+                                "objective": "resume objective",
+                                "turn_dir": str(project_root / ".agents-inc" / "turns" / "turn-1"),
+                                "resume_from_cycle": 7,
+                                "group_objectives": {"developer": "x"},
+                                "cycle_summaries": [{"cycle_id": 1}],
+                            },
+                        },
+                    ):
+                        with patch(
+                            "agents_inc.cli.resume.run_orchestrator_chat",
+                            return_value={
+                                "thread_id": "thread-next",
+                                "chat_log_path": str(project_root / "chat.log"),
+                            },
+                        ) as run_chat:
+                            with patch.object(
+                                sys, "argv", ["agents-inc-resume", "proj-test", "--json"]
+                            ):
+                                code = resume_cli.main()
+            self.assertEqual(code, 0)
+            run_chat.assert_called_once()
+            cfg = run_chat.call_args.args[0]
+            self.assertEqual(cfg.auto_restart_checkpoint_id, "20260308T010000Z-000003")
+            self.assertEqual(cfg.auto_restart_objective, "resume objective")
+            self.assertEqual(int(cfg.auto_restart_from_cycle), 7)
+
+    def test_resume_cli_skips_auto_restart_when_checkpoint_already_consumed(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "proj-test"
+            project_root.mkdir(parents=True, exist_ok=True)
+            with patch(
+                "agents_inc.cli.resume.resolve_project_context",
+                return_value=(
+                    project_root / "agent_group_fabric",
+                    project_root,
+                    project_root,
+                    project_root / "manifest.yaml",
+                    {"project_id": "proj-test"},
+                ),
+            ):
+                with patch(
+                    "agents_inc.cli.resume.load_orchestrator_state",
+                    return_value={
+                        "thread_id": "thread-prev",
+                        "last_auto_resume_checkpoint_id": "20260308T010000Z-000003",
+                    },
+                ):
+                    with patch(
+                        "agents_inc.cli.resume.load_checkpoint",
+                        return_value={
+                            "checkpoint_id": "20260308T010000Z-000003",
+                            "blocked_resume": {
+                                "enabled": True,
+                                "objective": "resume objective",
+                                "turn_dir": str(project_root / ".agents-inc" / "turns" / "turn-1"),
+                                "resume_from_cycle": 7,
+                            },
+                        },
+                    ):
+                        with patch(
+                            "agents_inc.cli.resume.run_orchestrator_chat",
+                            return_value={
+                                "thread_id": "thread-next",
+                                "chat_log_path": str(project_root / "chat.log"),
+                            },
+                        ) as run_chat:
+                            with patch.object(
+                                sys, "argv", ["agents-inc-resume", "proj-test", "--json"]
+                            ):
+                                code = resume_cli.main()
+            self.assertEqual(code, 0)
+            run_chat.assert_called_once()
+            cfg = run_chat.call_args.args[0]
+            self.assertEqual(cfg.auto_restart_checkpoint_id, "")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -178,6 +178,111 @@ class OrchestratorChatTests(unittest.TestCase):
             self.assertIn("session remains active", text)
             self.assertIn("final answer text", text)
 
+    def test_auto_restart_runs_before_user_input(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "proj-auto-resume"
+            project_root.mkdir(parents=True, exist_ok=True)
+            turn_dir = project_root / ".agents-inc" / "turns" / "turn-auto"
+            turn_dir.mkdir(parents=True, exist_ok=True)
+            final_answer = turn_dir / "final-exposed-answer.md"
+            final_answer.write_text("auto resume answer\n", encoding="utf-8")
+
+            captured = {"calls": []}
+
+            def _fake_orchestrator(config):  # type: ignore[no-untyped-def]
+                captured["calls"].append(config)
+                return {"final_answer_path": str(final_answer)}
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                with patch("agents_inc.core.orchestrator_chat.CodexAppClient", _SuccessClient):
+                    with patch(
+                        "agents_inc.core.orchestrator_chat.run_orchestrator_reply",
+                        side_effect=_fake_orchestrator,
+                    ):
+                        with patch("builtins.input", side_effect=["/quit"]):
+                            run_orchestrator_chat(
+                                OrchestratorChatConfig(
+                                    fabric_root=project_root / "agent_group_fabric",
+                                    project_root=project_root,
+                                    project_id="proj-auto-resume",
+                                    auto_restart_checkpoint_id="cp-000001",
+                                    auto_restart_objective="resume objective",
+                                    auto_restart_turn_dir=str(turn_dir),
+                                    auto_restart_from_cycle=4,
+                                    auto_restart_group_objectives={
+                                        "developer": "resume developer objective"
+                                    },
+                                    auto_restart_cycle_summaries=[{"cycle_id": 1}, {"cycle_id": 2}],
+                                )
+                            )
+            text = out.getvalue()
+            self.assertIn("live: auto-resume from checkpoint=cp-000001", text)
+            self.assertIn("auto resume answer", text)
+            self.assertEqual(len(captured["calls"]), 1)
+            config = captured["calls"][0]
+            self.assertEqual(config.message, "resume objective")
+            self.assertEqual(int(config.resume_from_cycle), 4)
+            self.assertEqual(Path(str(config.output_dir)).resolve(), turn_dir.resolve())
+            state = load_orchestrator_state(project_root, project_id="proj-auto-resume")
+            self.assertEqual(state.get("last_auto_resume_checkpoint_id"), "cp-000001")
+            self.assertEqual(state.get("last_auto_resume_status"), "completed")
+
+    def test_auto_restart_blocked_then_manual_retry_succeeds(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "proj-auto-resume-blocked"
+            project_root.mkdir(parents=True, exist_ok=True)
+            turn_dir = project_root / ".agents-inc" / "turns" / "turn-auto-blocked"
+            turn_dir.mkdir(parents=True, exist_ok=True)
+            blocked_reasons = turn_dir / "blocked-reasons.json"
+            blocked_report = turn_dir / "blocked-report.md"
+            blocked_reasons.write_text('{"reasons":["auto resume blocked"]}\n', encoding="utf-8")
+            blocked_report.write_text("# blocked report\n", encoding="utf-8")
+            final_answer = turn_dir / "final-exposed-answer.md"
+            final_answer.write_text("manual retry answer\n", encoding="utf-8")
+
+            call_count = {"n": 0}
+
+            def _fake_orchestrator(config):  # type: ignore[no-untyped-def]
+                call_count["n"] += 1
+                if call_count["n"] == 1:
+                    raise FabricError(
+                        "BLOCKED[BLOCKED_LAYERED_RUNTIME] blocked_report={0} blocked_reasons={1}".format(
+                            blocked_report,
+                            blocked_reasons,
+                        )
+                    )
+                return {"final_answer_path": str(final_answer)}
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                with patch("agents_inc.core.orchestrator_chat.CodexAppClient", _SuccessClient):
+                    with patch(
+                        "agents_inc.core.orchestrator_chat.run_orchestrator_reply",
+                        side_effect=_fake_orchestrator,
+                    ):
+                        with patch(
+                            "builtins.input",
+                            side_effect=["/agents-inc manual retry objective", "/quit"],
+                        ):
+                            run_orchestrator_chat(
+                                OrchestratorChatConfig(
+                                    fabric_root=project_root / "agent_group_fabric",
+                                    project_root=project_root,
+                                    project_id="proj-auto-resume-blocked",
+                                    auto_restart_checkpoint_id="cp-000002",
+                                    auto_restart_objective="auto blocked objective",
+                                    auto_restart_turn_dir=str(turn_dir),
+                                )
+                            )
+            text = out.getvalue()
+            self.assertIn("blocked: BLOCKED_LAYERED_RUNTIME", text)
+            self.assertIn("manual retry answer", text)
+            self.assertEqual(call_count["n"], 2)
+            state = load_orchestrator_state(project_root, project_id="proj-auto-resume-blocked")
+            self.assertEqual(state.get("last_auto_resume_checkpoint_id"), "cp-000002")
+            self.assertEqual(state.get("last_auto_resume_status"), "blocked")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
