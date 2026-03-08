@@ -8,14 +8,12 @@
 /_/   \_\____|_____|_| \_| |_| |____/    |___|_| \_|\____|
 ```
 
-`agents-inc` turns your Codex workspace into a restart-safe project workflow.
-It feels simple at the surface: define intent, create a project, keep moving, come back later, resume exactly where you left off.
+`agents-inc` is a multi-agent body that learns while it runs.
+One orchestrator, many group minds, each cycle sharpening the next through negotiation, evidence, and restart-safe memory.
 
-![Session lifecycle](./docs/assets/session-lifecycle.svg)
+![Session pulse](./docs/assets/session-lifecycle-v2.svg)
 
 ## Install (Ready To Paste)
-
-### Source install (best for local development)
 
 ```bash
 git clone git@github.com:sacRedeeRhoRn/agents-inc.git
@@ -24,74 +22,99 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
-## Bootstrap Your Workspace
+## Bootstrap (One Command)
 
 ```bash
 agents-inc init
 ```
 
-If you saw `entrace init` in older notes, use `agents-inc init`.
+What this activates:
+- captures your intent and constraints
+- resolves project root and session state
+- prepares project bundle and managed skills
+- writes checkpoint + compact resume state
+- opens managed flow (or keeps terminal-only if configured)
 
-What happens when you run this:
-- You get an intake flow: start new project or resume existing project.
-- `agents-inc` prepares/updates your local control state under `~/.agents-inc/`.
-- Project artifacts are generated in a project root.
-- Checkpoint + compact resume data are written for recovery.
-- Managed chat can launch automatically (or stay terminal-only depending on your flow).
+## The Self-Enhancing Core
 
-## First Practical Workflow (Minimal Commands)
+Every run is not just execution.
+It is refinement.
+Groups produce outputs, heads challenge each other, and the next cycle gets a sharper objective contract.
 
-1. See available groups:
+![Enhancement loop](./docs/assets/self-enhance-loop.svg)
+
+Grounded behavior behind the language:
+- group objectives are split and tuned per cycle
+- head meeting can demand another cycle when not satisfied
+- exposed handoffs become the canonical memory for integration
+- checkpoints preserve continuity when sessions pause or break
+
+## Live Group Negotiation
+
+Groups work in parallel, then converge.
+The meeting layer turns disagreement into explicit next actions.
+
+![Negotiation map](./docs/assets/group-negotiation-map.svg)
+
+## Checkpointed Recovery
+
+When the flow blocks, state is not lost.
+Checkpoint, compact snapshot, resume contract.
+You return to momentum, not to zero.
+
+![Recovery map](./docs/assets/resume-recovery-map.svg)
+
+## First Live Flow
+
+1. inspect available groups:
 
 ```bash
 agents-inc group-list
 ```
 
-2. Create your first group (interactive):
+2. create your first custom group:
 
 ```bash
 agents-inc new-group
 ```
 
-3. Create your first project:
+3. create your project:
 
 ```bash
 agents-inc create <project-id>
 ```
 
-4. List projects:
+4. list current projects:
 
 ```bash
 agents-inc list
 ```
 
-Default listing includes `active` + `inactive`. Use `--include-stale` only when needed.
-
-5. Deactivate a project you want to pause:
+5. pause a project intentionally:
 
 ```bash
 agents-inc deactivate <project-id>
 ```
 
-6. Make a checkpoint snapshot before a risky change:
+6. save a checkpoint before risky work:
 
 ```bash
 agents-inc save <project-id>
 ```
 
-7. Resume later:
+7. resume from latest stable state:
 
 ```bash
 agents-inc resume <project-id>
 ```
 
-## Need Full Flags and Features?
+## Full Operator Manual
 
-Use the full operator manual:
+For complete flags, advanced modes, and detailed command contracts:
 - [OVERVIEW.md](./OVERVIEW.md)
 
-Quick references:
-- Bootstrap prompt contract: [docs/bootstrap/START_IN_CODEX.md](./docs/bootstrap/START_IN_CODEX.md)
-- Internal session intake details: [src/agents_inc/docs/internal/session-intake.md](./src/agents_inc/docs/internal/session-intake.md)
-- Internal resume details: [src/agents_inc/docs/internal/session-resume.md](./src/agents_inc/docs/internal/session-resume.md)
-- GitHub repository: [sacRedeeRhoRn/agents-inc](https://github.com/sacRedeeRhoRn/agents-inc)
+Additional references:
+- [docs/bootstrap/START_IN_CODEX.md](./docs/bootstrap/START_IN_CODEX.md)
+- [src/agents_inc/docs/internal/session-intake.md](./src/agents_inc/docs/internal/session-intake.md)
+- [src/agents_inc/docs/internal/session-resume.md](./src/agents_inc/docs/internal/session-resume.md)
+- [sacRedeeRhoRn/agents-inc](https://github.com/sacRedeeRhoRn/agents-inc)

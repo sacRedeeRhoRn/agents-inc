@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" role="img" aria-labelledby="title desc">
+  <title id="title">self-enhance loop</title>
+  <desc id="desc">Cycle loop from objective to refinement.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f1e8; }
+      .ring { fill: none; stroke: #2f2a24; stroke-width: 3; }
+      .arc { fill: none; stroke: #8f5b2e; stroke-width: 4; marker-end: url(#m); }
+      .n { fill: #fff9ef; stroke: #2f2a24; stroke-width: 2.5; rx: 16; }
+      .t { font: 700 19px 'Segoe UI', Arial, sans-serif; fill: #2f2a24; text-anchor: middle; }
+      .c { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #8f5b2e; text-anchor: middle; }
+    </style>
+    <marker id="m" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto">
+      <polygon points="0,0 12,4 0,8" fill="#8f5b2e" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="960" height="520" />
+  <circle class="ring" cx="480" cy="260" r="170" />
+
+  <rect class="n" x="390" y="40" width="180" height="62" />
+  <text class="t" x="480" y="79">objective</text>
+
+  <rect class="n" x="720" y="230" width="180" height="62" />
+  <text class="t" x="810" y="269">group work</text>
+
+  <rect class="n" x="390" y="418" width="180" height="62" />
+  <text class="t" x="480" y="457">meeting</text>
+
+  <rect class="n" x="60" y="230" width="180" height="62" />
+  <text class="t" x="150" y="269">refine</text>
+
+  <path class="arc" d="M574 104 C675 128, 742 182, 772 232" />
+  <path class="arc" d="M806 294 C760 375, 676 425, 570 442" />
+  <path class="arc" d="M386 442 C278 425, 197 375, 152 294" />
+  <path class="arc" d="M150 226 C184 167, 265 112, 386 104" />
+
+  <text class="c" x="480" y="270">cycle</text>
+</svg>

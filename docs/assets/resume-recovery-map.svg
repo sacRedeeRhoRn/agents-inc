@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">resume and recovery map</title>
+  <desc id="desc">Turn snapshots and restart path after interruption.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f1e8; }
+      .n { fill: #fff9ef; stroke: #2f2a24; stroke-width: 2.5; rx: 16; }
+      .w { fill: #f9e2c7; stroke: #8f5b2e; stroke-width: 2.5; rx: 16; }
+      .t { font: 700 17px 'Segoe UI', Arial, sans-serif; fill: #2f2a24; text-anchor: middle; }
+      .l { stroke: #2f2a24; stroke-width: 2.5; fill: none; marker-end: url(#m); }
+    </style>
+    <marker id="m" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto">
+      <polygon points="0,0 12,4 0,8" fill="#2f2a24" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="360" />
+
+  <rect class="n" x="70" y="130" width="150" height="88" />
+  <text class="t" x="145" y="182">turn</text>
+
+  <rect class="n" x="280" y="130" width="180" height="88" />
+  <text class="t" x="370" y="182">checkpoint</text>
+
+  <rect class="n" x="520" y="130" width="150" height="88" />
+  <text class="t" x="595" y="182">compact</text>
+
+  <rect class="w" x="730" y="130" width="170" height="88" />
+  <text class="t" x="815" y="182">blocked</text>
+
+  <rect class="n" x="960" y="130" width="170" height="88" />
+  <text class="t" x="1045" y="182">resume</text>
+
+  <path class="l" d="M220 174 H280" />
+  <path class="l" d="M460 174 H520" />
+  <path class="l" d="M670 174 H730" />
+  <path class="l" d="M900 174 H960" />
+
+  <path class="l" d="M815 218 C815 290, 520 290, 520 218" />
+</svg>

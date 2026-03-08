@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">agents-inc session pulse</title>
+  <desc id="desc">Minimal flow from install to resume.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f1e8; }
+      .line { stroke: #2f2a24; stroke-width: 3; fill: none; marker-end: url(#m); }
+      .n { fill: #fff9ef; stroke: #2f2a24; stroke-width: 2.5; rx: 18; }
+      .t { font: 700 17px 'Segoe UI', Arial, sans-serif; fill: #2f2a24; }
+      .s { font: 600 13px 'Segoe UI', Arial, sans-serif; fill: #6a5f53; }
+    </style>
+    <marker id="m" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto">
+      <polygon points="0,0 12,4 0,8" fill="#2f2a24" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="360" />
+
+  <rect class="n" x="48" y="130" width="150" height="92" />
+  <text class="t" x="89" y="168">install</text>
+  <text class="s" x="92" y="191">start</text>
+
+  <rect class="n" x="248" y="130" width="150" height="92" />
+  <text class="t" x="304" y="168">init</text>
+  <text class="s" x="292" y="191">bootstrap</text>
+
+  <rect class="n" x="448" y="130" width="150" height="92" />
+  <text class="t" x="494" y="168">create</text>
+  <text class="s" x="492" y="191">project</text>
+
+  <rect class="n" x="648" y="130" width="150" height="92" />
+  <text class="t" x="704" y="168">run</text>
+  <text class="s" x="684" y="191">cycles</text>
+
+  <rect class="n" x="848" y="130" width="150" height="92" />
+  <text class="t" x="902" y="168">save</text>
+  <text class="s" x="885" y="191">state</text>
+
+  <rect class="n" x="1048" y="130" width="110" height="92" />
+  <text class="t" x="1068" y="168">resume</text>
+  <text class="s" x="1074" y="191">flow</text>
+
+  <path class="line" d="M198 176 H248" />
+  <path class="line" d="M398 176 H448" />
+  <path class="line" d="M598 176 H648" />
+  <path class="line" d="M798 176 H848" />
+  <path class="line" d="M998 176 H1048" />
+</svg>
