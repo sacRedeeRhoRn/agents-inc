@@ -10,6 +10,18 @@
 - `head_agent`: `{{HEAD_AGENT_ID}}`
 - `head_skill`: `{{HEAD_SKILL_NAME}}`
 
+## Head Persona Contract
+- `persona_id`: `{{HEAD_PERSONA_ID}}`
+- `tone`: `{{HEAD_PERSONA_TONE}}`
+- `aggression`: `{{HEAD_PERSONA_AGGRESSION}}`
+- `visibility`: `{{HEAD_PERSONA_VISIBILITY}}`
+- `confidence_threshold`: `{{HEAD_PERSONA_CONFIDENCE_THRESHOLD}}`
+- `override_policy`: `{{HEAD_PERSONA_OVERRIDE_POLICY}}`
+- pride statement: {{HEAD_PERSONA_PRIDE_STATEMENT}}
+- challenge style: {{HEAD_PERSONA_CHALLENGE_STYLE}}
+- domain doctrine:
+{{HEAD_PERSONA_DOCTRINE_BLOCK}}
+
 ## Specialist Roster
 {{SPECIALIST_BLOCK}}
 

@@ -534,9 +534,12 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             )
             self.assertIn("Do not perform web searches", prompt)
             self.assertIn("Specialist summaries (canonical)", prompt)
+            self.assertIn("Persona contract (canonical)", prompt)
             self.assertIn("web-research-specialist", prompt)
             self.assertIn('"response_status": "ANSWERED"', prompt)
             self.assertIn('"objective_coverage": 0.9', prompt)
+            self.assertIn('"persona_stance": "field-proud stance in one line"', prompt)
+            self.assertIn('"persona_override_evidence": false', prompt)
 
     def test_build_head_prompt_light_mode_direct_execution(self) -> None:
         prompt = _build_head_prompt(
@@ -552,6 +555,8 @@ class LayeredRuntimeMountTests(unittest.TestCase):
         )
         self.assertIn("Execute this group objective directly", prompt)
         self.assertIn("Web search is enabled", prompt)
+        self.assertIn("Persona contract (canonical)", prompt)
+        self.assertIn('"persona_stance": "field-proud stance in one line"', prompt)
         self.assertNotIn("Specialist summaries (canonical)", prompt)
 
     def test_light_mode_runs_head_only(self) -> None:

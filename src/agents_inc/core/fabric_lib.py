@@ -323,6 +323,79 @@ def ensure_group_shape(group: dict, source: str = "<unknown>") -> List[str]:
         for head_key in ["agent_id", "skill_name", "mission", "publish_contract"]:
             if not head.get(head_key):
                 errors.append(f"{source}: head.{head_key} is required")
+        persona = head.get("persona")
+        if persona is not None:
+            if not isinstance(persona, dict):
+                errors.append(f"{source}: head.persona must be a map when provided")
+            else:
+                persona_required = [
+                    "persona_id",
+                    "tone",
+                    "aggression",
+                    "pride_statement",
+                    "domain_doctrine",
+                    "challenge_style",
+                    "visibility",
+                    "confidence_threshold",
+                    "override_policy",
+                ]
+                for key in persona_required:
+                    if key not in persona:
+                        errors.append(f"{source}: head.persona.{key} is required")
+                if (
+                    "persona_id" in persona
+                    and (
+                        not isinstance(persona.get("persona_id"), str)
+                        or not str(persona.get("persona_id") or "").strip()
+                    )
+                ):
+                    errors.append(f"{source}: head.persona.persona_id must be non-empty string")
+                if persona.get("tone") not in {"authoritative"}:
+                    errors.append(f"{source}: head.persona.tone must be 'authoritative'")
+                if persona.get("aggression") not in {"unrestricted-confrontation"}:
+                    errors.append(
+                        f"{source}: head.persona.aggression must be 'unrestricted-confrontation'"
+                    )
+                if (
+                    "pride_statement" in persona
+                    and (
+                        not isinstance(persona.get("pride_statement"), str)
+                        or len(str(persona.get("pride_statement") or "").strip()) < 8
+                    )
+                ):
+                    errors.append(f"{source}: head.persona.pride_statement must be meaningful")
+                doctrine = persona.get("domain_doctrine")
+                if not isinstance(doctrine, list) or not doctrine:
+                    errors.append(
+                        f"{source}: head.persona.domain_doctrine must be non-empty string list"
+                    )
+                elif not all(isinstance(item, str) and str(item).strip() for item in doctrine):
+                    errors.append(
+                        f"{source}: head.persona.domain_doctrine entries must be non-empty strings"
+                    )
+                if (
+                    "challenge_style" in persona
+                    and (
+                        not isinstance(persona.get("challenge_style"), str)
+                        or len(str(persona.get("challenge_style") or "").strip()) < 8
+                    )
+                ):
+                    errors.append(f"{source}: head.persona.challenge_style must be meaningful")
+                if persona.get("visibility") not in {"moderate"}:
+                    errors.append(f"{source}: head.persona.visibility must be 'moderate'")
+                threshold = persona.get("confidence_threshold")
+                try:
+                    threshold_value = float(threshold)
+                except Exception:
+                    threshold_value = -1.0
+                if threshold_value < 0.0 or threshold_value > 1.0:
+                    errors.append(
+                        f"{source}: head.persona.confidence_threshold must be between 0 and 1"
+                    )
+                if persona.get("override_policy") not in {"head-meeting-only"}:
+                    errors.append(
+                        f"{source}: head.persona.override_policy must be 'head-meeting-only'"
+                    )
         publish_contract = head.get("publish_contract")
         if not isinstance(publish_contract, dict):
             errors.append(f"{source}: head.publish_contract must be a map")

@@ -128,6 +128,46 @@ class ProjectGroupsTests(unittest.TestCase):
             text = buf.getvalue()
             self.assertIn("selected_groups: developer,quality-assurance", text)
 
+    def test_generated_group_manifest_contains_head_persona(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fabric_root = Path(td) / "agent_group_fabric"
+            ensure_fabric_root_initialized(fabric_root)
+            project_id = "proj-group-persona"
+
+            with patch.object(
+                sys,
+                "argv",
+                [
+                    "agents-inc new-project",
+                    "--fabric-root",
+                    str(fabric_root),
+                    "--project-id",
+                    project_id,
+                    "--groups",
+                    "developer",
+                    "--force",
+                ],
+            ):
+                self.assertEqual(new_project_cli.main(), 0)
+
+            group_manifest_path = (
+                fabric_root
+                / "generated"
+                / "projects"
+                / project_id
+                / "agent-groups"
+                / "developer"
+                / "group.yaml"
+            )
+            manifest = load_yaml(group_manifest_path)
+            self.assertIsInstance(manifest, dict)
+            head = manifest.get("head")
+            self.assertIsInstance(head, dict)
+            persona = head.get("persona")
+            self.assertIsInstance(persona, dict)
+            self.assertEqual(persona.get("tone"), "authoritative")
+            self.assertEqual(persona.get("override_policy"), "head-meeting-only")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -228,6 +228,7 @@ class OrchestratorReplyTests(unittest.TestCase):
             self.assertIn("full_report:", final_answer_text)
             self.assertNotIn("## Delegation Summary", final_answer_text)
             self.assertIn("## Delegation Summary", full_report_text)
+            self.assertIn("persona_stance", full_report_text)
 
             non_group_result = run_orchestrator_reply(
                 OrchestratorReplyConfig(

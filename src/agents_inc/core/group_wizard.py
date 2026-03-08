@@ -205,6 +205,37 @@ def _validate_specialists(specialists: List[dict]) -> None:
         raise FabricError("at least 4 specialists are required")
 
 
+def _default_head_persona(draft: GroupDraft) -> dict:
+    domain_text = str(draft.domain or "general-domain").replace("-", " ").strip()
+    display = str(draft.display_name or "Group").strip()
+    persona_id = "persona-{0}-head".format(slugify(draft.group_id))
+    doctrine: List[str] = []
+    for item in draft.success_criteria:
+        text = str(item).strip()
+        if text and text not in doctrine:
+            doctrine.append(text)
+    if not doctrine:
+        doctrine = [
+            "Decisions are strict, explicit, and domain-grounded.",
+            "Weak evidence is challenged before publication.",
+        ]
+    return {
+        "persona_id": persona_id,
+        "tone": "authoritative",
+        "aggression": "unrestricted-confrontation",
+        "pride_statement": (
+            f"I represent {display} and defend {domain_text} standards with uncompromising rigor."
+        ),
+        "domain_doctrine": doctrine[:6],
+        "challenge_style": (
+            "Confront weak assumptions directly and demand stronger domain-grounded support."
+        ),
+        "visibility": "moderate",
+        "confidence_threshold": 0.8,
+        "override_policy": "head-meeting-only",
+    }
+
+
 def _format_specialists_for_prompt(specialists: List[dict]) -> str:
     lines = []
     for idx, specialist in enumerate(specialists, start=1):
@@ -348,6 +379,7 @@ def build_manifest_v2(draft: GroupDraft) -> dict:
             "agent_id": f"{group_id}-head",
             "skill_name": f"grp-{group_id}-head",
             "mission": f"Route and quality-gate specialist outputs for {draft.display_name}.",
+            "persona": _default_head_persona(draft),
             "publish_contract": {
                 "exposed_required": [
                     "summary.md",

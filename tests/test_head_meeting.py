@@ -21,9 +21,40 @@ def _write_group_exposed(
     group_id: str,
     response_status: str,
     objective_coverage: float,
+    include_persona: bool = True,
+    persona_override_evidence: bool = False,
+    persona_confidence: float = 0.9,
+    include_citation: bool = True,
+    handoff_status: str = "COMPLETE",
 ) -> None:
     exposed = project_dir / "agent-groups" / group_id / "exposed"
     exposed.mkdir(parents=True, exist_ok=True)
+    group_manifest_path = project_dir / "agent-groups" / group_id / "group.yaml"
+    group_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    group_manifest_path.write_text(
+        json.dumps(
+            {
+                "group_id": group_id,
+                "head": {
+                    "persona": {
+                        "persona_id": f"persona-{group_id}-head",
+                        "tone": "authoritative",
+                        "aggression": "unrestricted-confrontation",
+                        "pride_statement": f"{group_id} pride statement",
+                        "domain_doctrine": ["doctrine"],
+                        "challenge_style": "challenge style",
+                        "visibility": "moderate",
+                        "confidence_threshold": 0.8,
+                        "override_policy": "head-meeting-only",
+                    }
+                },
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (exposed / "summary.md").write_text(
         f"# Summary\n\n{group_id} summary for objective response.\n",
         encoding="utf-8",
@@ -32,26 +63,36 @@ def _write_group_exposed(
         f"# Integration Notes\n\n{group_id} notes.\n",
         encoding="utf-8",
     )
-    (exposed / "handoff.json").write_text(
-        json.dumps(
+    claims = []
+    if include_citation:
+        claims.append(
             {
-                "schema_version": "3.1",
-                "status": "COMPLETE",
-                "response_status": response_status,
-                "objective_response": f"{group_id} objective response",
-                "decision_summary": f"{group_id} decision summary",
-                "objective_coverage": objective_coverage,
-                "recommended_actions": ["next action"],
-                "claims_with_citations": [
-                    {
-                        "claim": f"{group_id} claim",
-                        "citation": f"https://example.org/{group_id}",
-                    }
-                ],
-            },
-            indent=2,
-            sort_keys=True,
+                "claim": f"{group_id} claim",
+                "citation": f"https://example.org/{group_id}",
+            }
         )
+    payload = {
+        "schema_version": "3.1",
+        "status": handoff_status,
+        "response_status": response_status,
+        "objective_response": f"{group_id} objective response",
+        "decision_summary": f"{group_id} decision summary",
+        "objective_coverage": objective_coverage,
+        "recommended_actions": ["next action"],
+        "claims_with_citations": claims,
+    }
+    if include_persona:
+        payload.update(
+            {
+                "persona_id": f"persona-{group_id}-head",
+                "persona_stance": f"{group_id} stance",
+                "persona_challenge": f"{group_id} challenge",
+                "persona_confidence": persona_confidence,
+                "persona_override_evidence": persona_override_evidence,
+            }
+        )
+    (exposed / "handoff.json").write_text(
+        json.dumps(payload, indent=2, sort_keys=True)
         + "\n",
         encoding="utf-8",
     )
@@ -128,6 +169,71 @@ class HeadMeetingTests(unittest.TestCase):
             self.assertTrue(bool(result.get("all_satisfied")))
             matrix = result.get("matrix", {})
             self.assertEqual(matrix.get("unsatisfied_groups", []), [])
+
+    def test_meeting_allows_persona_override_for_evidence_gap(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_dir = root / "generated" / "projects" / "proj-c"
+            cycle_dir = root / "turn" / "cycles" / "cycle-0001"
+            cycle_dir.mkdir(parents=True, exist_ok=True)
+
+            _write_group_exposed(
+                project_dir,
+                group_id="developer",
+                response_status="ANSWERED",
+                objective_coverage=0.25,
+                include_citation=False,
+                persona_override_evidence=True,
+                persona_confidence=0.95,
+            )
+
+            result = run_head_meeting(
+                HeadMeetingConfig(
+                    project_id="proj-c",
+                    cycle_id=1,
+                    cycle_dir=cycle_dir,
+                    project_dir=project_dir,
+                    selected_groups=["developer"],
+                    message="deliver objective answer",
+                )
+            )
+
+            self.assertTrue(bool(result.get("all_satisfied")))
+            decision = result.get("decisions", {}).get("developer", {})
+            self.assertTrue(bool(decision.get("persona_override_allowed")))
+
+    def test_meeting_does_not_bypass_structural_blockers(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_dir = root / "generated" / "projects" / "proj-d"
+            cycle_dir = root / "turn" / "cycles" / "cycle-0001"
+            cycle_dir.mkdir(parents=True, exist_ok=True)
+
+            _write_group_exposed(
+                project_dir,
+                group_id="developer",
+                response_status="ANSWERED",
+                objective_coverage=0.25,
+                include_citation=False,
+                persona_override_evidence=True,
+                persona_confidence=0.95,
+                handoff_status="PENDING",
+            )
+
+            result = run_head_meeting(
+                HeadMeetingConfig(
+                    project_id="proj-d",
+                    cycle_id=1,
+                    cycle_dir=cycle_dir,
+                    project_dir=project_dir,
+                    selected_groups=["developer"],
+                    message="deliver objective answer",
+                )
+            )
+
+            self.assertFalse(bool(result.get("all_satisfied")))
+            decision = result.get("decisions", {}).get("developer", {})
+            self.assertFalse(bool(decision.get("structural_valid")))
 
 
 if __name__ == "__main__":

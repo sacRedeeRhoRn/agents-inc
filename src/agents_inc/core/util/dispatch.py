@@ -118,6 +118,33 @@ def build_dispatch_plan(
     head = group_manifest.get("head", {})
     if not isinstance(head, dict):
         raise FabricError(f"group '{group_id}' head config is invalid")
+    persona = head.get("persona", {})
+    if not isinstance(persona, dict):
+        persona = {}
+    doctrine = persona.get("domain_doctrine")
+    if not isinstance(doctrine, list):
+        doctrine = []
+    doctrine_rows = [str(item).strip() for item in doctrine if str(item).strip()]
+    if not doctrine_rows:
+        success = group_manifest.get("success_criteria")
+        if isinstance(success, list):
+            doctrine_rows = [str(item).strip() for item in success if str(item).strip()]
+    if not doctrine_rows:
+        doctrine_rows = [
+            "Decisions are domain-grounded and explicit.",
+            "Weak evidence is challenged before publication.",
+        ]
+    head_persona_brief = {
+        "persona_id": str(persona.get("persona_id") or f"persona-{group_id}-head").strip(),
+        "tone": str(persona.get("tone") or "authoritative").strip(),
+        "aggression": str(persona.get("aggression") or "unrestricted-confrontation").strip(),
+        "pride_statement": str(persona.get("pride_statement") or "").strip(),
+        "domain_doctrine": doctrine_rows[:6],
+        "challenge_style": str(persona.get("challenge_style") or "").strip(),
+        "visibility": str(persona.get("visibility") or "moderate").strip(),
+        "confidence_threshold": float(persona.get("confidence_threshold") or 0.8),
+        "override_policy": str(persona.get("override_policy") or "head-meeting-only").strip(),
+    }
 
     interaction = group_manifest.get("interaction", {})
     session_mode = "interactive-separated"
@@ -165,6 +192,7 @@ def build_dispatch_plan(
                 "purpose": str(group_manifest.get("purpose") or "").strip(),
                 "head_mission": str(head.get("mission") or "").strip(),
                 "specialist_focus": specialist_focus[:12],
+                "head_persona": head_persona_brief,
             },
             "phases": [],
         }
@@ -261,6 +289,7 @@ def build_dispatch_plan(
             group_manifest.get("execution_defaults", {}).get("web_search_enabled", True)
         ),
         "gate_profile": group_manifest.get("gate_profile", {}),
+        "head_persona_brief": head_persona_brief,
         "phases": phases,
         "quality_gates": group_manifest.get("quality_gates", {}),
     }

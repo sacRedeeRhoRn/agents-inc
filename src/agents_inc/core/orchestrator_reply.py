@@ -30,13 +30,13 @@ from agents_inc.core.negotiation_monitor import NegotiationCycleRecord
 from agents_inc.core.orchestration import report as orchestration_report
 from agents_inc.core.orchestration.cycle_engine import build_cycle_summary
 from agents_inc.core.orchestration.meeting import build_negotiation_monitor
-from agents_inc.core.token_usage import write_turn_token_usage_report
 from agents_inc.core.orchestration.turn_router import (
     resolve_primary_group as resolve_primary_group_router,
 )
 from agents_inc.core.orchestration.turn_router import (
     selected_groups_from_manifest,
 )
+from agents_inc.core.orchestrator_state import mark_orchestrator_saved
 from agents_inc.core.response_policy import (
     classify_request_mode,
     ensure_response_policy,
@@ -45,7 +45,6 @@ from agents_inc.core.response_policy import (
     strip_non_group_prefix,
     upsert_specialist_sessions,
 )
-from agents_inc.core.orchestrator_state import mark_orchestrator_saved
 from agents_inc.core.session_compaction import compact_session
 from agents_inc.core.session_state import (
     default_project_index_path,
@@ -54,6 +53,7 @@ from agents_inc.core.session_state import (
     resolve_state_project_root,
     write_checkpoint,
 )
+from agents_inc.core.token_usage import write_turn_token_usage_report
 from agents_inc.core.util.edges import resolve_handoff_edges
 
 OBJECTIVE_COVERAGE_THRESHOLD = 0.8
@@ -683,6 +683,17 @@ def _parse_objective_coverage(value: object) -> float | None:
     return max(0.0, min(1.0, raw))
 
 
+def _parse_bool(value: object, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value or "").strip().lower()
+    if text in {"1", "true", "yes", "y", "on"}:
+        return True
+    if text in {"0", "false", "no", "n", "off"}:
+        return False
+    return bool(default)
+
+
 def _response_status_from_text(*, status: str, summary_text: str, notes_text: str) -> str:
     normalized = _normalize_response_status(status)
     if normalized:
@@ -808,27 +819,49 @@ def _collect_group_contributions(project_dir: Path, groups: List[str], objective
     rows: List[dict] = []
     for group_id in groups:
         exposed_dir = project_dir / "agent-groups" / group_id / "exposed"
+        group_manifest_path = project_dir / "agent-groups" / group_id / "group.yaml"
         summary_path = exposed_dir / "summary.md"
         handoff_path = exposed_dir / "handoff.json"
         notes_path = exposed_dir / "INTEGRATION_NOTES.md"
 
+        group_manifest = load_yaml(group_manifest_path) if group_manifest_path.exists() else {}
+        if not isinstance(group_manifest, dict):
+            group_manifest = {}
+        head_persona = group_manifest.get("head", {})
+        if isinstance(head_persona, dict):
+            head_persona = head_persona.get("persona", {})
+        else:
+            head_persona = {}
+        if not isinstance(head_persona, dict):
+            head_persona = {}
+        try:
+            persona_threshold = float(head_persona.get("confidence_threshold") or 0.8)
+        except Exception:
+            persona_threshold = 0.8
+        persona_threshold = max(0.0, min(1.0, persona_threshold))
+        persona_override_policy = str(head_persona.get("override_policy") or "head-meeting-only")
+
         summary_text = _safe_read(summary_path)
         notes_text = _safe_read(notes_path)
         reasons: List[str] = []
+        structural_reasons: List[str] = []
         handoff_payload: dict = {}
 
         if not handoff_path.exists():
             reasons.append("missing exposed/handoff.json")
+            structural_reasons.append("missing exposed/handoff.json")
         else:
             loaded = load_yaml(handoff_path)
             if not isinstance(loaded, dict):
                 reasons.append("exposed/handoff.json is not a mapping")
+                structural_reasons.append("exposed/handoff.json is not a mapping")
             else:
                 handoff_payload = loaded
 
         status = str(handoff_payload.get("status") or "").strip().upper()
         if status in {"", "PENDING"}:
             reasons.append("handoff status is pending")
+            structural_reasons.append("handoff status is pending")
 
         artifacts = handoff_payload.get("artifacts")
         artifact_preview: List[str] = []
@@ -949,20 +982,60 @@ def _collect_group_contributions(project_dir: Path, groups: List[str], objective
         elif response_status == "PARTIAL":
             objective_coverage = min(objective_coverage, 0.79)
 
+        persona_id = str(handoff_payload.get("persona_id") or "").strip()
+        persona_stance = _truncate(str(handoff_payload.get("persona_stance") or "").strip(), max_chars=220)
+        persona_challenge = _truncate(
+            str(handoff_payload.get("persona_challenge") or "").strip(),
+            max_chars=220,
+        )
+        raw_persona_confidence = _parse_objective_coverage(handoff_payload.get("persona_confidence"))
+        persona_confidence = raw_persona_confidence
+        if persona_confidence is None:
+            persona_confidence = persona_threshold
+        persona_confidence = max(0.0, min(1.0, float(persona_confidence)))
+        persona_override_evidence = _parse_bool(
+            handoff_payload.get("persona_override_evidence"),
+            default=False,
+        )
+        persona_missing: List[str] = []
+        if not persona_id:
+            persona_missing.append("persona_id")
+        if not persona_stance:
+            persona_missing.append("persona_stance")
+        if not persona_challenge:
+            persona_missing.append("persona_challenge")
+        if raw_persona_confidence is None:
+            persona_missing.append("persona_confidence")
+        if persona_missing:
+            reasons.append(
+                "persona contract incomplete ({0})".format(", ".join(persona_missing))
+            )
+        persona_contract_valid = len(persona_missing) == 0
+        persona_override_allowed = bool(
+            persona_contract_valid
+            and persona_override_evidence
+            and persona_override_policy == "head-meeting-only"
+            and persona_confidence >= persona_threshold
+        )
+
         if response_status != "ANSWERED":
             reasons.append(f"objective not fully satisfied ({response_status})")
-        if objective_coverage < OBJECTIVE_COVERAGE_THRESHOLD:
+        if objective_coverage < OBJECTIVE_COVERAGE_THRESHOLD and not persona_override_allowed:
             reasons.append(
                 "objective coverage below threshold ({0:.2f} < {1:.2f})".format(
                     objective_coverage, OBJECTIVE_COVERAGE_THRESHOLD
                 )
             )
 
+        structural_valid = len(structural_reasons) == 0
+        valid = not reasons
         rows.append(
             {
                 "group_id": group_id,
-                "valid": not reasons,
+                "valid": valid,
                 "reasons": reasons,
+                "structural_valid": structural_valid,
+                "structural_reasons": structural_reasons,
                 "status": status or "UNKNOWN",
                 "summary_path": str(summary_path),
                 "handoff_path": str(handoff_path),
@@ -981,9 +1054,24 @@ def _collect_group_contributions(project_dir: Path, groups: List[str], objective
                 "decision_summary": decision_summary,
                 "recommended_actions": recommended_actions[:8],
                 "objective_coverage": round(max(0.0, min(1.0, float(objective_coverage))), 3),
+                "persona_id": persona_id,
+                "persona_stance": persona_stance,
+                "persona_challenge": persona_challenge,
+                "persona_confidence": round(persona_confidence, 3),
+                "persona_override_evidence": bool(persona_override_evidence),
+                "persona_override_allowed": bool(persona_override_allowed),
+                "persona_override_policy": persona_override_policy,
+                "persona_confidence_threshold": round(persona_threshold, 3),
+                "persona_contract_valid": persona_contract_valid,
             }
         )
     return rows
+
+
+def _effective_contribution_valid(row: dict) -> bool:
+    if not isinstance(row, dict):
+        return False
+    return bool(row.get("valid")) or bool(row.get("persona_override_allowed"))
 
 
 def _apply_contribution_status(delegation_ledger: dict, contributions: List[dict]) -> dict:
@@ -1002,13 +1090,14 @@ def _apply_contribution_status(delegation_ledger: dict, contributions: List[dict
             }
             missing.append(group_id)
             continue
-        valid = bool(row.get("valid"))
+        valid = _effective_contribution_valid(row)
         if valid:
             contributed.append(group_id)
         else:
             missing.append(group_id)
         status_map[group_id] = {
             "valid": valid,
+            "persona_override_allowed": bool(row.get("persona_override_allowed")),
             "status": row.get("status", "UNKNOWN"),
             "reasons": row.get("reasons", []),
             "artifact_count": row.get("artifact_count", 0),
@@ -1053,10 +1142,14 @@ def _render_group_findings(contributions: List[dict]) -> str:
     lines: List[str] = []
     for row in contributions:
         group_id = str(row.get("group_id") or "")
+        effective_valid = _effective_contribution_valid(row)
+        status_label = "valid"
+        if not bool(row.get("valid")) and bool(row.get("persona_override_allowed")):
+            status_label = "valid (persona-override)"
+        elif not effective_valid:
+            status_label = "blocked"
         lines.append(f"### {group_id}")
-        lines.append(
-            "- contribution status: `{0}`".format("valid" if row.get("valid") else "blocked")
-        )
+        lines.append("- contribution status: `{0}`".format(status_label))
         lines.append("- exposed handoff: `{0}`".format(row.get("handoff_path", "")))
         lines.append("- exposed summary: `{0}`".format(row.get("summary_path", "")))
         lines.append(
@@ -1080,6 +1173,14 @@ def _render_group_findings(contributions: List[dict]) -> str:
         if decision_summary and decision_summary != objective_response:
             lines.append("- decision_summary:")
             lines.append(f"  {decision_summary}")
+        persona_stance = str(row.get("persona_stance") or "").strip()
+        persona_challenge = str(row.get("persona_challenge") or "").strip()
+        if persona_stance:
+            lines.append("- persona_stance:")
+            lines.append(f"  {persona_stance}")
+        if persona_challenge:
+            lines.append("- persona_challenge:")
+            lines.append(f"  {persona_challenge}")
 
         reasons = row.get("reasons", [])
         if isinstance(reasons, list) and reasons:
@@ -1411,9 +1512,12 @@ def _render_group_mode_chat_answer(
     blocking = [
         str(row.get("group_id") or "")
         for row in contributions
-        if not bool(row.get("valid"))
+        if not _effective_contribution_valid(row)
         or str(row.get("response_status") or "") != "ANSWERED"
-        or float(row.get("objective_coverage") or 0.0) < OBJECTIVE_COVERAGE_THRESHOLD
+        or (
+            float(row.get("objective_coverage") or 0.0) < OBJECTIVE_COVERAGE_THRESHOLD
+            and not bool(row.get("persona_override_allowed"))
+        )
     ]
     blocking = [group for group in blocking if group]
 
@@ -1441,7 +1545,7 @@ def _render_group_mode_chat_answer(
                 row.get("group_id", ""),
                 row.get("response_status", "UNKNOWN"),
                 row.get("objective_coverage", 0.0),
-                bool(row.get("valid")),
+                _effective_contribution_valid(row),
             )
         )
 
@@ -1574,7 +1678,7 @@ def _quality_gate(
     valid_contributions = [
         str(row.get("group_id") or "")
         for row in (contributions or [])
-        if isinstance(row, dict) and bool(row.get("valid"))
+        if isinstance(row, dict) and _effective_contribution_valid(row)
     ]
     valid_set = {group_id for group_id in valid_contributions if group_id}
     required_set = {group_id for group_id in required_groups if group_id}
@@ -1655,7 +1759,7 @@ def _render_blocked_report(
         lines.append(
             "| {0} | {1} | {2} | {3} | {4} | {5} |".format(
                 row.get("group_id", ""),
-                "valid" if row.get("valid") else "blocked",
+                "valid" if _effective_contribution_valid(row) else "blocked",
                 row.get("artifact_count", 0),
                 row.get("claim_count", 0),
                 row.get("citation_count", 0),
@@ -1715,7 +1819,7 @@ def _render_blocked_report(
     lines.extend(["", "## Recovery Commands"])
 
     for row in contributions:
-        if row.get("valid"):
+        if _effective_contribution_valid(row):
             continue
         group_id = str(row.get("group_id") or "")
         if not group_id:
@@ -2349,7 +2453,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     if not delegation.get("all_active_groups_contributed") and not block_status:
         block_status = "BLOCKED_GROUP_CONTRIBUTIONS"
         for row in contributions:
-            if row.get("valid"):
+            if _effective_contribution_valid(row):
                 continue
             reasons = row.get("reasons", [])
             reason_text = "; ".join(str(item) for item in reasons)

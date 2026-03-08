@@ -18,11 +18,11 @@ from agents_inc.core.fabric_lib import (
     load_group_catalog,
     load_profiles,
     make_skill_name,
+    normalize_execution_mode,
     render_template,
     resolve_fabric_root,
     select_groups,
     slugify,
-    normalize_execution_mode,
     upsert_project_registry_entry,
     write_text,
 )
@@ -91,6 +91,50 @@ def render_specialist_block(specialists: List[dict]) -> str:
             )
         )
     return "\n".join(rows)
+
+
+def resolve_head_persona(group: dict) -> dict:
+    head = group.get("head", {}) if isinstance(group, dict) else {}
+    if not isinstance(head, dict):
+        head = {}
+    persona = head.get("persona", {})
+    if not isinstance(persona, dict):
+        persona = {}
+
+    group_id = str(group.get("group_id") or "group").strip() or "group"
+    display_name = str(group.get("display_name") or group_id).strip() or group_id
+    domain = str(group.get("domain") or "general-domain").strip().replace("-", " ")
+    doctrine = persona.get("domain_doctrine")
+    if not isinstance(doctrine, list):
+        doctrine = []
+    doctrine_rows = [str(item).strip() for item in doctrine if str(item).strip()]
+    if not doctrine_rows:
+        success = group.get("success_criteria")
+        if isinstance(success, list):
+            doctrine_rows = [str(item).strip() for item in success if str(item).strip()]
+    if not doctrine_rows:
+        doctrine_rows = [
+            "Decisions are domain-grounded and explicit.",
+            "Weak evidence is challenged before publication.",
+        ]
+
+    return {
+        "persona_id": str(persona.get("persona_id") or f"persona-{group_id}-head").strip(),
+        "tone": str(persona.get("tone") or "authoritative").strip(),
+        "aggression": str(persona.get("aggression") or "unrestricted-confrontation").strip(),
+        "pride_statement": str(
+            persona.get("pride_statement")
+            or f"I represent {display_name} and defend {domain} standards with uncompromising rigor."
+        ).strip(),
+        "domain_doctrine": doctrine_rows[:6],
+        "challenge_style": str(
+            persona.get("challenge_style")
+            or "Confront weak assumptions directly and demand stronger domain-grounded support."
+        ).strip(),
+        "visibility": str(persona.get("visibility") or "moderate").strip(),
+        "confidence_threshold": float(persona.get("confidence_threshold") or 0.8),
+        "override_policy": str(persona.get("override_policy") or "head-meeting-only").strip(),
+    }
 
 
 def render_workdirs_block(project_id: str, group_id: str, specialists: List[dict]) -> str:
@@ -263,6 +307,7 @@ def write_group_assets(
         fabric_root, "templates/group/references/citation-policy.template.md"
     )
     wrappers_readme = read_template(fabric_root, "templates/group/tools/wrappers/README.txt")
+    persona = resolve_head_persona(group)
 
     context = {
         "PROJECT_ID": project_id,
@@ -273,6 +318,17 @@ def write_group_assets(
         "HEAD_AGENT_ID": group["head"]["agent_id"],
         "HEAD_SKILL_NAME": group["head"]["effective_skill_name"],
         "GROUP_MISSION": group["head"].get("mission", ""),
+        "HEAD_PERSONA_ID": persona["persona_id"],
+        "HEAD_PERSONA_TONE": persona["tone"],
+        "HEAD_PERSONA_AGGRESSION": persona["aggression"],
+        "HEAD_PERSONA_PRIDE_STATEMENT": persona["pride_statement"],
+        "HEAD_PERSONA_DOCTRINE_BLOCK": format_bullet(persona["domain_doctrine"]),
+        "HEAD_PERSONA_CHALLENGE_STYLE": persona["challenge_style"],
+        "HEAD_PERSONA_VISIBILITY": persona["visibility"],
+        "HEAD_PERSONA_CONFIDENCE_THRESHOLD": "{0:.2f}".format(
+            float(persona["confidence_threshold"])
+        ),
+        "HEAD_PERSONA_OVERRIDE_POLICY": persona["override_policy"],
         "SPECIALIST_BLOCK": render_specialist_block(group["specialists"]),
         "WORKDIR_BLOCK": render_workdirs_block(project_id, group_id, group["specialists"]),
         "QUALITY_GATE_BLOCK": render_quality_gate_block(group["quality_gates"]),
@@ -386,6 +442,17 @@ def write_group_assets(
             "GROUP_SUCCESS_CRITERIA_BLOCK": format_bullet(group.get("success_criteria", [])),
             "GATE_CHECKS_BLOCK": render_gate_checks_block(group),
             "SPECIALIST_SKILL_BLOCK": specialist_skill_block,
+            "HEAD_PERSONA_ID": persona["persona_id"],
+            "HEAD_PERSONA_TONE": persona["tone"],
+            "HEAD_PERSONA_AGGRESSION": persona["aggression"],
+            "HEAD_PERSONA_PRIDE_STATEMENT": persona["pride_statement"],
+            "HEAD_PERSONA_DOCTRINE_BLOCK": format_bullet(persona["domain_doctrine"]),
+            "HEAD_PERSONA_CHALLENGE_STYLE": persona["challenge_style"],
+            "HEAD_PERSONA_VISIBILITY": persona["visibility"],
+            "HEAD_PERSONA_CONFIDENCE_THRESHOLD": "{0:.2f}".format(
+                float(persona["confidence_threshold"])
+            ),
+            "HEAD_PERSONA_OVERRIDE_POLICY": persona["override_policy"],
         },
     )
 

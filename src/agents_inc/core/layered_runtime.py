@@ -14,16 +14,16 @@ from agents_inc.core.agent_threads import (
     set_head_thread,
     set_specialist_thread,
 )
+from agents_inc.core.escalation import (
+    ESCALATION_REQUEST_FILE,
+    ESCALATION_RESPONSE_FILE,
+    resolve_escalation_state,
+)
 from agents_inc.core.evidence_cache import (
     canonicalize_evidence_refs,
     evidence_id_for_citation,
     merge_evidence_refs_into_cache,
     resolve_evidence_ids,
-)
-from agents_inc.core.escalation import (
-    ESCALATION_REQUEST_FILE,
-    ESCALATION_RESPONSE_FILE,
-    resolve_escalation_state,
 )
 from agents_inc.core.fabric_lib import build_dispatch_plan, now_iso, stable_json, write_text
 from agents_inc.core.model_profiles import (
@@ -815,7 +815,17 @@ def _run_group(
         summary_text=summary_text,
         integration_notes=integration_notes,
         claims=claims,
+        persona_brief=_resolve_head_persona_brief(
+            dispatch=dispatch,
+            execution_mode=execution_mode,
+            group_id=group_id,
+        ),
     )
+    handoff_payload["persona_id"] = objective_contract["persona_id"]
+    handoff_payload["persona_stance"] = objective_contract["persona_stance"]
+    handoff_payload["persona_challenge"] = objective_contract["persona_challenge"]
+    handoff_payload["persona_confidence"] = objective_contract["persona_confidence"]
+    handoff_payload["persona_override_evidence"] = objective_contract["persona_override_evidence"]
     handoff_payload["response_status"] = objective_contract["response_status"]
     handoff_payload["objective_response"] = objective_contract["objective_response"]
     handoff_payload["decision_summary"] = objective_contract["decision_summary"]
@@ -1676,6 +1686,65 @@ def _build_specialist_prompt(
     )
 
 
+def _default_head_persona_brief(group_id: str) -> dict:
+    normalized_group = str(group_id or "group").strip() or "group"
+    return {
+        "persona_id": f"persona-{normalized_group}-head",
+        "tone": "authoritative",
+        "aggression": "unrestricted-confrontation",
+        "pride_statement": (
+            f"I represent {normalized_group} and defend domain standards with uncompromising rigor."
+        ),
+        "domain_doctrine": [
+            "Decisions are domain-grounded and explicit.",
+            "Weak evidence is challenged before publication.",
+        ],
+        "challenge_style": "Confront weak assumptions directly and demand stronger support.",
+        "visibility": "moderate",
+        "confidence_threshold": 0.8,
+        "override_policy": "head-meeting-only",
+    }
+
+
+def _resolve_head_persona_brief(*, dispatch: dict, execution_mode: str, group_id: str) -> dict:
+    if execution_mode == "light":
+        task_brief = dispatch.get("head_task_brief", {})
+        if not isinstance(task_brief, dict):
+            task_brief = {}
+        raw = task_brief.get("head_persona", {})
+    else:
+        raw = dispatch.get("head_persona_brief", {})
+    if not isinstance(raw, dict):
+        raw = {}
+
+    defaults = _default_head_persona_brief(group_id)
+    doctrine = raw.get("domain_doctrine")
+    if not isinstance(doctrine, list):
+        doctrine = defaults["domain_doctrine"]
+    doctrine_rows = [str(item).strip() for item in doctrine if str(item).strip()]
+    if not doctrine_rows:
+        doctrine_rows = list(defaults["domain_doctrine"])
+
+    confidence = raw.get("confidence_threshold")
+    try:
+        confidence_value = float(confidence)
+    except Exception:
+        confidence_value = float(defaults["confidence_threshold"])
+    confidence_value = max(0.0, min(1.0, confidence_value))
+
+    return {
+        "persona_id": str(raw.get("persona_id") or defaults["persona_id"]).strip(),
+        "tone": str(raw.get("tone") or defaults["tone"]).strip(),
+        "aggression": str(raw.get("aggression") or defaults["aggression"]).strip(),
+        "pride_statement": str(raw.get("pride_statement") or defaults["pride_statement"]).strip(),
+        "domain_doctrine": doctrine_rows[:6],
+        "challenge_style": str(raw.get("challenge_style") or defaults["challenge_style"]).strip(),
+        "visibility": str(raw.get("visibility") or defaults["visibility"]).strip(),
+        "confidence_threshold": confidence_value,
+        "override_policy": str(raw.get("override_policy") or defaults["override_policy"]).strip(),
+    }
+
+
 def _build_head_prompt(
     *,
     objective: str,
@@ -1690,6 +1759,11 @@ def _build_head_prompt(
         if head_skill
         else ""
     )
+    persona = _resolve_head_persona_brief(
+        dispatch=dispatch,
+        execution_mode=execution_mode,
+        group_id=group_id,
+    )
     if execution_mode == "light":
         head_task_brief = dispatch.get("head_task_brief", {})
         if not isinstance(head_task_brief, dict):
@@ -1701,6 +1775,7 @@ def _build_head_prompt(
             f"Group: {group_id}\n"
             f"Dispatch metadata: {json.dumps({'head_agent': dispatch.get('head_agent'), 'head_skill': dispatch.get('head_skill'), 'execution_mode': 'light'}, ensure_ascii=True)}\n"
             f"Group brief (canonical): {json.dumps(head_task_brief, ensure_ascii=True)}\n"
+            f"Persona contract (canonical): {json.dumps(persona, ensure_ascii=True)}\n"
             "Rules:\n"
             "1. Directly solve the group objective and produce an evidence-backed answer.\n"
             "2. Web search is enabled for this run; cite sources for externally derived claims.\n"
@@ -1708,6 +1783,8 @@ def _build_head_prompt(
             "4. Set response_status to ANSWERED only when this group directly answers the objective.\n"
             "5. If evidence is insufficient, set response_status to BLOCKED and explain why.\n"
             "6. objective_coverage is a 0..1 score for how fully this group addressed the objective.\n"
+            "7. Express a proud domain stance and explicit challenge posture in persona_stance/persona_challenge.\n"
+            "8. Set persona_override_evidence to true only when override policy permits it and confidence is justified.\n"
             "Return ONLY these exact blocks:\n"
             "BEGIN_WORK\n"
             "<group summary markdown>\n"
@@ -1716,6 +1793,11 @@ def _build_head_prompt(
             "{\n"
             '  "schema_version": "4.0",\n'
             '  "status": "COMPLETE",\n'
+            '  "persona_id": "persona-...-head",\n'
+            '  "persona_stance": "field-proud stance in one line",\n'
+            '  "persona_challenge": "direct challenge to weak assumptions in one line",\n'
+            '  "persona_confidence": 0.9,\n'
+            '  "persona_override_evidence": false,\n'
             '  "response_status": "ANSWERED",\n'
             '  "objective_response": "direct answer for this group",\n'
             '  "decision_summary": "direct decision in one to two sentences",\n'
@@ -1805,6 +1887,7 @@ def _build_head_prompt(
         f"Group: {group_id}\n"
         f"Dispatch metadata: {json.dumps({'head_agent': dispatch.get('head_agent'), 'head_skill': dispatch.get('head_skill')}, ensure_ascii=True)}\n"
         f"Specialist summaries (canonical): {json.dumps(input_rows, ensure_ascii=True)}\n"
+        f"Persona contract (canonical): {json.dumps(persona, ensure_ascii=True)}\n"
         "Rules:\n"
         "1. Use only the specialist summaries provided above as input. Do not perform web searches.\n"
         "2. Avoid broad filesystem crawling; read at most one specialist handoff file only if a required field is missing.\n"
@@ -1813,6 +1896,8 @@ def _build_head_prompt(
         "5. Set response_status to ANSWERED only when this group directly answers the objective.\n"
         "6. If evidence is insufficient, set response_status to BLOCKED and explain why.\n"
         "7. objective_coverage is a 0..1 score for how fully this group addressed the objective.\n"
+        "8. Express a proud domain stance and explicit challenge posture in persona_stance/persona_challenge.\n"
+        "9. Set persona_override_evidence to true only when override policy permits it and confidence is justified.\n"
         "Return ONLY these exact blocks:\n"
         "BEGIN_WORK\n"
         "<group summary markdown>\n"
@@ -1821,6 +1906,11 @@ def _build_head_prompt(
         "{\n"
         '  "schema_version": "4.0",\n'
         '  "status": "COMPLETE",\n'
+        '  "persona_id": "persona-...-head",\n'
+        '  "persona_stance": "field-proud stance in one line",\n'
+        '  "persona_challenge": "direct challenge to weak assumptions in one line",\n'
+        '  "persona_confidence": 0.9,\n'
+        '  "persona_override_evidence": false,\n'
         '  "response_status": "ANSWERED",\n'
         '  "objective_response": "direct answer for this group",\n'
         '  "decision_summary": "merge decision in one to two sentences",\n'
@@ -2557,6 +2647,17 @@ def _default_objective_response(*, group_id: str, summary_text: str, claims: Lis
     return f"{group_id} completed execution but did not provide an explicit objective response."
 
 
+def _parse_bool(value: object, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value or "").strip().lower()
+    if text in {"1", "true", "yes", "y", "on"}:
+        return True
+    if text in {"0", "false", "no", "n", "off"}:
+        return False
+    return bool(default)
+
+
 def _normalize_head_objective_contract(
     *,
     objective: str,
@@ -2565,7 +2666,11 @@ def _normalize_head_objective_contract(
     summary_text: str,
     integration_notes: str,
     claims: List[dict],
+    persona_brief: dict | None = None,
 ) -> dict:
+    if not isinstance(persona_brief, dict):
+        persona_brief = _default_head_persona_brief(group_id)
+
     response_status = _normalize_response_status(
         payload.get("response_status") or payload.get("objective_status") or payload.get("result_status")
     )
@@ -2626,7 +2731,36 @@ def _normalize_head_objective_contract(
     elif response_status == "PARTIAL":
         objective_coverage = min(objective_coverage, 0.79)
 
+    persona_stance = str(payload.get("persona_stance") or payload.get("stance") or "").strip()
+    if not persona_stance:
+        persona_stance = str(persona_brief.get("pride_statement") or "").strip()
+    persona_stance = _truncate_sentence(persona_stance, max_chars=260)
+
+    persona_challenge = str(payload.get("persona_challenge") or "").strip()
+    if not persona_challenge:
+        persona_challenge = str(persona_brief.get("challenge_style") or "").strip()
+    persona_challenge = _truncate_sentence(persona_challenge, max_chars=260)
+
+    persona_confidence = _parse_objective_coverage(payload.get("persona_confidence"))
+    if persona_confidence is None:
+        persona_confidence = _parse_objective_coverage(persona_brief.get("confidence_threshold"))
+    if persona_confidence is None:
+        persona_confidence = 0.8
+    persona_confidence = max(0.0, min(1.0, float(persona_confidence)))
+
+    persona_override_evidence = _parse_bool(payload.get("persona_override_evidence"), default=False)
+
     return {
+        "persona_id": str(
+            payload.get("persona_id")
+            or payload.get("head_persona_id")
+            or persona_brief.get("persona_id")
+            or f"persona-{group_id}-head"
+        ).strip(),
+        "persona_stance": persona_stance,
+        "persona_challenge": persona_challenge,
+        "persona_confidence": round(persona_confidence, 3),
+        "persona_override_evidence": bool(persona_override_evidence),
         "response_status": response_status,
         "objective_response": objective_response,
         "decision_summary": decision_summary,

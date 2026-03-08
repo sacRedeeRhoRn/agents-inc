@@ -27,6 +27,18 @@ autouse_triggers:
 ## Mission
 {{GROUP_PURPOSE}}
 
+## Persona Contract
+- `persona_id`: `{{HEAD_PERSONA_ID}}`
+- `tone`: `{{HEAD_PERSONA_TONE}}`
+- `aggression`: `{{HEAD_PERSONA_AGGRESSION}}`
+- `visibility`: `{{HEAD_PERSONA_VISIBILITY}}`
+- `confidence_threshold`: `{{HEAD_PERSONA_CONFIDENCE_THRESHOLD}}`
+- `override_policy`: `{{HEAD_PERSONA_OVERRIDE_POLICY}}`
+- Pride statement: {{HEAD_PERSONA_PRIDE_STATEMENT}}
+- Challenge style: {{HEAD_PERSONA_CHALLENGE_STYLE}}
+- Domain doctrine:
+{{HEAD_PERSONA_DOCTRINE_BLOCK}}
+
 ## When to Invoke
 - Group-level objective requires orchestration across specialists.
 - The active group is `{{GROUP_ID}}` in project `{{PROJECT_ID}}`.

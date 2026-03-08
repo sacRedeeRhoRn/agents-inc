@@ -22,6 +22,17 @@ OBJECTIVE_COVERAGE_THRESHOLD = 0.8
 OBJECTIVE_RESPONSE_STATUS_VALUES = {"ANSWERED", "PARTIAL", "BLOCKED"}
 
 
+def _parse_bool(value: object, default: bool = False) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value or "").strip().lower()
+    if text in {"1", "true", "yes", "y", "on"}:
+        return True
+    if text in {"0", "false", "no", "n", "off"}:
+        return False
+    return bool(default)
+
+
 def run_head_meeting(config: HeadMeetingConfig) -> dict:
     meeting_dir = config.cycle_dir / "meeting"
     meeting_dir.mkdir(parents=True, exist_ok=True)
@@ -38,7 +49,10 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
         for other_group, row in exposed_rows.items():
             if other_group == group_id:
                 continue
-            if bool(row.get("valid")):
+            other_effective_valid = bool(row.get("valid")) or bool(
+                row.get("persona_override_allowed")
+            )
+            if other_effective_valid:
                 accepted.append(f"{other_group}: accept current exposed handoff for this cycle")
                 if config.cycle_id == 1:
                     criticisms.append(
@@ -51,41 +65,59 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
                     f"{other_group}: published result is not consumable this cycle ({reason})"
                 )
 
-            if int(row.get("citation_count", 0)) <= 0:
+            if int(row.get("citation_count", 0)) <= 0 and not bool(
+                row.get("persona_override_allowed")
+            ):
                 requests.append(f"{other_group}: add claim-level citations and evidence URLs")
 
         own_valid = bool(self_row.get("valid"))
+        own_structural_valid = bool(self_row.get("structural_valid"))
         own_citations = int(self_row.get("citation_count", 0))
         own_response_status = str(self_row.get("response_status") or "PARTIAL")
         own_coverage = float(self_row.get("objective_coverage") or 0.0)
-        if not own_valid:
+        own_persona_valid = bool(self_row.get("persona_contract_valid"))
+        own_persona_override_allowed = bool(self_row.get("persona_override_allowed"))
+        if not own_structural_valid:
             new_actions.append(
                 "repair own exposed handoff structure and publish non-pending status"
             )
-        if own_citations <= 0:
+        if own_citations <= 0 and not own_persona_override_allowed:
             new_actions.append("add own citations and evidence URLs before next cycle")
         if own_response_status != "ANSWERED":
             new_actions.append(
                 "publish explicit objective_response with response_status=ANSWERED when objective is satisfied"
             )
-        if own_coverage < OBJECTIVE_COVERAGE_THRESHOLD:
+        if own_coverage < OBJECTIVE_COVERAGE_THRESHOLD and not own_persona_override_allowed:
             new_actions.append(
                 "increase objective_coverage by tightening decision summary and objective-specific outputs"
+            )
+        if not own_persona_valid:
+            new_actions.append(
+                "publish persona_id/persona_stance/persona_challenge/persona_confidence in exposed handoff"
             )
         if not new_actions:
             new_actions.append("maintain current quality and improve cross-group alignment notes")
 
+        objective_answered = own_response_status == "ANSWERED"
+        evidence_complete = own_citations > 0 and own_coverage >= OBJECTIVE_COVERAGE_THRESHOLD
         satisfied = (
-            own_valid
-            and own_citations > 0
-            and own_response_status == "ANSWERED"
-            and own_coverage >= OBJECTIVE_COVERAGE_THRESHOLD
+            own_structural_valid
+            and own_persona_valid
+            and objective_answered
+            and (evidence_complete or own_persona_override_allowed)
             and len(requests) == 0
         )
         decisions[group_id] = {
             "group_id": group_id,
             "response_status": own_response_status,
             "objective_coverage": round(own_coverage, 3),
+            "persona_id": str(self_row.get("persona_id") or ""),
+            "persona_confidence": round(float(self_row.get("persona_confidence") or 0.0), 3),
+            "persona_override_evidence": bool(self_row.get("persona_override_evidence")),
+            "persona_override_allowed": own_persona_override_allowed,
+            "persona_contract_valid": own_persona_valid,
+            "structural_valid": own_structural_valid,
+            "valid": own_valid,
             "request_changes": sorted(set(requests)),
             "criticisms": sorted(set(criticisms)),
             "accepted_items": sorted(set(accepted)),
@@ -149,6 +181,23 @@ def _collect_group_exposed(project_dir: Path, groups: List[str]) -> Dict[str, di
         summary_text = ""
         if summary_path.exists():
             summary_text = summary_path.read_text(encoding="utf-8", errors="replace")
+        group_manifest_path = project_dir / "agent-groups" / group_id / "group.yaml"
+        group_manifest = load_yaml(group_manifest_path) if group_manifest_path.exists() else {}
+        if not isinstance(group_manifest, dict):
+            group_manifest = {}
+        head_persona = group_manifest.get("head", {})
+        if isinstance(head_persona, dict):
+            head_persona = head_persona.get("persona", {})
+        else:
+            head_persona = {}
+        if not isinstance(head_persona, dict):
+            head_persona = {}
+        try:
+            persona_threshold = float(head_persona.get("confidence_threshold") or 0.8)
+        except Exception:
+            persona_threshold = 0.8
+        persona_threshold = max(0.0, min(1.0, persona_threshold))
+        persona_override_policy = str(head_persona.get("override_policy") or "head-meeting-only")
         if handoff_path.exists():
             loaded = load_yaml(handoff_path)
             if isinstance(loaded, dict):
@@ -221,6 +270,50 @@ def _collect_group_exposed(project_dir: Path, groups: List[str]) -> Dict[str, di
                 )
             )
 
+        persona_id = str(payload.get("persona_id") or "").strip()
+        persona_stance = str(payload.get("persona_stance") or "").strip()
+        persona_challenge = str(payload.get("persona_challenge") or "").strip()
+        raw_persona_confidence = _parse_objective_coverage(payload.get("persona_confidence"))
+        persona_confidence = raw_persona_confidence
+        if persona_confidence is None:
+            persona_confidence = persona_threshold
+        persona_confidence = max(0.0, min(1.0, float(persona_confidence)))
+        persona_override_evidence = _parse_bool(payload.get("persona_override_evidence"), default=False)
+        persona_missing: List[str] = []
+        if not persona_id:
+            persona_missing.append("persona_id")
+        if not persona_stance:
+            persona_missing.append("persona_stance")
+        if not persona_challenge:
+            persona_missing.append("persona_challenge")
+        if raw_persona_confidence is None:
+            persona_missing.append("persona_confidence")
+        if persona_missing:
+            reasons.append(
+                "persona contract incomplete ({0})".format(", ".join(persona_missing))
+            )
+        persona_contract_valid = len(persona_missing) == 0
+        persona_override_allowed = bool(
+            persona_contract_valid
+            and persona_override_evidence
+            and persona_override_policy == "head-meeting-only"
+            and persona_confidence >= persona_threshold
+        )
+        if persona_override_allowed:
+            reasons = [
+                item
+                for item in reasons
+                if not str(item).startswith("objective coverage below threshold")
+            ]
+
+        structural_reasons: List[str] = []
+        if "missing exposed handoff" in reasons:
+            structural_reasons.append("missing exposed handoff")
+        if "exposed handoff is not a mapping" in reasons:
+            structural_reasons.append("exposed handoff is not a mapping")
+        if "handoff status is pending" in reasons:
+            structural_reasons.append("handoff status is pending")
+        structural_valid = len(structural_reasons) == 0
         valid = len(reasons) == 0
         out[group_id] = {
             "group_id": group_id,
@@ -230,6 +323,17 @@ def _collect_group_exposed(project_dir: Path, groups: List[str]) -> Dict[str, di
             "objective_response": objective_response,
             "decision_summary": decision_summary,
             "objective_coverage": round(coverage, 3),
+            "persona_id": persona_id,
+            "persona_stance": persona_stance,
+            "persona_challenge": persona_challenge,
+            "persona_confidence": round(persona_confidence, 3),
+            "persona_override_evidence": persona_override_evidence,
+            "persona_override_policy": persona_override_policy,
+            "persona_confidence_threshold": round(persona_threshold, 3),
+            "persona_contract_valid": persona_contract_valid,
+            "persona_override_allowed": persona_override_allowed,
+            "structural_valid": structural_valid,
+            "structural_reasons": structural_reasons,
             "valid": valid,
             "reasons": reasons,
             "handoff_path": str(handoff_path),
@@ -251,6 +355,9 @@ def _render_minutes(config: HeadMeetingConfig, decisions: Dict[str, dict]) -> st
         row = decisions.get(group_id, {})
         lines.append(f"## {group_id}")
         lines.append(f"- satisfied: `{bool(row.get('satisfied'))}`")
+        lines.append(f"- structural_valid: `{bool(row.get('structural_valid'))}`")
+        lines.append(f"- persona_contract_valid: `{bool(row.get('persona_contract_valid'))}`")
+        lines.append(f"- persona_override_allowed: `{bool(row.get('persona_override_allowed'))}`")
         lines.append(f"- response_status: `{row.get('response_status', 'UNKNOWN')}`")
         lines.append(f"- objective_coverage: `{row.get('objective_coverage', 0.0)}`")
         for key in ["request_changes", "criticisms", "accepted_items", "new_actions"]:

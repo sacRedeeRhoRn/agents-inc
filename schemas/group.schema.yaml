@@ -46,6 +46,42 @@ properties:
       agent_id: {type: string}
       skill_name: {type: string}
       mission: {type: string}
+      persona:
+        type: object
+        required:
+          - persona_id
+          - tone
+          - aggression
+          - pride_statement
+          - domain_doctrine
+          - challenge_style
+          - visibility
+          - confidence_threshold
+          - override_policy
+        properties:
+          persona_id: {type: string}
+          tone:
+            type: string
+            enum: [authoritative]
+          aggression:
+            type: string
+            enum: [unrestricted-confrontation]
+          pride_statement: {type: string}
+          domain_doctrine:
+            type: array
+            minItems: 1
+            items: {type: string}
+          challenge_style: {type: string}
+          visibility:
+            type: string
+            enum: [moderate]
+          confidence_threshold:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+          override_policy:
+            type: string
+            enum: [head-meeting-only]
       publish_contract:
         type: object
         required: [exposed_required, visibility]
