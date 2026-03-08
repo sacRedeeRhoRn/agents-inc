@@ -1525,121 +1525,114 @@ def _collect_direct_answers(contributions: List[dict], *, limit: int = 8) -> Lis
     return rows
 
 
-def _collect_collaboration_signals(
-    contributions: List[dict],
-    meeting_outputs: List[dict],
-    *,
-    limit: int = 8,
-) -> dict:
+def _collect_meeting_conclusion(contributions: List[dict], meeting_outputs: List[dict]) -> dict:
+    latest_matrix: dict = {}
     latest_decisions: dict = {}
+    latest_cycle = 0
     if meeting_outputs:
         latest = meeting_outputs[-1]
         if isinstance(latest, dict):
+            matrix = latest.get("matrix", {})
+            if isinstance(matrix, dict):
+                latest_matrix = matrix
+                try:
+                    latest_cycle = int(matrix.get("cycle_id") or 0)
+                except Exception:
+                    latest_cycle = 0
             decisions = latest.get("decisions", {})
             if isinstance(decisions, dict):
                 latest_decisions = decisions
 
-    rows: List[dict] = []
-    request_counts: Dict[str, set] = {}
-    for row in contributions:
-        if not isinstance(row, dict):
-            continue
-        group_id = str(row.get("group_id") or "").strip()
-        if not group_id:
-            continue
-        decision = latest_decisions.get(group_id, {})
-        if not isinstance(decision, dict):
-            decision = {}
-        requests = decision.get("request_changes", [])
-        accepted = decision.get("accepted_items", [])
-        new_actions = decision.get("new_actions", [])
-        if not isinstance(requests, list):
-            requests = []
-        if not isinstance(accepted, list):
-            accepted = []
-        if not isinstance(new_actions, list):
-            new_actions = []
-        for request in requests:
-            text = str(request or "").strip()
-            if not text:
+    total_groups = len([row for row in contributions if isinstance(row, dict)])
+    satisfied_groups: List[str] = []
+    unsatisfied_groups: List[str] = []
+    request_count = 0
+    criticism_count = 0
+    strict_ready_count = 0
+    if latest_decisions:
+        for group_id, row in latest_decisions.items():
+            if not isinstance(row, dict):
                 continue
-            request_counts.setdefault(text, set()).add(group_id)
+            if bool(row.get("satisfied")):
+                satisfied_groups.append(str(group_id))
+            else:
+                unsatisfied_groups.append(str(group_id))
+            if bool(row.get("strict_evidence_complete")):
+                strict_ready_count += 1
+            requests = row.get("request_changes", [])
+            if isinstance(requests, list):
+                request_count += len([item for item in requests if str(item).strip()])
+            criticisms = row.get("criticisms", [])
+            if isinstance(criticisms, list):
+                criticism_count += len([item for item in criticisms if str(item).strip()])
+    else:
+        for row in contributions:
+            if not isinstance(row, dict):
+                continue
+            group_id = str(row.get("group_id") or "").strip()
+            if not group_id:
+                continue
+            if _effective_contribution_valid(row) and str(row.get("response_status") or "") == "ANSWERED":
+                satisfied_groups.append(group_id)
+            else:
+                unsatisfied_groups.append(group_id)
+            if (
+                int(row.get("citation_count", 0)) >= 1
+                and int(row.get("claim_count", 0)) >= 1
+                and float(row.get("objective_coverage", 0.0)) >= 0.8
+            ):
+                strict_ready_count += 1
 
-        first_action = ""
-        for action in new_actions:
-            text = str(action or "").strip()
-            if text:
-                first_action = text
-                break
+    if isinstance(latest_matrix.get("unsatisfied_groups"), list):
+        unsatisfied_groups = [str(item) for item in latest_matrix.get("unsatisfied_groups", []) if str(item).strip()]
+    if isinstance(latest_matrix.get("satisfied_groups"), list):
+        satisfied_groups = [str(item) for item in latest_matrix.get("satisfied_groups", []) if str(item).strip()]
 
+    all_satisfied = bool(latest_matrix.get("all_satisfied")) if latest_matrix else not unsatisfied_groups
+    verdict = "SATISFIED" if all_satisfied else "REWORK_REQUIRED"
+    return {
+        "cycle_id": latest_cycle,
+        "verdict": verdict,
+        "total_groups": total_groups,
+        "satisfied_groups": sorted(set(satisfied_groups)),
+        "unsatisfied_groups": sorted(set(unsatisfied_groups)),
+        "request_count": int(request_count),
+        "criticism_count": int(criticism_count),
+        "strict_ready_count": int(strict_ready_count),
+        "all_satisfied": bool(all_satisfied),
+    }
+
+
+def _collect_user_focused_done_rows(contributions: List[dict], *, limit: int = 10) -> List[dict]:
+    direct_answers = _collect_direct_answers(contributions, limit=max(limit * 2, 10))
+    direct_answers.sort(
+        key=lambda item: (
+            0 if str(item.get("response_status") or "") == "ANSWERED" else 1,
+            -float(item.get("objective_coverage") or 0.0),
+            str(item.get("group_id") or ""),
+        )
+    )
+    seen: set[str] = set()
+    rows: List[dict] = []
+    for item in direct_answers:
+        response = str(item.get("response") or "").strip()
+        if not response:
+            continue
+        fingerprint = re.sub(r"[^a-z0-9]+", " ", response.lower()).strip()[:120]
+        if fingerprint in seen:
+            continue
+        seen.add(fingerprint)
         rows.append(
             {
-                "group_id": group_id,
-                "satisfied": bool(decision.get("satisfied")),
-                "request_count": len([item for item in requests if str(item).strip()]),
-                "accepted_count": len([item for item in accepted if str(item).strip()]),
-                "persona_confidence": float(row.get("persona_confidence") or 0.0),
-                "persona_stance": _truncate(str(row.get("persona_stance") or "").strip(), max_chars=110),
-                "persona_challenge": _truncate(
-                    str(row.get("persona_challenge") or "").strip(),
-                    max_chars=110,
-                ),
-                "next_action": _truncate(first_action, max_chars=120),
+                "group_id": str(item.get("group_id") or ""),
+                "status": str(item.get("response_status") or "UNKNOWN"),
+                "coverage": float(item.get("objective_coverage") or 0.0),
+                "response": _truncate(response, max_chars=260),
             }
         )
         if len(rows) >= limit:
             break
-
-    pressure_rows: List[dict] = []
-    for request, groups in request_counts.items():
-        pressure_rows.append(
-            {
-                "request": _truncate(request, max_chars=140),
-                "group_count": len(groups),
-                "groups": sorted(str(group) for group in groups if str(group).strip()),
-            }
-        )
-    pressure_rows.sort(
-        key=lambda item: (-int(item.get("group_count") or 0), str(item.get("request") or ""))
-    )
-    return {"group_rows": rows, "cross_group_requests": pressure_rows[:5]}
-
-
-def _collect_shared_actions(
-    contributions: List[dict],
-    *,
-    min_groups: int = 2,
-    limit: int = 5,
-) -> List[dict]:
-    action_groups: Dict[str, set] = {}
-    for row in contributions:
-        if not isinstance(row, dict):
-            continue
-        group_id = str(row.get("group_id") or "").strip()
-        if not group_id:
-            continue
-        actions = row.get("recommended_actions", [])
-        if not isinstance(actions, list):
-            continue
-        for action in actions:
-            text = str(action or "").strip()
-            if not text:
-                continue
-            action_groups.setdefault(text, set()).add(group_id)
-
-    out: List[dict] = []
-    for action, groups in action_groups.items():
-        if len(groups) < min_groups:
-            continue
-        out.append(
-            {
-                "action": _truncate(action, max_chars=140),
-                "group_count": len(groups),
-                "groups": sorted(groups),
-            }
-        )
-    out.sort(key=lambda item: (-int(item.get("group_count") or 0), str(item.get("action") or "")))
-    return out[:limit]
+    return rows
 
 
 def _render_group_mode_chat_answer(
@@ -1680,111 +1673,76 @@ def _render_group_mode_chat_answer(
         f"- overall_status: `{overall_status}`",
         f"- decision: {headline}",
         f"- blocking_groups: {', '.join(blocking) if blocking else 'none'}",
-        "",
-        "## Group Snapshot",
     ]
+    meeting_conclusion = _collect_meeting_conclusion(
+        contributions=contributions,
+        meeting_outputs=meeting_outputs,
+    )
+    lines.extend(
+        [
+            "",
+            "## Meeting Conclusion",
+            "- cycle: `{0}`".format(meeting_conclusion.get("cycle_id", 0)),
+            "- verdict: `{0}`".format(meeting_conclusion.get("verdict", "UNKNOWN")),
+            "- strict_satisfied_groups: `{0}/{1}`".format(
+                len(meeting_conclusion.get("satisfied_groups", [])),
+                int(meeting_conclusion.get("total_groups", 0)),
+            ),
+            "- strict_evidence_ready_groups: `{0}/{1}`".format(
+                int(meeting_conclusion.get("strict_ready_count", 0)),
+                int(meeting_conclusion.get("total_groups", 0)),
+            ),
+            "- open_change_requests: `{0}`".format(int(meeting_conclusion.get("request_count", 0))),
+            "- open_criticisms: `{0}`".format(int(meeting_conclusion.get("criticism_count", 0))),
+            "- groups_requiring_rework: {0}".format(
+                ", ".join(str(item) for item in meeting_conclusion.get("unsatisfied_groups", []))
+                if meeting_conclusion.get("unsatisfied_groups")
+                else "none"
+            ),
+        ]
+    )
+
+    done_rows = _collect_user_focused_done_rows(contributions, limit=10)
+    lines.extend(["", "## Done For Your Request"])
+    if done_rows:
+        for item in done_rows:
+            lines.append(
+                "- {0} [status=`{1}` coverage=`{2}`]: {3}".format(
+                    str(item.get("group_id") or ""),
+                    str(item.get("status") or "UNKNOWN"),
+                    round(float(item.get("coverage") or 0.0), 3),
+                    str(item.get("response") or ""),
+                )
+            )
+    else:
+        lines.append("- no concrete objective conclusions were published.")
+
+    lines.extend(["", "## Group Status"])
     for row in contributions:
         lines.append(
-            "- {0}: status=`{1}` coverage=`{2}` valid=`{3}`".format(
+            "- {0}: status=`{1}` coverage=`{2}` citations=`{3}` claims=`{4}` valid=`{5}`".format(
                 row.get("group_id", ""),
                 row.get("response_status", "UNKNOWN"),
                 row.get("objective_coverage", 0.0),
+                row.get("citation_count", 0),
+                row.get("claim_count", 0),
                 _effective_contribution_valid(row),
             )
         )
 
-    collaboration = _collect_collaboration_signals(
-        contributions=contributions,
-        meeting_outputs=meeting_outputs,
-        limit=10,
-    )
-    lines.extend(["", "## Collaboration Signals"])
-    collaboration_rows = collaboration.get("group_rows", [])
-    if isinstance(collaboration_rows, list) and collaboration_rows:
-        for item in collaboration_rows:
-            lines.append(
-                "- {0}: satisfied=`{1}` requests=`{2}` accepts=`{3}` confidence=`{4}` stance=\"{5}\" challenge=\"{6}\" next=\"{7}\"".format(
-                    item.get("group_id", ""),
-                    bool(item.get("satisfied")),
-                    int(item.get("request_count") or 0),
-                    int(item.get("accepted_count") or 0),
-                    round(float(item.get("persona_confidence") or 0.0), 3),
-                    str(item.get("persona_stance") or ""),
-                    str(item.get("persona_challenge") or ""),
-                    str(item.get("next_action") or ""),
-                )
-            )
-    else:
-        lines.append("- no meeting collaboration rows published for this turn.")
-
-    cross_group_requests = collaboration.get("cross_group_requests", [])
-    if isinstance(cross_group_requests, list) and cross_group_requests:
-        lines.append(
-            "- cross_group_pressure: "
-            + " | ".join(
-                "{0} groups -> {1}".format(
-                    int(item.get("group_count") or 0),
-                    str(item.get("request") or ""),
-                )
-                for item in cross_group_requests[:3]
-            )
-        )
-
-    shared_actions = _collect_shared_actions(contributions, min_groups=2, limit=4)
-    if shared_actions:
-        lines.append(
-            "- shared_execution_actions: "
-            + " | ".join(
-                "{0} groups -> {1}".format(
-                    int(item.get("group_count") or 0),
-                    str(item.get("action") or ""),
-                )
-                for item in shared_actions
-            )
-        )
-
-    direct_answers = _collect_direct_answers(contributions, limit=10)
-    lines.extend(["", "## Direct Answers"])
-    if direct_answers:
-        for item in direct_answers:
-            lines.append(
-                "- {0} [status=`{1}` coverage=`{2}` confidence=`{3}`]: {4}".format(
-                    item.get("group_id", ""),
-                    item.get("response_status", "UNKNOWN"),
-                    round(float(item.get("objective_coverage") or 0.0), 3),
-                    round(float(item.get("persona_confidence") or 0.0), 3),
-                    item.get("response", ""),
-                )
-            )
-    else:
-        lines.append("- no direct objective responses found; open full report artifacts.")
-
-    lines.extend(["", "## Short Trace"])
     if cycle_summaries:
-        for summary in cycle_summaries[-3:]:
-            cycle_id = summary.get("cycle_id", "?")
-            blocked = bool(summary.get("runtime_blocked"))
-            escalation_count = int(summary.get("escalation_count", 0))
-            lines.append(
-                "- cycle {0}: runtime_blocked=`{1}` escalations=`{2}`".format(
-                    cycle_id,
-                    blocked,
-                    escalation_count,
-                )
-            )
-    if meeting_outputs:
-        for meeting in meeting_outputs[-3:]:
-            matrix = meeting.get("matrix", {})
-            cycle_id = matrix.get("cycle_id", "?") if isinstance(matrix, dict) else "?"
-            unsatisfied = matrix.get("unsatisfied_groups", []) if isinstance(matrix, dict) else []
-            if not isinstance(unsatisfied, list):
-                unsatisfied = []
-            lines.append(
-                "- meeting cycle {0}: unsatisfied={1}".format(
-                    cycle_id,
-                    ", ".join(str(item) for item in unsatisfied) if unsatisfied else "none",
-                )
-            )
+        last_cycle = cycle_summaries[-1]
+        lines.extend(
+            [
+                "",
+                "## Runtime Trace",
+                "- last_cycle: `{0}` runtime_blocked=`{1}` escalations=`{2}`".format(
+                    last_cycle.get("cycle_id", "?"),
+                    bool(last_cycle.get("runtime_blocked")),
+                    int(last_cycle.get("escalation_count", 0)),
+                ),
+            ]
+        )
 
     actions = _collect_next_actions(contributions, limit=5)
     lines.extend(["", "## Next Actions"])

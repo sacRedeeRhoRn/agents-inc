@@ -20,6 +20,10 @@ class HeadMeetingConfig:
 
 OBJECTIVE_COVERAGE_THRESHOLD = 0.8
 OBJECTIVE_RESPONSE_STATUS_VALUES = {"ANSWERED", "PARTIAL", "BLOCKED"}
+STRICT_MIN_CITATION_COUNT = 1
+STRICT_MIN_CLAIM_COUNT = 1
+STRICT_MIN_ARTIFACT_COUNT = 1
+STRICT_MIN_OBJECTIVE_RESPONSE_CHARS = 60
 
 
 def _parse_bool(value: object, default: bool = False) -> bool:
@@ -65,14 +69,43 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
                     f"{other_group}: published result is not consumable this cycle ({reason})"
                 )
 
-            if int(row.get("citation_count", 0)) <= 0 and not bool(
+            if int(row.get("citation_count", 0)) < STRICT_MIN_CITATION_COUNT and not bool(
                 row.get("persona_override_allowed")
             ):
-                requests.append(f"{other_group}: add claim-level citations and evidence URLs")
+                requests.append(
+                    f"{other_group}: add stronger evidence (>= {STRICT_MIN_CITATION_COUNT} citations)"
+                )
+            if int(row.get("claim_count", 0)) < STRICT_MIN_CLAIM_COUNT:
+                requests.append(
+                    f"{other_group}: publish >= {STRICT_MIN_CLAIM_COUNT} claim-level signals"
+                )
+            if int(row.get("artifact_count", 0)) < STRICT_MIN_ARTIFACT_COUNT:
+                requests.append(
+                    f"{other_group}: publish >= {STRICT_MIN_ARTIFACT_COUNT} exposed artifacts"
+                )
+            if (
+                float(row.get("objective_coverage", 0.0)) < OBJECTIVE_COVERAGE_THRESHOLD
+                and not bool(row.get("persona_override_allowed"))
+            ):
+                requests.append(
+                    "{0}: raise objective_coverage to >= {1:.2f}".format(
+                        other_group, OBJECTIVE_COVERAGE_THRESHOLD
+                    )
+                )
+            if (
+                str(row.get("response_status") or "") == "ANSWERED"
+                and int(row.get("objective_response_chars", 0)) < STRICT_MIN_OBJECTIVE_RESPONSE_CHARS
+            ):
+                requests.append(
+                    f"{other_group}: strengthen objective_response with concrete conclusion details"
+                )
 
         own_valid = bool(self_row.get("valid"))
         own_structural_valid = bool(self_row.get("structural_valid"))
         own_citations = int(self_row.get("citation_count", 0))
+        own_claim_count = int(self_row.get("claim_count", 0))
+        own_artifact_count = int(self_row.get("artifact_count", 0))
+        own_objective_response_chars = int(self_row.get("objective_response_chars", 0))
         own_response_status = str(self_row.get("response_status") or "PARTIAL")
         own_coverage = float(self_row.get("objective_coverage") or 0.0)
         own_persona_valid = bool(self_row.get("persona_contract_valid"))
@@ -81,15 +114,33 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
             new_actions.append(
                 "repair own exposed handoff structure and publish non-pending status"
             )
-        if own_citations <= 0 and not own_persona_override_allowed:
-            new_actions.append("add own citations and evidence URLs before next cycle")
+        if own_citations < STRICT_MIN_CITATION_COUNT and not own_persona_override_allowed:
+            new_actions.append(
+                "raise own citation count to >= {0} before next cycle".format(
+                    STRICT_MIN_CITATION_COUNT
+                )
+            )
+        if own_claim_count < STRICT_MIN_CLAIM_COUNT:
+            new_actions.append(
+                "publish >= {0} claim-level signals with evidence ids".format(
+                    STRICT_MIN_CLAIM_COUNT
+                )
+            )
+        if own_artifact_count < STRICT_MIN_ARTIFACT_COUNT:
+            new_actions.append(
+                "publish >= {0} exposed artifacts".format(STRICT_MIN_ARTIFACT_COUNT)
+            )
         if own_response_status != "ANSWERED":
             new_actions.append(
                 "publish explicit objective_response with response_status=ANSWERED when objective is satisfied"
             )
+        if own_objective_response_chars < STRICT_MIN_OBJECTIVE_RESPONSE_CHARS:
+            new_actions.append(
+                "expand objective_response with concrete conclusion details and measurable outcomes"
+            )
         if own_coverage < OBJECTIVE_COVERAGE_THRESHOLD and not own_persona_override_allowed:
             new_actions.append(
-                "increase objective_coverage by tightening decision summary and objective-specific outputs"
+                "increase objective_coverage to >= {0:.2f}".format(OBJECTIVE_COVERAGE_THRESHOLD)
             )
         if not own_persona_valid:
             new_actions.append(
@@ -99,23 +150,35 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
             new_actions.append("maintain current quality and improve cross-group alignment notes")
 
         objective_answered = own_response_status == "ANSWERED"
-        evidence_complete = own_citations > 0 and own_coverage >= OBJECTIVE_COVERAGE_THRESHOLD
+        strict_evidence = (
+            own_citations >= STRICT_MIN_CITATION_COUNT
+            and own_claim_count >= STRICT_MIN_CLAIM_COUNT
+            and own_artifact_count >= STRICT_MIN_ARTIFACT_COUNT
+            and own_objective_response_chars >= STRICT_MIN_OBJECTIVE_RESPONSE_CHARS
+        )
+        coverage_ok = own_coverage >= OBJECTIVE_COVERAGE_THRESHOLD or own_persona_override_allowed
+        evidence_complete = strict_evidence and coverage_ok
         satisfied = (
             own_structural_valid
             and own_persona_valid
             and objective_answered
-            and (evidence_complete or own_persona_override_allowed)
+            and evidence_complete
             and len(requests) == 0
         )
         decisions[group_id] = {
             "group_id": group_id,
             "response_status": own_response_status,
             "objective_coverage": round(own_coverage, 3),
+            "citation_count": own_citations,
+            "claim_count": own_claim_count,
+            "artifact_count": own_artifact_count,
+            "objective_response_chars": own_objective_response_chars,
             "persona_id": str(self_row.get("persona_id") or ""),
             "persona_confidence": round(float(self_row.get("persona_confidence") or 0.0), 3),
             "persona_override_evidence": bool(self_row.get("persona_override_evidence")),
             "persona_override_allowed": own_persona_override_allowed,
             "persona_contract_valid": own_persona_valid,
+            "strict_evidence_complete": bool(strict_evidence),
             "structural_valid": own_structural_valid,
             "valid": own_valid,
             "request_changes": sorted(set(requests)),
@@ -216,6 +279,7 @@ def _collect_group_exposed(project_dir: Path, groups: List[str]) -> Dict[str, di
             claims = payload.get("claims_with_citations")
         if not isinstance(claims, list):
             claims = []
+        claim_count = len([item for item in claims if isinstance(item, dict)])
         citation_count = 0
         seen_ids: set[str] = set()
         for claim in claims:
@@ -250,6 +314,7 @@ def _collect_group_exposed(project_dir: Path, groups: List[str]) -> Dict[str, di
             or ""
         ).strip()
         decision_summary = str(payload.get("decision_summary") or "").strip()
+        objective_response_chars = len(objective_response)
         coverage = _parse_objective_coverage(payload.get("objective_coverage"))
         if coverage is None:
             if response_status == "ANSWERED":
@@ -259,10 +324,47 @@ def _collect_group_exposed(project_dir: Path, groups: List[str]) -> Dict[str, di
             else:
                 coverage = 0.6
 
+        artifacts = payload.get("artifacts")
+        produced_artifacts = payload.get("produced_artifacts")
+        artifact_count = 0
+        if isinstance(artifacts, list):
+            artifact_count += len([item for item in artifacts if item is not None])
+        if isinstance(produced_artifacts, list):
+            artifact_count += len([item for item in produced_artifacts if str(item or "").strip()])
+        if artifact_count <= 0:
+            artifact_count = 3 if status == "COMPLETE" else 0
+
         if not objective_response:
             reasons.append("objective response missing")
         if response_status != "ANSWERED":
             reasons.append(f"objective not fully satisfied ({response_status})")
+        if (
+            response_status == "ANSWERED"
+            and objective_response_chars < STRICT_MIN_OBJECTIVE_RESPONSE_CHARS
+        ):
+            reasons.append(
+                "objective response too short ({0} < {1} chars)".format(
+                    objective_response_chars, STRICT_MIN_OBJECTIVE_RESPONSE_CHARS
+                )
+            )
+        if claim_count < STRICT_MIN_CLAIM_COUNT:
+            reasons.append(
+                "claim count below strict threshold ({0} < {1})".format(
+                    claim_count, STRICT_MIN_CLAIM_COUNT
+                )
+            )
+        if citation_count < STRICT_MIN_CITATION_COUNT:
+            reasons.append(
+                "citation count below strict threshold ({0} < {1})".format(
+                    citation_count, STRICT_MIN_CITATION_COUNT
+                )
+            )
+        if artifact_count < STRICT_MIN_ARTIFACT_COUNT:
+            reasons.append(
+                "artifact count below strict threshold ({0} < {1})".format(
+                    artifact_count, STRICT_MIN_ARTIFACT_COUNT
+                )
+            )
         if coverage < OBJECTIVE_COVERAGE_THRESHOLD:
             reasons.append(
                 "objective coverage below threshold ({0:.2f} < {1:.2f})".format(
@@ -319,8 +421,11 @@ def _collect_group_exposed(project_dir: Path, groups: List[str]) -> Dict[str, di
             "group_id": group_id,
             "status": status or "UNKNOWN",
             "citation_count": citation_count,
+            "claim_count": claim_count,
+            "artifact_count": artifact_count,
             "response_status": response_status,
             "objective_response": objective_response,
+            "objective_response_chars": objective_response_chars,
             "decision_summary": decision_summary,
             "objective_coverage": round(coverage, 3),
             "persona_id": persona_id,
@@ -360,6 +465,11 @@ def _render_minutes(config: HeadMeetingConfig, decisions: Dict[str, dict]) -> st
         lines.append(f"- persona_override_allowed: `{bool(row.get('persona_override_allowed'))}`")
         lines.append(f"- response_status: `{row.get('response_status', 'UNKNOWN')}`")
         lines.append(f"- objective_coverage: `{row.get('objective_coverage', 0.0)}`")
+        lines.append(f"- citation_count: `{row.get('citation_count', 0)}`")
+        lines.append(f"- claim_count: `{row.get('claim_count', 0)}`")
+        lines.append(f"- artifact_count: `{row.get('artifact_count', 0)}`")
+        lines.append(f"- objective_response_chars: `{row.get('objective_response_chars', 0)}`")
+        lines.append(f"- strict_evidence_complete: `{bool(row.get('strict_evidence_complete'))}`")
         for key in ["request_changes", "criticisms", "accepted_items", "new_actions"]:
             values = row.get(key, [])
             if not isinstance(values, list) or not values:

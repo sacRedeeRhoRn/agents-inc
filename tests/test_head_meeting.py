@@ -25,6 +25,7 @@ def _write_group_exposed(
     persona_override_evidence: bool = False,
     persona_confidence: float = 0.9,
     include_citation: bool = True,
+    claim_count: int = 2,
     handoff_status: str = "COMPLETE",
 ) -> None:
     exposed = project_dir / "agent-groups" / group_id / "exposed"
@@ -64,18 +65,22 @@ def _write_group_exposed(
         encoding="utf-8",
     )
     claims = []
-    if include_citation:
-        claims.append(
-            {
-                "claim": f"{group_id} claim",
-                "citation": f"https://example.org/{group_id}",
-            }
-        )
+    for index in range(max(0, int(claim_count))):
+        claim = {
+            "claim": f"{group_id} claim {index + 1}",
+        }
+        if include_citation:
+            claim["citation"] = f"https://example.org/{group_id}/{index + 1}"
+        claims.append(claim)
+    objective_response = (
+        f"{group_id} objective response with explicit conclusion, evidence-backed rationale, "
+        "and concrete measurable outcomes for the user request."
+    )
     payload = {
         "schema_version": "3.1",
         "status": handoff_status,
         "response_status": response_status,
-        "objective_response": f"{group_id} objective response",
+        "objective_response": objective_response,
         "decision_summary": f"{group_id} decision summary",
         "objective_coverage": objective_coverage,
         "recommended_actions": ["next action"],
@@ -170,7 +175,7 @@ class HeadMeetingTests(unittest.TestCase):
             matrix = result.get("matrix", {})
             self.assertEqual(matrix.get("unsatisfied_groups", []), [])
 
-    def test_meeting_allows_persona_override_for_evidence_gap(self) -> None:
+    def test_meeting_persona_override_does_not_bypass_strict_evidence_requirements(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             project_dir = root / "generated" / "projects" / "proj-c"
@@ -198,7 +203,7 @@ class HeadMeetingTests(unittest.TestCase):
                 )
             )
 
-            self.assertTrue(bool(result.get("all_satisfied")))
+            self.assertFalse(bool(result.get("all_satisfied")))
             decision = result.get("decisions", {}).get("developer", {})
             self.assertTrue(bool(decision.get("persona_override_allowed")))
 

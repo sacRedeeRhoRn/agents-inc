@@ -224,11 +224,10 @@ class OrchestratorReplyTests(unittest.TestCase):
             full_report_text = (group_turn_dir / "final" / "full-report.md").read_text(
                 encoding="utf-8"
             )
-            self.assertIn("## Short Trace", final_answer_text)
-            self.assertIn("## Collaboration Signals", final_answer_text)
-            self.assertIn("## Direct Answers", final_answer_text)
-            self.assertIn("- developer: satisfied=", final_answer_text)
-            self.assertIn("confidence=`", final_answer_text)
+            self.assertIn("## Meeting Conclusion", final_answer_text)
+            self.assertIn("## Done For Your Request", final_answer_text)
+            self.assertIn("## Group Status", final_answer_text)
+            self.assertIn("- developer [status=", final_answer_text)
             self.assertIn("full_report:", final_answer_text)
             self.assertNotIn("## Delegation Summary", final_answer_text)
             self.assertIn("## Delegation Summary", full_report_text)
