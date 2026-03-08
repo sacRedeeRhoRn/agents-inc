@@ -69,6 +69,30 @@ class _RecoveringClient:
         return TurnResult(thread_id=thread_id, turn_id="turn-2", text=f"recovered: {text}")
 
 
+class _SyncTimeoutClient:
+    def __init__(self, *, cwd: Path, env: dict) -> None:  # noqa: ARG002
+        self.cwd = cwd
+
+    def start(self) -> None:
+        return None
+
+    def close(self) -> None:
+        return None
+
+    def start_thread(self) -> str:
+        return "thread-1"
+
+    def resume_thread(self, thread_id: str) -> str:
+        return thread_id
+
+    def run_turn(self, *, thread_id: str, text: str, timeout_sec: float = 300.0) -> TurnResult:  # noqa: ARG002
+        if text.startswith(
+            "The following response was produced via /agents-inc orchestration."
+        ):
+            raise CodexAppServerError("turn timed out after 5s")
+        return TurnResult(thread_id=thread_id, turn_id="turn-3", text=f"echo: {text}")
+
+
 class OrchestratorChatTests(unittest.TestCase):
     def test_direct_turn_prints_live_prefix_and_reply(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -282,6 +306,45 @@ class OrchestratorChatTests(unittest.TestCase):
             state = load_orchestrator_state(project_root, project_id="proj-auto-resume-blocked")
             self.assertEqual(state.get("last_auto_resume_checkpoint_id"), "cp-000002")
             self.assertEqual(state.get("last_auto_resume_status"), "blocked")
+
+    def test_orchestration_reply_returns_prompt_even_if_sync_times_out(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "proj-sync-timeout"
+            project_root.mkdir(parents=True, exist_ok=True)
+            turn_dir = project_root / ".agents-inc" / "turns" / "turn-sync-timeout"
+            turn_dir.mkdir(parents=True, exist_ok=True)
+            final_answer = turn_dir / "final-exposed-answer.md"
+            final_answer.write_text("orchestrated answer\n", encoding="utf-8")
+
+            def _fake_orchestrator(config):  # type: ignore[no-untyped-def]
+                return {"final_answer_path": str(final_answer)}
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                with patch("agents_inc.core.orchestrator_chat.CodexAppClient", _SyncTimeoutClient):
+                    with patch(
+                        "agents_inc.core.orchestrator_chat.run_orchestrator_reply",
+                        side_effect=_fake_orchestrator,
+                    ):
+                        with patch(
+                            "builtins.input",
+                            side_effect=[
+                                "/agents-inc generate result",
+                                "continue in direct chat",
+                                "/quit",
+                            ],
+                        ):
+                            run_orchestrator_chat(
+                                OrchestratorChatConfig(
+                                    fabric_root=project_root / "agent_group_fabric",
+                                    project_root=project_root,
+                                    project_id="proj-sync-timeout",
+                                )
+                            )
+            text = out.getvalue()
+            self.assertIn("orchestrated answer", text)
+            self.assertIn("codex-live> processing direct turn...", text)
+            self.assertIn("echo: continue in direct chat", text)
 
 
 if __name__ == "__main__":

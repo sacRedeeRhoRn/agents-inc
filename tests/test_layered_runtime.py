@@ -573,6 +573,14 @@ class LayeredRuntimeMountTests(unittest.TestCase):
                 (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
             )
             self.assertIsInstance(group_manifest, dict)
+            skill_root = project_root / ".agents-inc" / "codex-home" / "skills" / "local"
+            for skill_name in ["grp-developer-head", "grp-developer-domain-core"]:
+                skill_dir = skill_root / skill_name
+                skill_dir.mkdir(parents=True, exist_ok=True)
+                (skill_dir / "SKILL.md").write_text(
+                    f"# {skill_name}\n",
+                    encoding="utf-8",
+                )
             runtime_config = LayeredRuntimeConfig(
                 project_id="proj-light-head-only",
                 project_root=project_root,
@@ -605,6 +613,12 @@ class LayeredRuntimeMountTests(unittest.TestCase):
                 (turn_dir / "layer2" / "orchestrator-plan.json").read_text(encoding="utf-8")
             )
             self.assertEqual(orchestrator_plan["settings"].get("execution_mode"), "light")
+            group_head_sessions = json.loads(
+                Path(str(result.get("group_head_sessions_path") or "")).read_text(encoding="utf-8")
+            )
+            visible_skills = group_head_sessions.get("developer", {}).get("visible_skills", [])
+            self.assertIn("grp-developer-head", visible_skills)
+            self.assertIn("grp-developer-domain-core", visible_skills)
 
 
 if __name__ == "__main__":

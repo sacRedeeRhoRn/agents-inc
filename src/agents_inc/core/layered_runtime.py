@@ -1407,7 +1407,12 @@ def _run_head_with_retries(
     redacted_log_path = group_layer3 / "head-redacted.log"
 
     head_skill = str(dispatch.get("head_skill") or "").strip()
-    allowed_skills = [head_skill] if head_skill else []
+    allowed_skills = _resolve_head_allowed_skills(
+        config=config,
+        group_id=group_id,
+        execution_mode=execution_mode,
+        head_skill=head_skill,
+    )
     codex_home, visible_skills, missing_skills, mount_status = _prepare_agent_codex_home(
         config=config,
         runtime_dir=group_layer3,
@@ -1552,6 +1557,39 @@ def _run_head_with_retries(
         mount_status=mount_status,
         error="head session failed after retries",
     )
+
+
+def _resolve_head_allowed_skills(
+    *,
+    config: LayeredRuntimeConfig,
+    group_id: str,
+    execution_mode: str,
+    head_skill: str,
+) -> List[str]:
+    out: List[str] = []
+    head_skill_name = str(head_skill or "").strip()
+    if head_skill_name:
+        out.append(head_skill_name)
+    if execution_mode != "light":
+        return out
+
+    group_manifest = config.group_manifests.get(group_id, {})
+    if not isinstance(group_manifest, dict):
+        return out
+    specialists = group_manifest.get("specialists", [])
+    if not isinstance(specialists, list):
+        return out
+
+    for specialist in specialists:
+        if not isinstance(specialist, dict):
+            continue
+        skill_name = str(
+            specialist.get("effective_skill_name") or specialist.get("skill_name") or ""
+        ).strip()
+        if not skill_name or skill_name in out:
+            continue
+        out.append(skill_name)
+    return out
 
 
 def _role_specific_contract(role: str) -> Tuple[List[str], List[str]]:

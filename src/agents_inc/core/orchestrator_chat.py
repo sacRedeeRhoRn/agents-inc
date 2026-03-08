@@ -28,6 +28,7 @@ class OrchestratorChatConfig:
     resume_thread_id: str = ""
     no_launch: bool = False
     sync_orchestrated_to_direct_thread: bool = True
+    sync_context_timeout_sec: float = 5.0
     project_index_path: Path | None = None
     auto_restart_checkpoint_id: str = ""
     auto_restart_objective: str = ""
@@ -168,6 +169,28 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
         print(f"thread_id: {thread_id}")
         print(f"prefix for orchestration: {config.orchestration_prefix}")
         print("type '/quit' to exit")
+        pending_sync_notes: List[str] = []
+
+        def _flush_pending_sync_notes() -> None:
+            if not config.sync_orchestrated_to_direct_thread:
+                pending_sync_notes.clear()
+                return
+            while pending_sync_notes:
+                note = pending_sync_notes.pop(0)
+                try:
+                    timeout_sec = max(0.1, float(config.sync_context_timeout_sec or 0.0))
+                except Exception:
+                    timeout_sec = 5.0
+                try:
+                    client.run_turn(
+                        thread_id=thread_id,
+                        text=note,
+                        timeout_sec=timeout_sec,
+                    )
+                except CodexAppServerError as exc:
+                    message = str(exc).strip() or "sync-to-direct-thread failed"
+                    _append_chat_line(chat_log_path, "codex-sync-error", message)
+                    continue
 
         def _run_orchestrated_objective(
             objective: str,
@@ -241,11 +264,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                     "Keep this as project context.\n\n"
                     f"{answer}"
                 )
-                try:
-                    client.run_turn(thread_id=thread_id, text=sync_note, timeout_sec=0.0)
-                except CodexAppServerError:
-                    # Non-fatal: orchestration output is still preserved in artifacts/log.
-                    pass
+                pending_sync_notes.append(sync_note)
             return "completed"
 
         auto_checkpoint_id = str(config.auto_restart_checkpoint_id or "").strip()
@@ -300,6 +319,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                 _run_orchestrated_objective(objective)
                 continue
 
+            _flush_pending_sync_notes()
             print("codex-live> processing direct turn...", flush=True)
             _append_chat_line(chat_log_path, "codex-live", "processing direct turn")
             try:
