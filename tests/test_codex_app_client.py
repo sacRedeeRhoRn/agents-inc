@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
+import threading
 import unittest
 from pathlib import Path
 
-from agents_inc.core.codex_app_client import CodexAppClient
+from agents_inc.core.codex_app_client import CodexAppClient, CodexAppServerError
 
 
 class CodexAppClientTests(unittest.TestCase):
@@ -118,6 +119,32 @@ class CodexAppClientTests(unittest.TestCase):
         turn = client.run_turn(thread_id="thread-1", text="say ok", timeout_sec=0.5)
         self.assertEqual(turn.turn_id, "turn-1")
         self.assertEqual(turn.text, "OK")
+
+    def test_run_turn_interrupt_requests_cancel(self) -> None:
+        client = CodexAppClient(cwd=Path("."))
+        calls: list[str] = []
+
+        def _fake_request(method: str, params: dict, *, timeout_sec: float) -> dict:
+            calls.append(method)
+            if method == "turn/start":
+                return {"turn": {"id": "turn-2"}}
+            if method == "turn/cancel":
+                return {"ok": True}
+            return {}
+
+        client._request = _fake_request  # type: ignore[method-assign]
+        cancel_event = threading.Event()
+        cancel_event.set()
+
+        with self.assertRaises(CodexAppServerError) as ctx:
+            client.run_turn(
+                thread_id="thread-1",
+                text="interrupt me",
+                timeout_sec=1.0,
+                cancel_event=cancel_event,
+            )
+        self.assertIn("interrupted by user", str(ctx.exception))
+        self.assertEqual(calls[:2], ["turn/start", "turn/cancel"])
 
 
 if __name__ == "__main__":

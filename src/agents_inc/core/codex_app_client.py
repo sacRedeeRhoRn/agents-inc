@@ -112,7 +112,14 @@ class CodexAppClient:
             raise CodexAppServerError("thread/resume response missing thread id")
         return resumed
 
-    def run_turn(self, *, thread_id: str, text: str, timeout_sec: float = 0.0) -> TurnResult:
+    def run_turn(
+        self,
+        *,
+        thread_id: str,
+        text: str,
+        timeout_sec: float = 0.0,
+        cancel_event: threading.Event | None = None,
+    ) -> TurnResult:
         result = self._request(
             "turn/start",
             {"threadId": str(thread_id), "input": [{"type": "text", "text": str(text)}]},
@@ -137,6 +144,9 @@ class CodexAppClient:
             deadline = time.monotonic() + parsed_timeout
 
         while True:
+            if cancel_event is not None and cancel_event.is_set():
+                self._cancel_turn(thread_id=str(thread_id), turn_id=turn_id)
+                raise CodexAppServerError("turn interrupted by user")
             if deadline is None:
                 poll_timeout = 0.5
             else:
@@ -190,6 +200,16 @@ class CodexAppClient:
         raise CodexAppServerError(
             self._timeout_message(f"turn timed out after {parsed_timeout:.0f}s")
         )
+
+    def _cancel_turn(self, *, thread_id: str, turn_id: str) -> None:
+        try:
+            self._request(
+                "turn/cancel",
+                {"threadId": str(thread_id), "turnId": str(turn_id)},
+                timeout_sec=1.0,
+            )
+        except Exception:
+            return
 
     def _thread_params(self) -> dict:
         return {

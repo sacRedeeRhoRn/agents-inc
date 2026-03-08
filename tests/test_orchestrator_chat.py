@@ -4,6 +4,7 @@ from __future__ import annotations
 import io
 import sys
 import tempfile
+import time
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -39,7 +40,14 @@ class _SuccessClient:
     def resume_thread(self, thread_id: str) -> str:
         return thread_id
 
-    def run_turn(self, *, thread_id: str, text: str, timeout_sec: float = 300.0) -> TurnResult:  # noqa: ARG002
+    def run_turn(
+        self,
+        *,
+        thread_id: str,
+        text: str,
+        timeout_sec: float = 300.0,  # noqa: ARG002
+        cancel_event=None,  # noqa: ANN001,ARG002
+    ) -> TurnResult:
         return TurnResult(thread_id=thread_id, turn_id="turn-1", text=f"echo: {text}")
 
 
@@ -62,7 +70,14 @@ class _RecoveringClient:
     def resume_thread(self, thread_id: str) -> str:
         return thread_id
 
-    def run_turn(self, *, thread_id: str, text: str, timeout_sec: float = 300.0) -> TurnResult:  # noqa: ARG002
+    def run_turn(
+        self,
+        *,
+        thread_id: str,
+        text: str,
+        timeout_sec: float = 300.0,  # noqa: ARG002
+        cancel_event=None,  # noqa: ANN001,ARG002
+    ) -> TurnResult:
         self._run_calls += 1
         if self._run_calls == 1:
             raise CodexAppServerError("simulated direct-turn failure")
@@ -85,12 +100,53 @@ class _SyncTimeoutClient:
     def resume_thread(self, thread_id: str) -> str:
         return thread_id
 
-    def run_turn(self, *, thread_id: str, text: str, timeout_sec: float = 300.0) -> TurnResult:  # noqa: ARG002
+    def run_turn(
+        self,
+        *,
+        thread_id: str,
+        text: str,
+        timeout_sec: float = 300.0,  # noqa: ARG002
+        cancel_event=None,  # noqa: ANN001,ARG002
+    ) -> TurnResult:
         if text.startswith(
             "The following response was produced via /agents-inc orchestration."
         ):
             raise CodexAppServerError("turn timed out after 5s")
         return TurnResult(thread_id=thread_id, turn_id="turn-3", text=f"echo: {text}")
+
+
+class _InterruptibleDirectClient:
+    def __init__(self, *, cwd: Path, env: dict) -> None:  # noqa: ARG002
+        self.cwd = cwd
+
+    def start(self) -> None:
+        return None
+
+    def close(self) -> None:
+        return None
+
+    def start_thread(self) -> str:
+        return "thread-1"
+
+    def resume_thread(self, thread_id: str) -> str:
+        return thread_id
+
+    def run_turn(
+        self,
+        *,
+        thread_id: str,
+        text: str,
+        timeout_sec: float = 300.0,  # noqa: ARG002
+        cancel_event=None,  # noqa: ANN001
+    ) -> TurnResult:
+        if text.startswith("The following response was produced via /agents-inc orchestration."):
+            return TurnResult(thread_id=thread_id, turn_id="turn-sync", text="synced")
+        deadline = time.time() + 1.0
+        while time.time() < deadline:
+            if cancel_event is not None and cancel_event.is_set():
+                raise CodexAppServerError("turn interrupted by user")
+            time.sleep(0.01)
+        return TurnResult(thread_id=thread_id, turn_id="turn-long", text="late answer")
 
 
 class OrchestratorChatTests(unittest.TestCase):
@@ -345,6 +401,102 @@ class OrchestratorChatTests(unittest.TestCase):
             self.assertIn("orchestrated answer", text)
             self.assertIn("codex-live> processing direct turn...", text)
             self.assertIn("echo: continue in direct chat", text)
+
+    def test_double_esc_interrupts_orchestration_and_keeps_chat_alive(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "proj-esc-orchestration"
+            project_root.mkdir(parents=True, exist_ok=True)
+            turn_dir = project_root / ".agents-inc" / "turns" / "turn-esc-orchestration"
+            turn_dir.mkdir(parents=True, exist_ok=True)
+            blocked_reasons = turn_dir / "blocked-reasons.json"
+            blocked_report = turn_dir / "blocked-report.md"
+            blocked_reasons.write_text('{"reasons":["abort file detected"]}\n', encoding="utf-8")
+            blocked_report.write_text("# blocked report\n", encoding="utf-8")
+
+            def _fake_orchestrator(config):  # type: ignore[no-untyped-def]
+                abort_file = Path(str(config.abort_file or ""))
+                deadline = time.time() + 1.0
+                while time.time() < deadline and not abort_file.exists():
+                    time.sleep(0.01)
+                raise FabricError(
+                    "BLOCKED[BLOCKED_ABORT_REQUESTED] blocked_report={0} blocked_reasons={1}".format(
+                        blocked_report,
+                        blocked_reasons,
+                    )
+                )
+
+            def _fake_watch(**kwargs):  # type: ignore[no-untyped-def]
+                on_interrupt = kwargs["on_interrupt"]
+                worker = kwargs["worker"]
+                on_interrupt()
+                worker.join(timeout=1.0)
+                return True
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                with patch("agents_inc.core.orchestrator_chat.CodexAppClient", _SuccessClient):
+                    with patch(
+                        "agents_inc.core.orchestrator_chat.run_orchestrator_reply",
+                        side_effect=_fake_orchestrator,
+                    ):
+                        with patch(
+                            "agents_inc.core.orchestrator_chat._watch_double_escape_interrupt",
+                            side_effect=_fake_watch,
+                        ):
+                            with patch(
+                                "builtins.input",
+                                side_effect=[
+                                    "/agents-inc long orchestration",
+                                    "still alive",
+                                    "/quit",
+                                ],
+                            ):
+                                run_orchestrator_chat(
+                                    OrchestratorChatConfig(
+                                        fabric_root=project_root / "agent_group_fabric",
+                                        project_root=project_root,
+                                        project_id="proj-esc-orchestration",
+                                    )
+                                )
+            text = out.getvalue()
+            self.assertIn("interrupted: orchestration aborted by user", text)
+            self.assertIn("echo: still alive", text)
+
+    def test_double_esc_interrupts_direct_turn_and_keeps_session_active(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "proj-esc-direct"
+            project_root.mkdir(parents=True, exist_ok=True)
+
+            def _fake_watch(**kwargs):  # type: ignore[no-untyped-def]
+                on_interrupt = kwargs["on_interrupt"]
+                worker = kwargs["worker"]
+                on_interrupt()
+                worker.join(timeout=1.0)
+                return True
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                with patch(
+                    "agents_inc.core.orchestrator_chat.CodexAppClient",
+                    _InterruptibleDirectClient,
+                ):
+                    with patch(
+                        "agents_inc.core.orchestrator_chat._watch_double_escape_interrupt",
+                        side_effect=_fake_watch,
+                    ):
+                        with patch(
+                            "builtins.input",
+                            side_effect=["long direct turn", "/quit"],
+                        ):
+                            run_orchestrator_chat(
+                                OrchestratorChatConfig(
+                                    fabric_root=project_root / "agent_group_fabric",
+                                    project_root=project_root,
+                                    project_id="proj-esc-direct",
+                                )
+                            )
+            text = out.getvalue()
+            self.assertIn("direct turn interrupted by user; session remains active", text)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,22 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import select
+import sys
+import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
+
+try:
+    import termios
+    import tty
+except Exception:  # pragma: no cover - platform fallback (e.g., Windows)
+    termios = None  # type: ignore[assignment]
+    tty = None  # type: ignore[assignment]
 
 from agents_inc.core.codex_app_client import CodexAppClient, CodexAppServerError
 from agents_inc.core.codex_home import codex_launch_env
@@ -17,6 +29,8 @@ from agents_inc.core.util.time import now_iso
 _BLOCKED_RE = re.compile(
     r"BLOCKED\[(?P<status>[^\]]+)\]\s+blocked_report=(?P<report>\S+)\s+blocked_reasons=(?P<reasons>\S+)"
 )
+_DOUBLE_ESC_WINDOW_SEC = 0.7
+_INTERRUPT_POLL_SEC = 0.1
 
 
 @dataclass
@@ -103,6 +117,107 @@ def _normalize_resume_cycle_summaries(value: List[dict] | None) -> List[dict] | 
     return out or None
 
 
+def _stdin_fd_if_tty() -> int | None:
+    try:
+        fd = int(sys.stdin.fileno())
+    except Exception:
+        return None
+    if fd < 0:
+        return None
+    if not os.isatty(fd):
+        return None
+    return fd
+
+
+def _watch_double_escape_interrupt(
+    *,
+    worker: threading.Thread,
+    on_interrupt: Callable[[], None],
+    chat_log_path: Path,
+) -> bool:
+    fd = _stdin_fd_if_tty()
+    if fd is None:
+        while worker.is_alive():
+            worker.join(timeout=_INTERRUPT_POLL_SEC)
+        return False
+
+    original_attrs = None
+    if termios is not None and tty is not None:
+        try:
+            original_attrs = termios.tcgetattr(fd)
+            tty.setcbreak(fd)
+        except Exception:
+            original_attrs = None
+
+    interrupted = False
+    last_esc_at = 0.0
+    try:
+        while worker.is_alive():
+            worker.join(timeout=_INTERRUPT_POLL_SEC)
+            if not worker.is_alive():
+                break
+            try:
+                ready, _, _ = select.select([fd], [], [], 0.0)
+            except Exception:
+                continue
+            if not ready:
+                continue
+            try:
+                chunk = os.read(fd, 32)
+            except Exception:
+                continue
+            if not chunk:
+                continue
+            for byte in chunk:
+                if byte != 0x1B:
+                    continue
+                now = time.monotonic()
+                if not interrupted and (now - last_esc_at) <= _DOUBLE_ESC_WINDOW_SEC:
+                    interrupted = True
+                    try:
+                        on_interrupt()
+                    except Exception:
+                        pass
+                    line = "live: interrupt requested (double ESC)"
+                    print("agents-inc-live>", flush=True)
+                    print(line, flush=True)
+                    _append_chat_line(chat_log_path, "agents-inc-live", line)
+                last_esc_at = now
+    finally:
+        if original_attrs is not None and termios is not None:
+            try:
+                termios.tcsetattr(fd, termios.TCSADRAIN, original_attrs)
+            except Exception:
+                pass
+    return interrupted
+
+
+def _run_interruptible_action(
+    *,
+    action: Callable[[], object],
+    on_interrupt: Callable[[], None],
+    chat_log_path: Path,
+) -> tuple[object | None, BaseException | None, bool]:
+    result_box: Dict[str, object] = {}
+    error_box: Dict[str, BaseException] = {}
+
+    def _worker() -> None:
+        try:
+            result_box["value"] = action()
+        except BaseException as exc:  # noqa: BLE001
+            error_box["error"] = exc
+
+    worker = threading.Thread(target=_worker, daemon=True)
+    worker.start()
+    interrupted = _watch_double_escape_interrupt(
+        worker=worker,
+        on_interrupt=on_interrupt,
+        chat_log_path=chat_log_path,
+    )
+    worker.join()
+    return result_box.get("value"), error_box.get("error"), interrupted
+
+
 def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
     project_root = config.project_root.expanduser().resolve()
     chat_log_path = project_root / ".agents-inc" / "state" / "orchestrator-chat.log"
@@ -169,6 +284,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
         print(f"thread_id: {thread_id}")
         print(f"prefix for orchestration: {config.orchestration_prefix}")
         print("type '/quit' to exit")
+        print("double-press ESC to interrupt active orchestration/direct turns")
         pending_sync_notes: List[str] = []
 
         def _flush_pending_sync_notes() -> None:
@@ -208,8 +324,20 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                 print(line, flush=True)
                 _append_chat_line(chat_log_path, "agents-inc-live", line)
 
-            try:
-                result = run_orchestrator_reply(
+            abort_dir = project_root / ".agents-inc" / "state"
+            abort_dir.mkdir(parents=True, exist_ok=True)
+            abort_file = abort_dir / f"abort-request-{int(time.time() * 1000)}.flag"
+
+            def _request_abort() -> None:
+                if abort_file.exists():
+                    return
+                write_text(
+                    abort_file,
+                    "user interrupt requested via double ESC at {0}\n".format(now_iso()),
+                )
+
+            def _call_orchestrator() -> object:
+                return run_orchestrator_reply(
                     OrchestratorReplyConfig(
                         fabric_root=config.fabric_root,
                         project_id=config.project_id,
@@ -221,11 +349,31 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                         resume_from_cycle=max(0, int(resume_from_cycle or 0)),
                         resume_group_objectives=resume_group_objectives,
                         resume_previous_cycle_summaries=resume_cycle_summaries,
+                        abort_file=abort_file,
                     )
                 )
+
+            try:
+                run_result, run_error, _ = _run_interruptible_action(
+                    action=_call_orchestrator,
+                    on_interrupt=_request_abort,
+                    chat_log_path=chat_log_path,
+                )
+                if run_error is not None:
+                    raise run_error
+                result = run_result if isinstance(run_result, dict) else {}
             except Exception as exc:  # noqa: BLE001
                 blocked = _parse_blocked_error(str(exc))
                 if blocked:
+                    if str(blocked.get("status") or "") == "BLOCKED_ABORT_REQUESTED":
+                        print("agents-inc>")
+                        print("interrupted: orchestration aborted by user (double ESC).")
+                        _append_chat_line(
+                            chat_log_path,
+                            "agents-inc",
+                            "interrupted: orchestration aborted by user",
+                        )
+                        return "interrupted"
                     print("agents-inc>")
                     print(f"blocked: {blocked['status']}")
                     top_reasons = _load_blocked_reasons(blocked.get("blocked_reasons", ""))
@@ -249,6 +397,12 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                 print("session remains active; fix and retry.")
                 _append_chat_line(chat_log_path, "agents-inc-error", message)
                 return "error"
+            finally:
+                if abort_file.exists():
+                    try:
+                        abort_file.unlink()
+                    except Exception:
+                        pass
             final_answer_path = Path(str(result.get("final_answer_path") or "")).expanduser()
             answer = (
                 read_text(final_answer_path).strip()
@@ -322,10 +476,30 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
             _flush_pending_sync_notes()
             print("codex-live> processing direct turn...", flush=True)
             _append_chat_line(chat_log_path, "codex-live", "processing direct turn")
-            try:
-                turn = client.run_turn(thread_id=thread_id, text=text)
-            except CodexAppServerError as exc:
-                message = str(exc).strip() or "unknown codex app-server error"
+            cancel_event = threading.Event()
+
+            def _run_direct_turn() -> object:
+                return client.run_turn(
+                    thread_id=thread_id,
+                    text=text,
+                    cancel_event=cancel_event,
+                )
+
+            turn_result, turn_error, interrupted = _run_interruptible_action(
+                action=_run_direct_turn,
+                on_interrupt=cancel_event.set,
+                chat_log_path=chat_log_path,
+            )
+            if turn_error is not None:
+                message = str(turn_error).strip() or "unknown codex app-server error"
+                if interrupted and "interrupted by user" in message.lower():
+                    print("codex> direct turn interrupted by user; session remains active")
+                    _append_chat_line(
+                        chat_log_path,
+                        "codex-live",
+                        "direct turn interrupted by user",
+                    )
+                    continue
                 print("codex> direct turn failed; keeping session active")
                 print(f"codex> error: {message}")
                 _append_chat_line(chat_log_path, "codex-error", message)
@@ -344,11 +518,16 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                     print(f"codex> recovery failed: {recovery}")
                     _append_chat_line(chat_log_path, "codex-error", f"recovery failed: {recovery}")
                 continue
-            answer = turn.text.strip() or "(empty response)"
+            turn = turn_result
+            if turn is None:
+                print("codex> direct turn failed; keeping session active")
+                _append_chat_line(chat_log_path, "codex-error", "direct turn missing result payload")
+                continue
+            answer = str(getattr(turn, "text", "")).strip() or "(empty response)"
             print("codex>")
             print(answer)
             _append_chat_line(chat_log_path, "codex", answer)
-            state["last_turn_id"] = turn.turn_id
+            state["last_turn_id"] = str(getattr(turn, "turn_id", ""))
             save_orchestrator_state(project_root, state)
         return summary
     finally:
