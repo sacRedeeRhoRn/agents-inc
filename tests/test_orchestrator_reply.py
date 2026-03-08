@@ -225,6 +225,10 @@ class OrchestratorReplyTests(unittest.TestCase):
                 encoding="utf-8"
             )
             self.assertIn("## Short Trace", final_answer_text)
+            self.assertIn("## Collaboration Signals", final_answer_text)
+            self.assertIn("## Direct Answers", final_answer_text)
+            self.assertIn("- developer: satisfied=", final_answer_text)
+            self.assertIn("confidence=`", final_answer_text)
             self.assertIn("full_report:", final_answer_text)
             self.assertNotIn("## Delegation Summary", final_answer_text)
             self.assertIn("## Delegation Summary", full_report_text)

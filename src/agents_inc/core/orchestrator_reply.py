@@ -1498,6 +1498,150 @@ def _collect_next_actions(contributions: List[dict], *, limit: int = 5) -> List[
     return rows
 
 
+def _collect_direct_answers(contributions: List[dict], *, limit: int = 8) -> List[dict]:
+    rows: List[dict] = []
+    for row in contributions:
+        if not isinstance(row, dict):
+            continue
+        group_id = str(row.get("group_id") or "").strip()
+        if not group_id:
+            continue
+        response = _truncate(str(row.get("objective_response") or "").strip(), max_chars=320)
+        if not response:
+            response = _truncate(str(row.get("decision_summary") or "").strip(), max_chars=320)
+        if not response:
+            continue
+        rows.append(
+            {
+                "group_id": group_id,
+                "response": response,
+                "response_status": str(row.get("response_status") or "UNKNOWN"),
+                "objective_coverage": float(row.get("objective_coverage") or 0.0),
+                "persona_confidence": float(row.get("persona_confidence") or 0.0),
+            }
+        )
+        if len(rows) >= limit:
+            break
+    return rows
+
+
+def _collect_collaboration_signals(
+    contributions: List[dict],
+    meeting_outputs: List[dict],
+    *,
+    limit: int = 8,
+) -> dict:
+    latest_decisions: dict = {}
+    if meeting_outputs:
+        latest = meeting_outputs[-1]
+        if isinstance(latest, dict):
+            decisions = latest.get("decisions", {})
+            if isinstance(decisions, dict):
+                latest_decisions = decisions
+
+    rows: List[dict] = []
+    request_counts: Dict[str, set] = {}
+    for row in contributions:
+        if not isinstance(row, dict):
+            continue
+        group_id = str(row.get("group_id") or "").strip()
+        if not group_id:
+            continue
+        decision = latest_decisions.get(group_id, {})
+        if not isinstance(decision, dict):
+            decision = {}
+        requests = decision.get("request_changes", [])
+        accepted = decision.get("accepted_items", [])
+        new_actions = decision.get("new_actions", [])
+        if not isinstance(requests, list):
+            requests = []
+        if not isinstance(accepted, list):
+            accepted = []
+        if not isinstance(new_actions, list):
+            new_actions = []
+        for request in requests:
+            text = str(request or "").strip()
+            if not text:
+                continue
+            request_counts.setdefault(text, set()).add(group_id)
+
+        first_action = ""
+        for action in new_actions:
+            text = str(action or "").strip()
+            if text:
+                first_action = text
+                break
+
+        rows.append(
+            {
+                "group_id": group_id,
+                "satisfied": bool(decision.get("satisfied")),
+                "request_count": len([item for item in requests if str(item).strip()]),
+                "accepted_count": len([item for item in accepted if str(item).strip()]),
+                "persona_confidence": float(row.get("persona_confidence") or 0.0),
+                "persona_stance": _truncate(str(row.get("persona_stance") or "").strip(), max_chars=110),
+                "persona_challenge": _truncate(
+                    str(row.get("persona_challenge") or "").strip(),
+                    max_chars=110,
+                ),
+                "next_action": _truncate(first_action, max_chars=120),
+            }
+        )
+        if len(rows) >= limit:
+            break
+
+    pressure_rows: List[dict] = []
+    for request, groups in request_counts.items():
+        pressure_rows.append(
+            {
+                "request": _truncate(request, max_chars=140),
+                "group_count": len(groups),
+                "groups": sorted(str(group) for group in groups if str(group).strip()),
+            }
+        )
+    pressure_rows.sort(
+        key=lambda item: (-int(item.get("group_count") or 0), str(item.get("request") or ""))
+    )
+    return {"group_rows": rows, "cross_group_requests": pressure_rows[:5]}
+
+
+def _collect_shared_actions(
+    contributions: List[dict],
+    *,
+    min_groups: int = 2,
+    limit: int = 5,
+) -> List[dict]:
+    action_groups: Dict[str, set] = {}
+    for row in contributions:
+        if not isinstance(row, dict):
+            continue
+        group_id = str(row.get("group_id") or "").strip()
+        if not group_id:
+            continue
+        actions = row.get("recommended_actions", [])
+        if not isinstance(actions, list):
+            continue
+        for action in actions:
+            text = str(action or "").strip()
+            if not text:
+                continue
+            action_groups.setdefault(text, set()).add(group_id)
+
+    out: List[dict] = []
+    for action, groups in action_groups.items():
+        if len(groups) < min_groups:
+            continue
+        out.append(
+            {
+                "action": _truncate(action, max_chars=140),
+                "group_count": len(groups),
+                "groups": sorted(groups),
+            }
+        )
+    out.sort(key=lambda item: (-int(item.get("group_count") or 0), str(item.get("action") or "")))
+    return out[:limit]
+
+
 def _render_group_mode_chat_answer(
     *,
     project_id: str,
@@ -1548,6 +1692,72 @@ def _render_group_mode_chat_answer(
                 _effective_contribution_valid(row),
             )
         )
+
+    collaboration = _collect_collaboration_signals(
+        contributions=contributions,
+        meeting_outputs=meeting_outputs,
+        limit=10,
+    )
+    lines.extend(["", "## Collaboration Signals"])
+    collaboration_rows = collaboration.get("group_rows", [])
+    if isinstance(collaboration_rows, list) and collaboration_rows:
+        for item in collaboration_rows:
+            lines.append(
+                "- {0}: satisfied=`{1}` requests=`{2}` accepts=`{3}` confidence=`{4}` stance=\"{5}\" challenge=\"{6}\" next=\"{7}\"".format(
+                    item.get("group_id", ""),
+                    bool(item.get("satisfied")),
+                    int(item.get("request_count") or 0),
+                    int(item.get("accepted_count") or 0),
+                    round(float(item.get("persona_confidence") or 0.0), 3),
+                    str(item.get("persona_stance") or ""),
+                    str(item.get("persona_challenge") or ""),
+                    str(item.get("next_action") or ""),
+                )
+            )
+    else:
+        lines.append("- no meeting collaboration rows published for this turn.")
+
+    cross_group_requests = collaboration.get("cross_group_requests", [])
+    if isinstance(cross_group_requests, list) and cross_group_requests:
+        lines.append(
+            "- cross_group_pressure: "
+            + " | ".join(
+                "{0} groups -> {1}".format(
+                    int(item.get("group_count") or 0),
+                    str(item.get("request") or ""),
+                )
+                for item in cross_group_requests[:3]
+            )
+        )
+
+    shared_actions = _collect_shared_actions(contributions, min_groups=2, limit=4)
+    if shared_actions:
+        lines.append(
+            "- shared_execution_actions: "
+            + " | ".join(
+                "{0} groups -> {1}".format(
+                    int(item.get("group_count") or 0),
+                    str(item.get("action") or ""),
+                )
+                for item in shared_actions
+            )
+        )
+
+    direct_answers = _collect_direct_answers(contributions, limit=10)
+    lines.extend(["", "## Direct Answers"])
+    if direct_answers:
+        for item in direct_answers:
+            lines.append(
+                "- {0} [status=`{1}` coverage=`{2}` confidence=`{3}`]: {4}".format(
+                    item.get("group_id", ""),
+                    item.get("response_status", "UNKNOWN"),
+                    round(float(item.get("objective_coverage") or 0.0), 3),
+                    round(float(item.get("persona_confidence") or 0.0), 3),
+                    item.get("response", ""),
+                )
+            )
+    else:
+        lines.append("- no direct objective responses found; open full report artifacts.")
 
     lines.extend(["", "## Short Trace"])
     if cycle_summaries:
