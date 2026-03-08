@@ -100,6 +100,23 @@ class AgentSessionRunnerTimeoutTests(unittest.TestCase):
         self.assertIn("-c", cmd)
         self.assertIn("mcp_servers={}", cmd)
 
+    def test_build_codex_cmd_includes_approval_sandbox_and_cd(self) -> None:
+        cmd = AgentSessionRunner._build_codex_cmd(
+            codex_bin="codex",
+            prompt="hello",
+            thread_id=None,
+            approval_policy="never",
+            sandbox_mode="workspace-write",
+            sandbox_cd_dir=Path("/tmp/run-a"),
+            sandbox_network_access=True,
+        )
+        self.assertIn('approval_policy="never"', cmd)
+        self.assertIn("-s", cmd)
+        self.assertIn("workspace-write", cmd)
+        self.assertIn("sandbox_workspace_write.network_access=true", cmd)
+        self.assertIn("--cd", cmd)
+        self.assertIn("/tmp/run-a", cmd)
+
     def test_parse_session_output_fallback_reads_json_fence(self) -> None:
         raw = """
 work notes without strict markers.

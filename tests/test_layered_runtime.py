@@ -128,6 +128,10 @@ class LayeredRuntimeMountTests(unittest.TestCase):
                 self.assertEqual(cfg.model, "gpt-5.3-codex-spark")
                 self.assertIsNone(cfg.model_reasoning_effort)
                 self.assertTrue(bool(cfg.disable_mcp))
+                self.assertEqual(cfg.approval_policy, "never")
+                self.assertEqual(cfg.sandbox_mode, "workspace-write")
+                self.assertEqual(Path(str(cfg.sandbox_cd_dir)), Path(str(cfg.work_dir)))
+                self.assertTrue(bool(cfg.sandbox_network_access))
                 if str(cfg.session_label).endswith("/web-research-specialist"):
                     self.assertTrue(bool(cfg.web_search))
                 else:
@@ -135,6 +139,13 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             self.assertEqual(head_runs[0].model, "gpt-5.3-codex")
             self.assertEqual(head_runs[0].model_reasoning_effort, "xhigh")
             self.assertFalse(bool(head_runs[0].disable_mcp))
+            self.assertEqual(head_runs[0].approval_policy, "never")
+            self.assertEqual(head_runs[0].sandbox_mode, "workspace-write")
+            self.assertEqual(
+                Path(str(head_runs[0].sandbox_cd_dir)),
+                Path(str(head_runs[0].work_dir)),
+            )
+            self.assertTrue(bool(head_runs[0].sandbox_network_access))
 
     def test_web_search_policy_all_enabled_applies_to_all_specialists(self) -> None:
         with tempfile.TemporaryDirectory() as td:

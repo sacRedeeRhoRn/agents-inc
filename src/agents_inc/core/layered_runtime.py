@@ -185,6 +185,10 @@ def run_layered_runtime(config: LayeredRuntimeConfig) -> dict:
             "head_reasoning_effort": config.head_reasoning_effort,
             "web_search_policy": str(config.web_search_policy or "web-role-only"),
             "execution_mode": _resolve_execution_mode(config),
+            "worker_approval_policy": "never",
+            "worker_sandbox_mode": "workspace-write",
+            "worker_sandbox_cd": "per-agent-work-dir",
+            "worker_network_access": True,
         },
         "created_at": now_iso(),
     }
@@ -988,6 +992,10 @@ def _run_specialist_with_retries(
                 model=config.specialist_model,
                 model_reasoning_effort=config.specialist_reasoning_effort,
                 disable_mcp=True,
+                approval_policy="never",
+                sandbox_mode="workspace-write",
+                sandbox_cd_dir=specialist_root,
+                sandbox_network_access=True,
             )
         )
 
@@ -1444,6 +1452,10 @@ def _run_head_with_retries(
                 session_label=f"{group_id}/head",
                 model=config.head_model,
                 model_reasoning_effort=config.head_reasoning_effort,
+                approval_policy="never",
+                sandbox_mode="workspace-write",
+                sandbox_cd_dir=group_work_dir,
+                sandbox_network_access=True,
             )
         )
 

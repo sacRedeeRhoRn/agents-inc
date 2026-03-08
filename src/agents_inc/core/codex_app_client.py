@@ -31,10 +31,14 @@ class CodexAppClient:
         cwd: Path,
         env: Optional[Dict[str, str]] = None,
         approval_policy: str = "never",
+        sandbox_mode: str = "workspace-write",
+        network_access: bool = True,
     ) -> None:
         self.cwd = Path(cwd).expanduser().resolve()
         self.env = dict(env or {})
         self.approval_policy = approval_policy
+        self.sandbox_mode = str(sandbox_mode or "").strip() or "workspace-write"
+        self.network_access = bool(network_access)
         self.proc: Optional[subprocess.Popen[str]] = None
         self._next_id = 1
         self._events: "queue.Queue[Tuple[str, str]]" = queue.Queue()
@@ -81,7 +85,7 @@ class CodexAppClient:
     def start_thread(self) -> str:
         result = self._request(
             "thread/start",
-            {"cwd": str(self.cwd), "approvalPolicy": self.approval_policy},
+            self._thread_params(),
             timeout_sec=0.0,
         )
         thread = result.get("thread")
@@ -93,13 +97,11 @@ class CodexAppClient:
         return thread_id
 
     def resume_thread(self, thread_id: str) -> str:
+        params = self._thread_params()
+        params["threadId"] = str(thread_id)
         result = self._request(
             "thread/resume",
-            {
-                "threadId": str(thread_id),
-                "cwd": str(self.cwd),
-                "approvalPolicy": self.approval_policy,
-            },
+            params,
             timeout_sec=0.0,
         )
         thread = result.get("thread")
@@ -188,6 +190,16 @@ class CodexAppClient:
         raise CodexAppServerError(
             self._timeout_message(f"turn timed out after {parsed_timeout:.0f}s")
         )
+
+    def _thread_params(self) -> dict:
+        return {
+            "cwd": str(self.cwd),
+            "approvalPolicy": self.approval_policy,
+            "sandbox": self.sandbox_mode,
+            "config": {
+                "sandbox_workspace_write.network_access": bool(self.network_access),
+            },
+        }
 
     def _start_reader(self, stream: subprocess.PIPE, kind: str) -> None:  # type: ignore[type-arg]
         def _worker() -> None:

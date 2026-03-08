@@ -8,6 +8,49 @@ from agents_inc.core.codex_app_client import CodexAppClient
 
 
 class CodexAppClientTests(unittest.TestCase):
+    def test_start_thread_requests_network_enabled_workspace_write(self) -> None:
+        client = CodexAppClient(cwd=Path("."), approval_policy="never")
+        captured: dict = {}
+
+        def _fake_request(method: str, params: dict, *, timeout_sec: float) -> dict:
+            captured["method"] = method
+            captured["params"] = dict(params)
+            captured["timeout_sec"] = float(timeout_sec)
+            return {"thread": {"id": "thr-123"}}
+
+        client._request = _fake_request  # type: ignore[method-assign]
+        thread_id = client.start_thread()
+
+        self.assertEqual(thread_id, "thr-123")
+        self.assertEqual(captured.get("method"), "thread/start")
+        params = captured.get("params", {})
+        self.assertEqual(params.get("approvalPolicy"), "never")
+        self.assertEqual(params.get("sandbox"), "workspace-write")
+        config = params.get("config", {})
+        self.assertEqual(config.get("sandbox_workspace_write.network_access"), True)
+
+    def test_resume_thread_requests_network_enabled_workspace_write(self) -> None:
+        client = CodexAppClient(cwd=Path("."), approval_policy="never")
+        captured: dict = {}
+
+        def _fake_request(method: str, params: dict, *, timeout_sec: float) -> dict:
+            captured["method"] = method
+            captured["params"] = dict(params)
+            captured["timeout_sec"] = float(timeout_sec)
+            return {"thread": {"id": "thr-abc"}}
+
+        client._request = _fake_request  # type: ignore[method-assign]
+        thread_id = client.resume_thread("thr-input")
+
+        self.assertEqual(thread_id, "thr-abc")
+        self.assertEqual(captured.get("method"), "thread/resume")
+        params = captured.get("params", {})
+        self.assertEqual(params.get("threadId"), "thr-input")
+        self.assertEqual(params.get("approvalPolicy"), "never")
+        self.assertEqual(params.get("sandbox"), "workspace-write")
+        config = params.get("config", {})
+        self.assertEqual(config.get("sandbox_workspace_write.network_access"), True)
+
     def test_wait_response_buffers_non_target_notifications(self) -> None:
         client = CodexAppClient(cwd=Path("."))
         client._events.put(("stdout", json.dumps({"method": "thread/started", "params": {}})))  # type: ignore[attr-defined]

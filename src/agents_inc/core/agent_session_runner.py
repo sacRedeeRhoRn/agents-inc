@@ -37,6 +37,10 @@ class AgentRunConfig:
     model: str | None = None
     model_reasoning_effort: str | None = None
     disable_mcp: bool = False
+    approval_policy: str | None = None
+    sandbox_mode: str | None = None
+    sandbox_cd_dir: Path | None = None
+    sandbox_network_access: bool | None = None
 
 
 @dataclass
@@ -110,6 +114,10 @@ class AgentSessionRunner:
             model=config.model,
             model_reasoning_effort=config.model_reasoning_effort,
             disable_mcp=bool(config.disable_mcp),
+            approval_policy=config.approval_policy,
+            sandbox_mode=config.sandbox_mode,
+            sandbox_cd_dir=config.sandbox_cd_dir,
+            sandbox_network_access=config.sandbox_network_access,
         )
 
         try:
@@ -134,6 +142,10 @@ class AgentSessionRunner:
                     model=config.model,
                     model_reasoning_effort=config.model_reasoning_effort,
                     disable_mcp=bool(config.disable_mcp),
+                    approval_policy=config.approval_policy,
+                    sandbox_mode=config.sandbox_mode,
+                    sandbox_cd_dir=config.sandbox_cd_dir,
+                    sandbox_network_access=config.sandbox_network_access,
                 )
                 rotate_proc = self._run_process(config=config, cmd=rotate_cmd)
                 rotate_raw = (rotate_proc.stdout or "") + "\n" + (rotate_proc.stderr or "")
@@ -353,6 +365,10 @@ class AgentSessionRunner:
         model: str | None = None,
         model_reasoning_effort: str | None = None,
         disable_mcp: bool = False,
+        approval_policy: str | None = None,
+        sandbox_mode: str | None = None,
+        sandbox_cd_dir: Path | None = None,
+        sandbox_network_access: bool | None = None,
     ) -> list[str]:
         cmd: list[str] = [codex_bin, "exec"]
         if thread_id:
@@ -364,6 +380,23 @@ class AgentSessionRunner:
         effort = str(model_reasoning_effort or "").strip()
         if effort:
             cmd.extend(["-c", f'model_reasoning_effort="{effort}"'])
+        policy = str(approval_policy or "").strip()
+        if policy:
+            cmd.extend(["-c", f'approval_policy="{policy}"'])
+        sandbox = str(sandbox_mode or "").strip()
+        if sandbox:
+            cmd.extend(["-s", sandbox])
+        if sandbox == "workspace-write" and sandbox_network_access is not None:
+            cmd.extend(
+                [
+                    "-c",
+                    "sandbox_workspace_write.network_access="
+                    + ("true" if sandbox_network_access else "false"),
+                ]
+            )
+        cd_dir = str(sandbox_cd_dir or "").strip()
+        if cd_dir:
+            cmd.extend(["--cd", cd_dir])
         if disable_mcp:
             cmd.extend(["-c", "mcp_servers={}"])
         if thread_id:
