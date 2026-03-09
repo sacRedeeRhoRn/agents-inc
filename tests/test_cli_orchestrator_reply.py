@@ -310,6 +310,47 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
             self.assertIn("live: cycle 1 started", text)
             self.assertIn("live: cycle 1 head meeting started", text)
 
+    def test_main_clears_terminal_before_non_json_final_output(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fake_root = Path(td)
+
+            def _fake_run(config):  # type: ignore[no-untyped-def]
+                return {
+                    "project_id": "proj-a",
+                    "turn_dir": str(fake_root / "turn"),
+                    "full_report_path": str(fake_root / "full-report.md"),
+                }
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                with patch(
+                    "agents_inc.cli.orchestrator_reply._resolve_project_fabric_root",
+                    return_value=fake_root,
+                ):
+                    with patch("agents_inc.cli.orchestrator_reply.ensure_fabric_root_initialized"):
+                        with patch(
+                            "agents_inc.cli.orchestrator_reply.run_orchestrator_reply",
+                            side_effect=_fake_run,
+                        ):
+                            with patch(
+                                "agents_inc.cli.orchestrator_reply.clear_interactive_terminal"
+                            ) as clear_terminal:
+                                with patch.object(
+                                    sys,
+                                    "argv",
+                                    [
+                                        "agents-inc-orchestrator-reply",
+                                        "--project-id",
+                                        "proj-a",
+                                        "--message",
+                                        "delegate objective",
+                                    ],
+                                ):
+                                    code = orchestrator_reply_cli.main()
+            self.assertEqual(code, 0)
+            clear_terminal.assert_called_once()
+            self.assertIn("project_id: proj-a", out.getvalue())
+
     def test_main_json_mode_streams_live_notes_to_stderr(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             fake_root = Path(td)

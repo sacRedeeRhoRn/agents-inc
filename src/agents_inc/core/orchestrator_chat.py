@@ -21,7 +21,11 @@ except Exception:  # pragma: no cover - platform fallback (e.g., Windows)
 
 from agents_inc.core.codex_app_client import CodexAppClient, CodexAppServerError
 from agents_inc.core.codex_home import codex_launch_env
-from agents_inc.core.live_dashboard import LiveDashboard, should_enable_dashboard
+from agents_inc.core.live_dashboard import (
+    LiveDashboard,
+    clear_interactive_terminal,
+    should_enable_dashboard,
+)
 from agents_inc.core.orchestrator_reply import OrchestratorReplyConfig, run_orchestrator_reply
 from agents_inc.core.orchestrator_state import load_orchestrator_state, save_orchestrator_state
 from agents_inc.core.progress_notes import format_progress_event
@@ -466,6 +470,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                     raise run_error
                 result = run_result if isinstance(run_result, dict) else {}
             except Exception as exc:  # noqa: BLE001
+                clear_interactive_terminal()
                 blocked = _parse_blocked_error(str(exc))
                 if blocked:
                     if str(blocked.get("status") or "") == "BLOCKED_ABORT_REQUESTED":
@@ -509,6 +514,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                         abort_file.unlink()
                     except Exception:
                         pass
+            clear_interactive_terminal()
             final_answer_path = Path(str(result.get("final_answer_path") or "")).expanduser()
             answer = (
                 read_text(final_answer_path).strip()

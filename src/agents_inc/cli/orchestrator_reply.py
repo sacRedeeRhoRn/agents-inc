@@ -27,7 +27,11 @@ from agents_inc.core.fabric_lib import (
     resolve_fabric_root,
     slugify,
 )
-from agents_inc.core.live_dashboard import LiveDashboard, should_enable_dashboard
+from agents_inc.core.live_dashboard import (
+    LiveDashboard,
+    clear_interactive_terminal,
+    should_enable_dashboard,
+)
 from agents_inc.core.model_profiles import (
     DEFAULT_HEAD_MODEL,
     DEFAULT_HEAD_REASONING_EFFORT,
@@ -605,6 +609,7 @@ def main() -> int:
         if args.json:
             print(json.dumps(result, indent=2, sort_keys=True))
         else:
+            clear_interactive_terminal()
             key_points_path = str(result.get("key_points_path") or "").strip()
             if key_points_path:
                 key_points_text = Path(key_points_path).read_text(
@@ -623,6 +628,7 @@ def main() -> int:
                 if args.json:
                     print(json.dumps({"error": "interrupted", **blocked}, indent=2, sort_keys=True))
                 else:
+                    clear_interactive_terminal()
                     print("interrupted: orchestration aborted by user (double ESC)")
                 return 130
             escalation_summary = {}
@@ -646,6 +652,7 @@ def main() -> int:
                     )
                 )
             else:
+                clear_interactive_terminal()
                 print(f"blocked_status: {blocked['status']}")
                 print(f"blocked_report: {blocked['blocked_report']}")
                 print(f"blocked_reasons: {blocked['blocked_reasons']}")

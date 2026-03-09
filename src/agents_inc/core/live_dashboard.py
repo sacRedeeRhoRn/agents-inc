@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import deque
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
+import sys
 from typing import Deque, Dict, Iterable, List, Optional
 
 try:
@@ -270,3 +271,18 @@ def should_enable_dashboard(mode: str, *, interactive: bool, json_mode: bool = F
     if normalized == "on":
         return LiveDashboard.supported()
     return interactive and LiveDashboard.supported()
+
+
+def clear_interactive_terminal(*, clear_scrollback: bool = True) -> bool:
+    stream = getattr(sys, "stdout", None)
+    if stream is None or not bool(getattr(stream, "isatty", lambda: False)()):
+        return False
+    sequence = "\x1b[2J\x1b[H"
+    if clear_scrollback:
+        sequence = "\x1b[3J" + sequence
+    try:
+        stream.write(sequence)
+        stream.flush()
+        return True
+    except Exception:
+        return False

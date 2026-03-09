@@ -290,6 +290,42 @@ class OrchestratorChatTests(unittest.TestCase):
             self.assertIn("session remains active", text)
             self.assertIn("final answer text", text)
 
+    def test_orchestration_success_clears_terminal_before_final_answer(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "proj-clear-success"
+            project_root.mkdir(parents=True, exist_ok=True)
+            turn_dir = project_root / ".agents-inc" / "turns" / "turn-clear"
+            turn_dir.mkdir(parents=True, exist_ok=True)
+            final_answer = turn_dir / "final-exposed-answer.md"
+            final_answer.write_text("cleared answer\n", encoding="utf-8")
+
+            def _fake_orchestrator(config):  # type: ignore[no-untyped-def]
+                return {"final_answer_path": str(final_answer)}
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                with patch("agents_inc.core.orchestrator_chat.CodexAppClient", _SuccessClient):
+                    with patch(
+                        "agents_inc.core.orchestrator_chat.run_orchestrator_reply",
+                        side_effect=_fake_orchestrator,
+                    ):
+                        with patch(
+                            "agents_inc.core.orchestrator_chat.clear_interactive_terminal"
+                        ) as clear_terminal:
+                            with patch(
+                                "builtins.input",
+                                side_effect=["/agents-inc objective", "/quit"],
+                            ):
+                                run_orchestrator_chat(
+                                    OrchestratorChatConfig(
+                                        fabric_root=project_root / "agent_group_fabric",
+                                        project_root=project_root,
+                                        project_id="proj-clear-success",
+                                    )
+                                )
+            clear_terminal.assert_called()
+            self.assertIn("cleared answer", out.getvalue())
+
     def test_auto_restart_runs_before_user_input(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             project_root = Path(td) / "proj-auto-resume"
