@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Callable, Dict, List
 
 from agents_inc.core.backends.registry import resolve_backend
+from agents_inc.core.codex_app_client import CodexAppClient, CodexAppServerError
 from agents_inc.core.codex_home import codex_launch_env
 from agents_inc.core.fabric_lib import now_iso, write_text
 from agents_inc.core.transcript_capture import redact_text
@@ -107,6 +108,9 @@ class AgentSessionRunner:
                 rotated_thread=False,
                 parse_mode="",
             )
+
+        if config.stream_callback is not None and not bool(config.disable_mcp):
+            return self._run_codex_via_app_server(config=config, started=started)
 
         used_resume = bool(str(config.thread_id or "").strip())
         primary_cmd = self._build_codex_cmd(
@@ -221,6 +225,104 @@ class AgentSessionRunner:
                 rotated_thread=False,
                 parse_mode="",
             )
+
+    def _run_codex_via_app_server(
+        self, *, config: AgentRunConfig, started: str
+    ) -> AgentRunResult:
+        used_resume = bool(str(config.thread_id or "").strip())
+        rotated = False
+        thread_id = str(config.thread_id or "").strip()
+        session_cwd = Path(
+            config.sandbox_cd_dir or config.work_dir or config.project_root
+        ).expanduser().resolve()
+        event_lines: List[str] = []
+        client = CodexAppClient(
+            cwd=session_cwd,
+            env=self._launch_env(config),
+            approval_policy=str(config.approval_policy or "never"),
+            sandbox_mode=str(config.sandbox_mode or "workspace-write"),
+            network_access=(
+                bool(config.sandbox_network_access)
+                if config.sandbox_network_access is not None
+                else True
+            ),
+        )
+
+        def _forward_event(event: Dict[str, object]) -> None:
+            event_lines.append(json.dumps(event, ensure_ascii=False))
+            self._emit_stream_event(config, event)
+
+        try:
+            client.start()
+            try:
+                active_thread_id = (
+                    client.resume_thread(thread_id) if thread_id else client.start_thread()
+                )
+            except CodexAppServerError:
+                if used_resume:
+                    active_thread_id = client.start_thread()
+                    rotated = True
+                else:
+                    raise
+            turn = client.run_turn(
+                thread_id=active_thread_id,
+                text=self._prompt_with_web_mode(config.prompt, config.web_search),
+                timeout_sec=float(max(0, int(config.timeout_sec or 0))),
+                event_callback=_forward_event,
+            )
+            parse_input = str(turn.text or "")
+            parsed_work, parsed_handoff, parse_error, parse_mode = _parse_session_output(parse_input)
+            success = not parse_error
+            raw_parts = list(event_lines)
+            if parse_mode:
+                raw_parts.append(f"--- PARSE_MODE:{parse_mode} ---")
+            raw_parts.append(parse_input)
+            raw_text = "\n".join(part for part in raw_parts if str(part).strip()).rstrip() + "\n"
+            self._write_logs(config, raw_text=raw_text)
+            finished = now_iso()
+            if success and not parsed_work and parse_input:
+                parse_error = "missing BEGIN_WORK/END_WORK block"
+                success = False
+            return AgentRunResult(
+                success=success,
+                return_code=0 if success else 1,
+                stdout=parse_input,
+                stderr="",
+                raw_text=raw_text,
+                parsed_work=parsed_work,
+                parsed_handoff=parsed_handoff,
+                error=parse_error,
+                started_at=started,
+                finished_at=finished,
+                backend=self.backend,
+                thread_id=str(turn.thread_id or active_thread_id),
+                used_resume=used_resume,
+                rotated_thread=rotated,
+                parse_mode=parse_mode,
+            )
+        except CodexAppServerError as exc:
+            raw_text = "\n".join(event_lines + [str(exc).strip()]).rstrip() + "\n"
+            self._write_logs(config, raw_text=raw_text)
+            finished = now_iso()
+            return AgentRunResult(
+                success=False,
+                return_code=1,
+                stdout="",
+                stderr=str(exc),
+                raw_text=raw_text,
+                parsed_work="",
+                parsed_handoff={},
+                error=str(exc),
+                started_at=started,
+                finished_at=finished,
+                backend=self.backend,
+                thread_id=thread_id,
+                used_resume=used_resume,
+                rotated_thread=rotated,
+                parse_mode="",
+            )
+        finally:
+            client.close()
 
     def _run_mock(self, config: AgentRunConfig) -> AgentRunResult:
         started = now_iso()

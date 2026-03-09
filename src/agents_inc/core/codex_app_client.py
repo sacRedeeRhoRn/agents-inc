@@ -8,7 +8,7 @@ import time
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Deque, Dict, Optional, Tuple
+from typing import Callable, Deque, Dict, Optional, Tuple
 
 from agents_inc.core.util.errors import FabricError
 
@@ -119,6 +119,7 @@ class CodexAppClient:
         text: str,
         timeout_sec: float = 0.0,
         cancel_event: threading.Event | None = None,
+        event_callback: Callable[[dict], None] | None = None,
     ) -> TurnResult:
         result = self._request(
             "turn/start",
@@ -169,7 +170,13 @@ class CodexAppClient:
 
             if method == "item/agentMessage/delta":
                 if str(params.get("turnId") or "") == turn_id:
-                    delta_text += str(params.get("delta") or "")
+                    chunk = str(params.get("delta") or "")
+                    delta_text += chunk
+                    if chunk and event_callback is not None:
+                        try:
+                            event_callback({"event": "agent_delta", "text": chunk})
+                        except Exception:
+                            pass
                 continue
 
             if method == "item/completed":
@@ -178,6 +185,11 @@ class CodexAppClient:
                 item = params.get("item") if isinstance(params.get("item"), dict) else {}
                 if str(item.get("type") or "") == "agentMessage":
                     full_text = str(item.get("text") or full_text)
+                    if full_text and event_callback is not None:
+                        try:
+                            event_callback({"event": "agent_message", "text": full_text})
+                        except Exception:
+                            pass
                 continue
 
             if method == "codex/event/task_complete":
