@@ -58,6 +58,8 @@ from agents_inc.core.util.edges import resolve_handoff_edges
 
 OBJECTIVE_COVERAGE_THRESHOLD = 0.8
 OBJECTIVE_RESPONSE_STATUS_VALUES = {"ANSWERED", "PARTIAL", "BLOCKED"}
+CONSENSUS_CLUSTER_SIMILARITY = 0.45
+CONSENSUS_MIN_SIGNAL_WORDS = 6
 
 
 @dataclass
@@ -1525,6 +1527,620 @@ def _collect_direct_answers(contributions: List[dict], *, limit: int = 8) -> Lis
     return rows
 
 
+def _consensus_tokens(text: object) -> set[str]:
+    return set(_objective_tokens(str(text or "")))
+
+
+def _token_jaccard(left: set[str], right: set[str]) -> float:
+    if not left and not right:
+        return 1.0
+    if not left or not right:
+        return 0.0
+    union = left | right
+    if not union:
+        return 0.0
+    return len(left & right) / len(union)
+
+
+def _split_signal_lines(text: str, *, limit: int = 6) -> List[str]:
+    rows: List[str] = []
+    for raw in re.split(r"[\r\n]+|(?<=[.!?])\s+", str(text or "").strip()):
+        candidate = _clean_signal_text(raw)
+        if not candidate:
+            continue
+        if len(re.findall(r"\b\w+\b", candidate)) < CONSENSUS_MIN_SIGNAL_WORDS:
+            continue
+        if candidate not in rows:
+            rows.append(candidate)
+        if len(rows) >= limit:
+            break
+    return rows
+
+
+def _clean_signal_text(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    text = re.sub(r"^[#>\-\*\s\d\.\)\(]+", "", text)
+    text = text.replace("`", "")
+    text = re.sub(r"\bfor\s+[a-z0-9\-]+/[a-z0-9\-]+\b", "", text, flags=re.IGNORECASE)
+    text = " ".join(text.split()).strip()
+    return text
+
+
+def _extract_consensus_signals(contributions: List[dict]) -> List[dict]:
+    rows: List[dict] = []
+    for row in contributions:
+        if not isinstance(row, dict):
+            continue
+        group_id = str(row.get("group_id") or "").strip()
+        if not group_id:
+            continue
+        added = 0
+        claim_preview = row.get("claim_preview", [])
+        if isinstance(claim_preview, list):
+            for claim in claim_preview:
+                if not isinstance(claim, dict):
+                    continue
+                text = _truncate(_clean_signal_text(claim.get("text")), max_chars=260)
+                if not text:
+                    continue
+                tokens = _consensus_tokens(text)
+                if len(tokens) < CONSENSUS_MIN_SIGNAL_WORDS:
+                    continue
+                rows.append(
+                    {
+                        "group_id": group_id,
+                        "text": text,
+                        "tokens": tokens,
+                        "citations": (
+                            [str(item).strip() for item in claim.get("citations", []) if str(item).strip()]
+                            if isinstance(claim.get("citations"), list)
+                            else []
+                        ),
+                        "coverage": float(row.get("objective_coverage") or 0.0),
+                        "citation_count": int(row.get("citation_count", 0)),
+                        "claim_count": int(row.get("claim_count", 0)),
+                    }
+                )
+                added += 1
+                if added >= 4:
+                    break
+        if added > 0:
+            continue
+        for sentence in _split_signal_lines(str(row.get("objective_response") or ""), limit=3):
+            tokens = _consensus_tokens(sentence)
+            if len(tokens) < CONSENSUS_MIN_SIGNAL_WORDS:
+                continue
+            rows.append(
+                {
+                    "group_id": group_id,
+                    "text": _truncate(sentence, max_chars=260),
+                    "tokens": tokens,
+                    "citations": [
+                        str(item).strip()
+                        for item in row.get("citation_refs", [])[:5]
+                        if str(item).strip()
+                    ],
+                    "coverage": float(row.get("objective_coverage") or 0.0),
+                    "citation_count": int(row.get("citation_count", 0)),
+                    "claim_count": int(row.get("claim_count", 0)),
+                }
+            )
+            added += 1
+            if added >= 3:
+                break
+    return rows
+
+
+def _cluster_consensus_signals(signals: List[dict]) -> List[dict]:
+    clusters: List[dict] = []
+    for signal in signals:
+        if not isinstance(signal, dict):
+            continue
+        tokens = signal.get("tokens")
+        if not isinstance(tokens, set) or not tokens:
+            continue
+        text = str(signal.get("text") or "").strip()
+        if not text:
+            continue
+        best_index = -1
+        best_similarity = 0.0
+        for index, cluster in enumerate(clusters):
+            similarity = _token_jaccard(tokens, cluster.get("tokens", set()))
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_index = index
+        if best_index >= 0 and best_similarity >= CONSENSUS_CLUSTER_SIMILARITY:
+            cluster = clusters[best_index]
+            rows = cluster.get("rows", [])
+            if isinstance(rows, list):
+                rows.append(signal)
+            groups = cluster.get("groups", set())
+            if isinstance(groups, set):
+                groups.add(str(signal.get("group_id") or ""))
+            citations = cluster.get("citations", set())
+            if isinstance(citations, set):
+                for item in signal.get("citations", []):
+                    text = str(item or "").strip()
+                    if text:
+                        citations.add(text)
+            # Keep the representative concise while preserving a high-support statement.
+            rep = str(cluster.get("representative_text") or "")
+            if rep and len(text) < len(rep):
+                cluster["representative_text"] = text
+        else:
+            clusters.append(
+                {
+                    "representative_text": text,
+                    "tokens": set(tokens),
+                    "groups": {str(signal.get("group_id") or "")},
+                    "citations": {
+                        str(item).strip()
+                        for item in signal.get("citations", [])
+                        if str(item).strip()
+                    },
+                    "rows": [signal],
+                }
+            )
+    out: List[dict] = []
+    for cluster in clusters:
+        groups = sorted({item for item in cluster.get("groups", set()) if item})
+        citations = sorted({item for item in cluster.get("citations", set()) if item})
+        rows = cluster.get("rows", [])
+        coverage_values = [
+            float(item.get("coverage") or 0.0)
+            for item in rows
+            if isinstance(item, dict)
+        ]
+        out.append(
+            {
+                "text": _truncate(str(cluster.get("representative_text") or ""), max_chars=260),
+                "support_groups": groups,
+                "support_count": len(groups),
+                "citation_refs": citations,
+                "citation_count": len(citations),
+                "avg_coverage": (
+                    round(sum(coverage_values) / len(coverage_values), 3)
+                    if coverage_values
+                    else 0.0
+                ),
+            }
+        )
+    out.sort(
+        key=lambda item: (
+            -int(item.get("support_count", 0)),
+            -float(item.get("avg_coverage", 0.0)),
+            str(item.get("text") or ""),
+        )
+    )
+    return out
+
+
+def _required_consensus_support(total_groups: int) -> int:
+    if total_groups <= 0:
+        return 0
+    if total_groups <= 4:
+        return total_groups
+    return max(3, int(total_groups * 0.75 + 0.999))
+
+
+def _build_consensus_report(
+    *,
+    message: str,
+    contributions: List[dict],
+    meeting_conclusion: dict,
+    cycle_summaries: List[dict],
+) -> dict:
+    answered_rows = [
+        row
+        for row in contributions
+        if isinstance(row, dict)
+        and _effective_contribution_valid(row)
+        and str(row.get("response_status") or "") == "ANSWERED"
+        and float(row.get("objective_coverage") or 0.0) >= OBJECTIVE_COVERAGE_THRESHOLD
+    ]
+    blocking_groups = [
+        str(row.get("group_id") or "")
+        for row in contributions
+        if isinstance(row, dict)
+        and (
+            not _effective_contribution_valid(row)
+            or str(row.get("response_status") or "") != "ANSWERED"
+            or float(row.get("objective_coverage") or 0.0) < OBJECTIVE_COVERAGE_THRESHOLD
+        )
+    ]
+    blocking_groups = [group for group in blocking_groups if group]
+
+    signals = _extract_consensus_signals(answered_rows)
+    clusters = _cluster_consensus_signals(signals)
+    required_support = _required_consensus_support(len(answered_rows))
+    consensus_points = [
+        row for row in clusters if int(row.get("support_count", 0)) >= required_support
+    ]
+    top_support_count = int(consensus_points[0].get("support_count", 0)) if consensus_points else 0
+    top_support_groups = list(consensus_points[0].get("support_groups", [])) if consensus_points else []
+
+    anchor_rows = answered_rows if answered_rows else [row for row in contributions if isinstance(row, dict)]
+    anchor = None
+    if anchor_rows:
+        anchor = sorted(
+            anchor_rows,
+            key=lambda row: (
+                -float(row.get("objective_coverage") or 0.0),
+                -int(row.get("citation_count") or 0),
+                -int(row.get("claim_count") or 0),
+                str(row.get("group_id") or ""),
+            ),
+        )[0]
+    anchor_response = _truncate(
+        _clean_signal_text((anchor or {}).get("objective_response") or ""),
+        max_chars=420,
+    )
+    if consensus_points:
+        consensus_conclusion = _clean_signal_text(consensus_points[0].get("text"))
+    elif anchor_response:
+        consensus_conclusion = anchor_response
+    else:
+        consensus_conclusion = "No answer-ready consensus conclusion was published in this cycle."
+
+    meeting_all_satisfied = bool(meeting_conclusion.get("all_satisfied"))
+    meeting_consensus_ready = bool(meeting_conclusion.get("consensus_ready"))
+    meeting_cycle_depth_ready = bool(meeting_conclusion.get("minimum_cycle_depth_ready"))
+    if not meeting_consensus_ready:
+        total_groups = int(meeting_conclusion.get("total_groups", 0))
+        ready_groups = int(meeting_conclusion.get("consensus_ready_count", 0))
+        meeting_consensus_ready = total_groups > 0 and ready_groups >= total_groups
+    if not meeting_cycle_depth_ready:
+        total_groups = int(meeting_conclusion.get("total_groups", 0))
+        ready_groups = int(meeting_conclusion.get("minimum_cycle_depth_ready_count", 0))
+        meeting_cycle_depth_ready = total_groups > 0 and ready_groups >= total_groups
+    consensus_gate_met = bool(
+        meeting_all_satisfied
+        and meeting_consensus_ready
+        and meeting_cycle_depth_ready
+        and len(answered_rows) > 0
+        and not blocking_groups
+    )
+    if consensus_gate_met and top_support_count <= 0:
+        top_support_count = len(answered_rows)
+        top_support_groups = [
+            str(row.get("group_id") or "")
+            for row in answered_rows
+            if str(row.get("group_id") or "")
+        ]
+    if blocking_groups:
+        decision_status = "BLOCKED"
+    elif consensus_gate_met:
+        decision_status = "ANSWERED"
+    else:
+        decision_status = "PARTIAL"
+
+    if decision_status == "ANSWERED":
+        decision = "all active groups converged on a shared conclusion and passed strict meeting gates."
+    elif decision_status == "PARTIAL":
+        decision = "groups produced useful progress but did not reach strict consensus closure yet."
+    else:
+        decision = "at least one active group remains blocked or below objective gate threshold."
+
+    coverage_values = [float(row.get("objective_coverage") or 0.0) for row in answered_rows]
+    avg_coverage = round(sum(coverage_values) / len(coverage_values), 3) if coverage_values else 0.0
+    support_ratio = (top_support_count / len(answered_rows)) if answered_rows else 0.0
+    strict_ready_ratio = 0.0
+    total_groups = int(meeting_conclusion.get("total_groups", 0))
+    if total_groups > 0:
+        strict_ready_ratio = float(meeting_conclusion.get("strict_ready_count", 0)) / total_groups
+    confidence = round(
+        max(
+            0.0,
+            min(1.0, (0.45 * support_ratio) + (0.35 * avg_coverage) + (0.20 * strict_ready_ratio)),
+        ),
+        3,
+    )
+
+    completed: List[str] = []
+    for item in consensus_points[:5]:
+        text = _clean_signal_text(item.get("text"))
+        if not text:
+            continue
+        completed.append(text)
+    if not completed and consensus_gate_met and answered_rows:
+        completed.append(_truncate(consensus_conclusion, max_chars=300))
+        completed.append(
+            "Integrated decision gates passed: strict evidence, strict consensus alignment, and no blocking groups."
+        )
+    if not completed and anchor_response:
+        completed.append(anchor_response)
+
+    unique_evidence_refs: List[str] = []
+    for row in answered_rows:
+        refs = row.get("citation_refs", [])
+        if not isinstance(refs, list):
+            continue
+        for item in refs:
+            text = str(item or "").strip()
+            if text and text not in unique_evidence_refs:
+                unique_evidence_refs.append(text)
+    if not unique_evidence_refs:
+        for item in consensus_points:
+            refs = item.get("citation_refs", [])
+            if not isinstance(refs, list):
+                continue
+            for ref in refs:
+                text = str(ref or "").strip()
+                if text and text not in unique_evidence_refs:
+                    unique_evidence_refs.append(text)
+
+    explicit_basis: List[dict] = []
+    for point in consensus_points[:6]:
+        citations = [
+            str(item).strip()
+            for item in point.get("citation_refs", [])
+            if str(item).strip()
+        ]
+        explicit_basis.append(
+            {
+                "statement": str(point.get("text") or "").strip(),
+                "support_count": int(point.get("support_count", 0)),
+                "support_total": len(answered_rows),
+                "support_percent": (
+                    round(
+                        (int(point.get("support_count", 0)) / len(answered_rows)) * 100.0,
+                        1,
+                    )
+                    if answered_rows
+                    else 0.0
+                ),
+                "avg_coverage": round(float(point.get("avg_coverage", 0.0)), 3),
+                "citation_count": len(citations),
+                "citations": citations[:4],
+            }
+        )
+    if not explicit_basis and anchor_response:
+        explicit_basis.append(
+            {
+                "statement": anchor_response,
+                "support_count": len(answered_rows),
+                "support_total": len(answered_rows),
+                "support_percent": 100.0 if answered_rows else 0.0,
+                "avg_coverage": avg_coverage,
+                "citation_count": len(unique_evidence_refs),
+                "citations": unique_evidence_refs[:4],
+            }
+        )
+
+    strict_ready_count = int(meeting_conclusion.get("strict_ready_count", 0))
+    consensus_ready_count = int(meeting_conclusion.get("consensus_ready_count", 0))
+    total_groups = int(meeting_conclusion.get("total_groups", 0))
+    gate_rows = [
+        {
+            "gate": "all_groups_answered",
+            "passed": len(answered_rows) == len(contributions) and len(contributions) > 0,
+            "basis": f"answered_groups={len(answered_rows)} total_groups={len(contributions)}",
+        },
+        {
+            "gate": "meeting_unanimous_satisfied",
+            "passed": bool(meeting_all_satisfied),
+            "basis": "meeting_verdict={0}".format(str(meeting_conclusion.get("verdict") or "UNKNOWN")),
+        },
+        {
+            "gate": "strict_evidence_ready",
+            "passed": total_groups > 0 and strict_ready_count >= total_groups,
+            "basis": f"strict_evidence_ready={strict_ready_count}/{total_groups}",
+        },
+        {
+            "gate": "strict_consensus_alignment",
+            "passed": total_groups > 0 and consensus_ready_count >= total_groups,
+            "basis": f"strict_consensus_ready={consensus_ready_count}/{total_groups}",
+        },
+        {
+            "gate": "minimum_cycle_depth",
+            "passed": bool(meeting_cycle_depth_ready),
+            "basis": (
+                "minimum_cycle_depth_ready={0}/{1}".format(
+                    int(meeting_conclusion.get("minimum_cycle_depth_ready_count", 0)),
+                    int(meeting_conclusion.get("total_groups", 0)),
+                )
+            ),
+        },
+        {
+            "gate": "no_blocking_groups",
+            "passed": len(blocking_groups) == 0,
+            "basis": f"blocking_groups={len(blocking_groups)}",
+        },
+    ]
+
+    unresolved: List[str] = []
+    if not meeting_all_satisfied:
+        unsatisfied = meeting_conclusion.get("unsatisfied_groups", [])
+        if isinstance(unsatisfied, list) and unsatisfied:
+            unresolved.append(
+                "meeting not fully satisfied; rework required for: "
+                + ", ".join(str(item) for item in unsatisfied if str(item).strip())
+            )
+    if decision_status != "ANSWERED":
+        if len(answered_rows) >= 2 and not consensus_points:
+            unresolved.append(
+                "shared conclusion support is below strict threshold; group outputs remain partially divergent."
+            )
+        if blocking_groups:
+            unresolved.append("blocking groups: " + ", ".join(blocking_groups))
+    if not unresolved:
+        unresolved.append("none")
+
+    detailed_conclusion_parts = [
+        f"Current consensus conclusion: {consensus_conclusion}",
+        "Decision basis: {0} explicit basis signal(s), {1} unique evidence reference(s), and gate status {2}/{3} passed.".format(
+            len(explicit_basis),
+            len(unique_evidence_refs),
+            len([row for row in gate_rows if bool(row.get("passed"))]),
+            len(gate_rows),
+        ),
+    ]
+    if unresolved and unresolved != ["none"]:
+        detailed_conclusion_parts.append(
+            "Remaining limits: " + "; ".join(str(item) for item in unresolved[:2])
+        )
+    detailed_conclusion = " ".join(detailed_conclusion_parts).strip()
+
+    next_actions = _collect_next_actions(contributions, limit=5)
+    if not next_actions:
+        next_actions = ["Continue with published artifacts and validation steps."]
+
+    last_cycle_id = 0
+    if cycle_summaries:
+        try:
+            last_cycle_id = int(cycle_summaries[-1].get("cycle_id") or 0)
+        except Exception:
+            last_cycle_id = 0
+
+    return {
+        "schema_version": "3.1",
+        "generated_at": now_iso(),
+        "objective": message,
+        "decision_status": decision_status,
+        "decision": decision,
+        "consensus_conclusion": consensus_conclusion,
+        "detailed_conclusion": detailed_conclusion,
+        "consensus_gate_met": consensus_gate_met,
+        "confidence": confidence,
+        "groups_total": len([row for row in contributions if isinstance(row, dict)]),
+        "groups_answered": len(answered_rows),
+        "groups_blocking": blocking_groups,
+        "support_required": required_support,
+        "support_observed": top_support_count,
+        "supporting_groups": top_support_groups,
+        "consensus_points": consensus_points[:8],
+        "explicit_basis": explicit_basis,
+        "decision_gates": gate_rows,
+        "unique_evidence_refs": unique_evidence_refs[:12],
+        "completed_actions": completed,
+        "unresolved_points": unresolved,
+        "next_actions": next_actions,
+        "meeting_cycle_id": int(meeting_conclusion.get("cycle_id", 0) or 0),
+        "runtime_cycle_id": last_cycle_id,
+        "meeting_verdict": str(meeting_conclusion.get("verdict") or "UNKNOWN"),
+    }
+
+
+def _render_consensus_report_markdown(report: dict) -> str:
+    lines = [
+        "# Consensus Report",
+        "",
+        f"- objective: {report.get('objective', '')}",
+        f"- decision_status: `{report.get('decision_status', 'UNKNOWN')}`",
+        f"- decision: {report.get('decision', '')}",
+        f"- confidence: `{report.get('confidence', 0.0)}`",
+        f"- support: `{report.get('support_observed', 0)}/{report.get('groups_answered', 0)}` "
+        f"(required `{report.get('support_required', 0)}`)",
+        "",
+        "## Consensus Conclusion",
+        str(report.get("consensus_conclusion") or ""),
+        "",
+        "## Detailed Conclusion",
+        str(report.get("detailed_conclusion") or ""),
+        "",
+        "## Explicit Basis",
+    ]
+    basis_rows = report.get("explicit_basis", [])
+    if isinstance(basis_rows, list) and basis_rows:
+        for index, row in enumerate(basis_rows, start=1):
+            if not isinstance(row, dict):
+                continue
+            statement = str(row.get("statement") or "").strip()
+            support_count = int(row.get("support_count", 0))
+            support_total = int(row.get("support_total", 0))
+            support_percent = float(row.get("support_percent", 0.0))
+            citation_count = int(row.get("citation_count", 0))
+            citations = row.get("citations", [])
+            citations_preview = "; ".join(
+                str(item).strip() for item in citations[:3] if str(item).strip()
+            )
+            lines.append(
+                "{0}. {1} | support={2}/{3} ({4}%) | citations={5}".format(
+                    index,
+                    statement or "basis statement not available",
+                    support_count,
+                    support_total,
+                    support_percent,
+                    citation_count,
+                )
+            )
+            lines.append(
+                "   evidence_refs: {0}".format(citations_preview if citations_preview else "none")
+            )
+    else:
+        lines.append("1. No explicit basis signal was extracted.")
+    lines.extend(
+        [
+            "",
+            "## Decision Gates",
+        ]
+    )
+    gate_rows = report.get("decision_gates", [])
+    if isinstance(gate_rows, list) and gate_rows:
+        for row in gate_rows:
+            if not isinstance(row, dict):
+                continue
+            lines.append(
+                "- {0}: `{1}` ({2})".format(
+                    str(row.get("gate") or "unknown-gate"),
+                    "PASS" if bool(row.get("passed")) else "FAIL",
+                    str(row.get("basis") or "no basis"),
+                )
+            )
+    else:
+        lines.append("- decision gates unavailable")
+    lines.extend(
+        [
+            "",
+            "## Evidence References",
+        ]
+    )
+    evidence_refs = report.get("unique_evidence_refs", [])
+    if isinstance(evidence_refs, list) and evidence_refs:
+        for index, item in enumerate(evidence_refs[:10], start=1):
+            lines.append(f"{index}. {str(item)}")
+    else:
+        lines.append("1. No explicit evidence reference was captured in this cycle.")
+    lines.extend(
+        [
+            "",
+            "## Completed At Current Stage",
+        ]
+    )
+    completed = report.get("completed_actions", [])
+    if isinstance(completed, list) and completed:
+        for index, item in enumerate(completed, start=1):
+            lines.append(f"{index}. {str(item)}")
+    else:
+        lines.append("1. No completed objective action was published.")
+    lines.extend(["", "## Open Points"])
+    unresolved = report.get("unresolved_points", [])
+    if isinstance(unresolved, list) and unresolved:
+        for item in unresolved:
+            lines.append(f"- {str(item)}")
+    else:
+        lines.append("- none")
+    lines.extend(["", "## Next Actions"])
+    actions = report.get("next_actions", [])
+    if isinstance(actions, list) and actions:
+        for index, action in enumerate(actions, start=1):
+            lines.append(f"{index}. {str(action)}")
+    else:
+        lines.append("1. Continue with published artifacts and validation steps.")
+    lines.extend(
+        [
+            "",
+            "## Trace",
+            f"- meeting_cycle_id: `{report.get('meeting_cycle_id', 0)}`",
+            f"- runtime_cycle_id: `{report.get('runtime_cycle_id', 0)}`",
+            f"- meeting_verdict: `{report.get('meeting_verdict', 'UNKNOWN')}`",
+        ]
+    )
+    return "\n".join(lines).strip() + "\n"
+
+
 def _collect_meeting_conclusion(contributions: List[dict], meeting_outputs: List[dict]) -> dict:
     latest_matrix: dict = {}
     latest_decisions: dict = {}
@@ -1549,6 +2165,11 @@ def _collect_meeting_conclusion(contributions: List[dict], meeting_outputs: List
     request_count = 0
     criticism_count = 0
     strict_ready_count = 0
+    consensus_ready_count = 0
+    minimum_cycle_depth_ready_count = 0
+    consensus_min_similarity = 1.0
+    consensus_avg_similarity = 1.0
+    consensus_stats_present = False
     if latest_decisions:
         for group_id, row in latest_decisions.items():
             if not isinstance(row, dict):
@@ -1559,6 +2180,28 @@ def _collect_meeting_conclusion(contributions: List[dict], meeting_outputs: List
                 unsatisfied_groups.append(str(group_id))
             if bool(row.get("strict_evidence_complete")):
                 strict_ready_count += 1
+            if bool(row.get("consensus_alignment_ok")):
+                consensus_ready_count += 1
+            if bool(row.get("minimum_cycle_depth_met")):
+                minimum_cycle_depth_ready_count += 1
+            if "consensus_pair_min_similarity" in row:
+                consensus_stats_present = True
+                try:
+                    consensus_min_similarity = min(
+                        consensus_min_similarity,
+                        float(row.get("consensus_pair_min_similarity") or 0.0),
+                    )
+                except Exception:
+                    consensus_min_similarity = min(consensus_min_similarity, 0.0)
+            if "consensus_pair_avg_similarity" in row:
+                consensus_stats_present = True
+                try:
+                    consensus_avg_similarity = min(
+                        consensus_avg_similarity,
+                        float(row.get("consensus_pair_avg_similarity") or 0.0),
+                    )
+                except Exception:
+                    consensus_avg_similarity = min(consensus_avg_similarity, 0.0)
             requests = row.get("request_changes", [])
             if isinstance(requests, list):
                 request_count += len([item for item in requests if str(item).strip()])
@@ -1582,11 +2225,28 @@ def _collect_meeting_conclusion(contributions: List[dict], meeting_outputs: List
                 and float(row.get("objective_coverage", 0.0)) >= 0.8
             ):
                 strict_ready_count += 1
+                consensus_ready_count += 1
 
     if isinstance(latest_matrix.get("unsatisfied_groups"), list):
         unsatisfied_groups = [str(item) for item in latest_matrix.get("unsatisfied_groups", []) if str(item).strip()]
     if isinstance(latest_matrix.get("satisfied_groups"), list):
         satisfied_groups = [str(item) for item in latest_matrix.get("satisfied_groups", []) if str(item).strip()]
+    if isinstance(latest_matrix.get("consensus_alignment_groups"), list):
+        consensus_ready_count = len(
+            [
+                str(item)
+                for item in latest_matrix.get("consensus_alignment_groups", [])
+                if str(item).strip()
+            ]
+        )
+    if isinstance(latest_matrix.get("minimum_cycle_depth_groups"), list):
+        minimum_cycle_depth_ready_count = len(
+            [
+                str(item)
+                for item in latest_matrix.get("minimum_cycle_depth_groups", [])
+                if str(item).strip()
+            ]
+        )
 
     all_satisfied = bool(latest_matrix.get("all_satisfied")) if latest_matrix else not unsatisfied_groups
     verdict = "SATISFIED" if all_satisfied else "REWORK_REQUIRED"
@@ -1599,7 +2259,21 @@ def _collect_meeting_conclusion(contributions: List[dict], meeting_outputs: List
         "request_count": int(request_count),
         "criticism_count": int(criticism_count),
         "strict_ready_count": int(strict_ready_count),
+        "consensus_ready_count": int(consensus_ready_count),
+        "minimum_cycle_depth_ready_count": int(minimum_cycle_depth_ready_count),
+        "consensus_min_pair_similarity": (
+            round(consensus_min_similarity, 3) if consensus_stats_present else 0.0
+        ),
+        "consensus_avg_pair_similarity": (
+            round(consensus_avg_similarity, 3) if consensus_stats_present else 0.0
+        ),
         "all_satisfied": bool(all_satisfied),
+        "consensus_ready": bool(latest_matrix.get("consensus_ready")) if latest_matrix else bool(all_satisfied),
+        "minimum_cycle_depth_ready": (
+            bool(latest_matrix.get("minimum_cycle_depth_ready"))
+            if latest_matrix
+            else bool(all_satisfied)
+        ),
     }
 
 
@@ -1642,10 +2316,12 @@ def _render_group_mode_chat_answer(
     contributions: List[dict],
     cycle_summaries: List[dict],
     meeting_outputs: List[dict],
+    consensus_report: dict,
+    consensus_report_path: Path,
     turn_dir: Path,
     full_report_path: Path,
 ) -> str:
-    overall_status = _overall_objective_status(contributions)
+    overall_status = str(consensus_report.get("decision_status") or _overall_objective_status(contributions))
     blocking = [
         str(row.get("group_id") or "")
         for row in contributions
@@ -1657,23 +2333,58 @@ def _render_group_mode_chat_answer(
         )
     ]
     blocking = [group for group in blocking if group]
-
-    if overall_status == "ANSWERED":
-        headline = "objective answered across all active groups."
-    elif overall_status == "PARTIAL":
-        headline = "objective only partially addressed; additional cycle or tighter constraints needed."
-    else:
-        headline = "objective blocked; at least one group did not produce an answer-ready handoff."
+    headline = str(consensus_report.get("decision") or "").strip()
+    if not headline:
+        if overall_status == "ANSWERED":
+            headline = "objective answered across all active groups."
+        elif overall_status == "PARTIAL":
+            headline = "objective only partially addressed; additional cycle or tighter constraints needed."
+        else:
+            headline = "objective blocked; at least one group did not produce an answer-ready handoff."
 
     lines = [
         f"# Orchestrator Reply - {project_id}",
         "",
-        "## Outcome",
+        "## Consensus Decision",
         f"- objective: {message}",
-        f"- overall_status: `{overall_status}`",
+        f"- status: `{overall_status}`",
         f"- decision: {headline}",
+        "- confidence: `{0}`".format(consensus_report.get("confidence", 0.0)),
+        "- consensus_support: `{0}/{1}` (required `{2}`)".format(
+            int(consensus_report.get("support_observed", 0)),
+            int(consensus_report.get("groups_answered", 0)),
+            int(consensus_report.get("support_required", 0)),
+        ),
         f"- blocking_groups: {', '.join(blocking) if blocking else 'none'}",
+        "- conclusion: {0}".format(str(consensus_report.get("consensus_conclusion") or "")),
     ]
+    detailed_conclusion = str(consensus_report.get("detailed_conclusion") or "").strip()
+    if detailed_conclusion:
+        lines.extend(["", "## Detailed Conclusion", detailed_conclusion])
+
+    basis_rows = consensus_report.get("explicit_basis", [])
+    lines.extend(["", "## Explicit Basis"])
+    if isinstance(basis_rows, list) and basis_rows:
+        for index, row in enumerate(basis_rows[:5], start=1):
+            if not isinstance(row, dict):
+                continue
+            statement = str(row.get("statement") or "").strip()
+            support_count = int(row.get("support_count", 0))
+            support_total = int(row.get("support_total", 0))
+            support_percent = float(row.get("support_percent", 0.0))
+            citation_count = int(row.get("citation_count", 0))
+            lines.append(
+                "{0}. {1} | support={2}/{3} ({4}%) | citations={5}".format(
+                    index,
+                    statement or "basis statement not available",
+                    support_count,
+                    support_total,
+                    support_percent,
+                    citation_count,
+                )
+            )
+    else:
+        lines.append("1. No explicit basis signal was extracted.")
     meeting_conclusion = _collect_meeting_conclusion(
         contributions=contributions,
         meeting_outputs=meeting_outputs,
@@ -1681,7 +2392,7 @@ def _render_group_mode_chat_answer(
     lines.extend(
         [
             "",
-            "## Meeting Conclusion",
+            "## Meeting Gate",
             "- cycle: `{0}`".format(meeting_conclusion.get("cycle_id", 0)),
             "- verdict: `{0}`".format(meeting_conclusion.get("verdict", "UNKNOWN")),
             "- strict_satisfied_groups: `{0}/{1}`".format(
@@ -1692,6 +2403,17 @@ def _render_group_mode_chat_answer(
                 int(meeting_conclusion.get("strict_ready_count", 0)),
                 int(meeting_conclusion.get("total_groups", 0)),
             ),
+            "- strict_consensus_ready_groups: `{0}/{1}`".format(
+                int(meeting_conclusion.get("consensus_ready_count", 0)),
+                int(meeting_conclusion.get("total_groups", 0)),
+            ),
+            "- minimum_cycle_depth_ready_groups: `{0}/{1}`".format(
+                int(meeting_conclusion.get("minimum_cycle_depth_ready_count", 0)),
+                int(meeting_conclusion.get("total_groups", 0)),
+            ),
+            "- consensus_pair_similarity_floor: `{0}`".format(
+                meeting_conclusion.get("consensus_min_pair_similarity", 0.0)
+            ),
             "- open_change_requests: `{0}`".format(int(meeting_conclusion.get("request_count", 0))),
             "- open_criticisms: `{0}`".format(int(meeting_conclusion.get("criticism_count", 0))),
             "- groups_requiring_rework: {0}".format(
@@ -1701,34 +2423,29 @@ def _render_group_mode_chat_answer(
             ),
         ]
     )
-
-    done_rows = _collect_user_focused_done_rows(contributions, limit=10)
-    lines.extend(["", "## Done For Your Request"])
-    if done_rows:
-        for item in done_rows:
+    lines.extend(["", "## Decision Gates"])
+    gate_rows = consensus_report.get("decision_gates", [])
+    if isinstance(gate_rows, list) and gate_rows:
+        for row in gate_rows:
+            if not isinstance(row, dict):
+                continue
             lines.append(
-                "- {0} [status=`{1}` coverage=`{2}`]: {3}".format(
-                    str(item.get("group_id") or ""),
-                    str(item.get("status") or "UNKNOWN"),
-                    round(float(item.get("coverage") or 0.0), 3),
-                    str(item.get("response") or ""),
+                "- {0}: `{1}` ({2})".format(
+                    str(row.get("gate") or "unknown-gate"),
+                    "PASS" if bool(row.get("passed")) else "FAIL",
+                    str(row.get("basis") or "no basis"),
                 )
             )
     else:
-        lines.append("- no concrete objective conclusions were published.")
+        lines.append("- decision gates unavailable")
 
-    lines.extend(["", "## Group Status"])
-    for row in contributions:
-        lines.append(
-            "- {0}: status=`{1}` coverage=`{2}` citations=`{3}` claims=`{4}` valid=`{5}`".format(
-                row.get("group_id", ""),
-                row.get("response_status", "UNKNOWN"),
-                row.get("objective_coverage", 0.0),
-                row.get("citation_count", 0),
-                row.get("claim_count", 0),
-                _effective_contribution_valid(row),
-            )
-        )
+    completed_rows = consensus_report.get("completed_actions", [])
+    lines.extend(["", "## Current Stage"])
+    if isinstance(completed_rows, list) and completed_rows:
+        for index, item in enumerate(completed_rows, start=1):
+            lines.append(f"{index}. {str(item)}")
+    else:
+        lines.append("1. No consensus-ready completion details were published.")
 
     if cycle_summaries:
         last_cycle = cycle_summaries[-1]
@@ -1744,18 +2461,27 @@ def _render_group_mode_chat_answer(
             ]
         )
 
-    actions = _collect_next_actions(contributions, limit=5)
-    lines.extend(["", "## Next Actions"])
-    if actions:
+    actions = consensus_report.get("next_actions", [])
+    lines.extend(["", "## What To Do Next"])
+    if isinstance(actions, list) and actions:
         for index, action in enumerate(actions, start=1):
-            lines.append(f"{index}. {action}")
+            lines.append(f"{index}. {str(action)}")
     else:
         lines.append("1. Continue with published artifacts and validation steps.")
+
+    unresolved = consensus_report.get("unresolved_points", [])
+    lines.extend(["", "## Open Points"])
+    if isinstance(unresolved, list) and unresolved:
+        for item in unresolved:
+            lines.append(f"- {str(item)}")
+    else:
+        lines.append("- none")
 
     lines.extend(
         [
             "",
             "## Artifacts",
+            f"- consensus_report: `{consensus_report_path}`",
             f"- full_report: `{full_report_path}`",
             f"- turn_dir: `{turn_dir}`",
         ]
@@ -2749,7 +3475,21 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     final_path = turn_dir / "final-exposed-answer.md"
     full_report_path = final_dir / "full-report.md"
     full_report_json_path = final_dir / "full-report.json"
+    consensus_report_json_path = final_dir / "consensus-report.json"
+    consensus_report_md_path = final_dir / "consensus-report.md"
     key_points_path = final_dir / "key-points.txt"
+    meeting_conclusion = _collect_meeting_conclusion(
+        contributions=contributions,
+        meeting_outputs=meeting_outputs,
+    )
+    consensus_report = _build_consensus_report(
+        message=config.message,
+        contributions=contributions,
+        meeting_conclusion=meeting_conclusion,
+        cycle_summaries=cycle_summaries,
+    )
+    write_text(consensus_report_json_path, stable_json(consensus_report) + "\n")
+    write_text(consensus_report_md_path, _render_consensus_report_markdown(consensus_report))
 
     final_answer = _render_group_mode_chat_answer(
         project_id=config.project_id,
@@ -2757,6 +3497,8 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         contributions=contributions,
         cycle_summaries=cycle_summaries,
         meeting_outputs=meeting_outputs,
+        consensus_report=consensus_report,
+        consensus_report_path=consensus_report_md_path,
         turn_dir=turn_dir,
         full_report_path=full_report_path,
     )
@@ -2883,7 +3625,10 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                     "escalations": str(turn_dir / "escalations.json"),
                     "token_usage_json": token_usage_json_path,
                     "token_usage_markdown": token_usage_md_path,
+                    "consensus_report_json": str(consensus_report_json_path),
+                    "consensus_report_markdown": str(consensus_report_md_path),
                 },
+                "consensus_report": consensus_report,
             }
         )
         + "\n",
@@ -2914,6 +3659,8 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
         "final_answer_path": str(final_path),
         "full_report_path": str(full_report_path),
         "full_report_json_path": str(full_report_json_path),
+        "consensus_report_path": str(consensus_report_md_path),
+        "consensus_report_json_path": str(consensus_report_json_path),
         "key_points_path": str(key_points_path),
         "quality_path": str(turn_dir / "final-answer-quality.json"),
         "quality": quality,

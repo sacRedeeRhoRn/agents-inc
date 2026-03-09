@@ -173,12 +173,16 @@ class OrchestratorReplyTests(unittest.TestCase):
             self.assertTrue((group_turn_dir / "meeting" / "negotiation-monitor.md").exists())
             self.assertTrue((group_turn_dir / "final-exposed-answer.md").exists())
             self.assertTrue((group_turn_dir / "final" / "full-report.md").exists())
+            self.assertTrue((group_turn_dir / "final" / "consensus-report.md").exists())
+            self.assertTrue((group_turn_dir / "final" / "consensus-report.json").exists())
             self.assertTrue((group_turn_dir / "final" / "key-points.txt").exists())
             self.assertTrue((group_turn_dir / "token-usage-report.json").exists())
             self.assertTrue((group_turn_dir / "token-usage-report.md").exists())
             self.assertIn("token_usage_summary", group_result)
             self.assertIn("token_usage_json_path", group_result)
             self.assertIn("token_usage_md_path", group_result)
+            self.assertIn("consensus_report_path", group_result)
+            self.assertIn("consensus_report_json_path", group_result)
             self.assertTrue(
                 (
                     group_turn_dir / "cycles" / "cycle-0001" / "layer2" / "orchestrator-plan.json"
@@ -224,13 +228,24 @@ class OrchestratorReplyTests(unittest.TestCase):
             full_report_text = (group_turn_dir / "final" / "full-report.md").read_text(
                 encoding="utf-8"
             )
-            self.assertIn("## Meeting Conclusion", final_answer_text)
-            self.assertIn("## Done For Your Request", final_answer_text)
-            self.assertIn("## Group Status", final_answer_text)
-            self.assertIn("- developer [status=", final_answer_text)
+            consensus_report_text = (group_turn_dir / "final" / "consensus-report.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("## Consensus Decision", final_answer_text)
+            self.assertIn("## Detailed Conclusion", final_answer_text)
+            self.assertIn("## Explicit Basis", final_answer_text)
+            self.assertIn("## Meeting Gate", final_answer_text)
+            self.assertIn("## Decision Gates", final_answer_text)
+            self.assertIn("## Current Stage", final_answer_text)
+            self.assertIn("## What To Do Next", final_answer_text)
+            self.assertIn("consensus_report:", final_answer_text)
             self.assertIn("full_report:", final_answer_text)
             self.assertNotIn("## Delegation Summary", final_answer_text)
             self.assertIn("## Delegation Summary", full_report_text)
+            self.assertIn("## Consensus Conclusion", consensus_report_text)
+            self.assertIn("## Detailed Conclusion", consensus_report_text)
+            self.assertIn("## Explicit Basis", consensus_report_text)
+            self.assertIn("## Decision Gates", consensus_report_text)
             self.assertIn("persona_stance", full_report_text)
 
             non_group_result = run_orchestrator_reply(

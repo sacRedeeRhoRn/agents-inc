@@ -27,6 +27,7 @@ def _write_group_exposed(
     include_citation: bool = True,
     claim_count: int = 2,
     handoff_status: str = "COMPLETE",
+    objective_response: str | None = None,
 ) -> None:
     exposed = project_dir / "agent-groups" / group_id / "exposed"
     exposed.mkdir(parents=True, exist_ok=True)
@@ -72,7 +73,7 @@ def _write_group_exposed(
         if include_citation:
             claim["citation"] = f"https://example.org/{group_id}/{index + 1}"
         claims.append(claim)
-    objective_response = (
+    objective_response_text = objective_response or (
         f"{group_id} objective response with explicit conclusion, evidence-backed rationale, "
         "and concrete measurable outcomes for the user request."
     )
@@ -80,7 +81,7 @@ def _write_group_exposed(
         "schema_version": "3.1",
         "status": handoff_status,
         "response_status": response_status,
-        "objective_response": objective_response,
+        "objective_response": objective_response_text,
         "decision_summary": f"{group_id} decision summary",
         "objective_coverage": objective_coverage,
         "recommended_actions": ["next action"],
@@ -144,7 +145,7 @@ class HeadMeetingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             project_dir = root / "generated" / "projects" / "proj-b"
-            cycle_dir = root / "turn" / "cycles" / "cycle-0001"
+            cycle_dir = root / "turn" / "cycles" / "cycle-0002"
             cycle_dir.mkdir(parents=True, exist_ok=True)
 
             _write_group_exposed(
@@ -163,7 +164,7 @@ class HeadMeetingTests(unittest.TestCase):
             result = run_head_meeting(
                 HeadMeetingConfig(
                     project_id="proj-b",
-                    cycle_id=1,
+                    cycle_id=2,
                     cycle_dir=cycle_dir,
                     project_dir=project_dir,
                     selected_groups=["developer", "integration-delivery"],
@@ -174,6 +175,41 @@ class HeadMeetingTests(unittest.TestCase):
             self.assertTrue(bool(result.get("all_satisfied")))
             matrix = result.get("matrix", {})
             self.assertEqual(matrix.get("unsatisfied_groups", []), [])
+
+    def test_meeting_requires_refinement_cycle_for_multi_group(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_dir = root / "generated" / "projects" / "proj-b1"
+            cycle_dir = root / "turn" / "cycles" / "cycle-0001"
+            cycle_dir.mkdir(parents=True, exist_ok=True)
+
+            _write_group_exposed(
+                project_dir,
+                group_id="developer",
+                response_status="ANSWERED",
+                objective_coverage=0.95,
+            )
+            _write_group_exposed(
+                project_dir,
+                group_id="integration-delivery",
+                response_status="ANSWERED",
+                objective_coverage=0.93,
+            )
+
+            result = run_head_meeting(
+                HeadMeetingConfig(
+                    project_id="proj-b1",
+                    cycle_id=1,
+                    cycle_dir=cycle_dir,
+                    project_dir=project_dir,
+                    selected_groups=["developer", "integration-delivery"],
+                    message="deliver objective answer",
+                )
+            )
+
+            self.assertFalse(bool(result.get("all_satisfied")))
+            matrix = result.get("matrix", {})
+            self.assertFalse(bool(matrix.get("minimum_cycle_depth_ready")))
 
     def test_meeting_persona_override_does_not_bypass_strict_evidence_requirements(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -239,6 +275,53 @@ class HeadMeetingTests(unittest.TestCase):
             self.assertFalse(bool(result.get("all_satisfied")))
             decision = result.get("decisions", {}).get("developer", {})
             self.assertFalse(bool(decision.get("structural_valid")))
+
+    def test_meeting_requires_cross_group_consensus_alignment(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_dir = root / "generated" / "projects" / "proj-e"
+            cycle_dir = root / "turn" / "cycles" / "cycle-0001"
+            cycle_dir.mkdir(parents=True, exist_ok=True)
+
+            _write_group_exposed(
+                project_dir,
+                group_id="developer",
+                response_status="ANSWERED",
+                objective_coverage=0.95,
+                objective_response=(
+                    "GPU kernel occupancy tuning and cache-line batching improved "
+                    "throughput telemetry for orchestrator runtime lanes."
+                ),
+            )
+            _write_group_exposed(
+                project_dir,
+                group_id="quality-assurance",
+                response_status="ANSWERED",
+                objective_coverage=0.94,
+                objective_response=(
+                    "Bibliometric novelty screening and phosphide topology ranking "
+                    "produced literature-grounded candidate audit decisions."
+                ),
+            )
+
+            result = run_head_meeting(
+                HeadMeetingConfig(
+                    project_id="proj-e",
+                    cycle_id=1,
+                    cycle_dir=cycle_dir,
+                    project_dir=project_dir,
+                    selected_groups=["developer", "quality-assurance"],
+                    message="deliver one strict consensus answer with explicit next steps",
+                )
+            )
+
+            self.assertFalse(bool(result.get("all_satisfied")))
+            matrix = result.get("matrix", {})
+            self.assertFalse(bool(matrix.get("consensus_ready")))
+            dev = result.get("decisions", {}).get("developer", {})
+            qa = result.get("decisions", {}).get("quality-assurance", {})
+            self.assertFalse(bool(dev.get("consensus_alignment_ok")))
+            self.assertFalse(bool(qa.get("consensus_alignment_ok")))
 
 
 if __name__ == "__main__":

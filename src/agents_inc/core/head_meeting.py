@@ -23,7 +23,30 @@ OBJECTIVE_RESPONSE_STATUS_VALUES = {"ANSWERED", "PARTIAL", "BLOCKED"}
 STRICT_MIN_CITATION_COUNT = 1
 STRICT_MIN_CLAIM_COUNT = 1
 STRICT_MIN_ARTIFACT_COUNT = 1
-STRICT_MIN_OBJECTIVE_RESPONSE_CHARS = 60
+STRICT_MIN_OBJECTIVE_RESPONSE_CHARS = 90
+STRICT_MIN_CONSENSUS_PAIR_SIMILARITY = 0.12
+STRICT_MIN_CYCLES_FOR_MULTI_GROUP_SATISFACTION = 2
+_CONSENSUS_STOPWORDS = {
+    "about",
+    "across",
+    "after",
+    "again",
+    "before",
+    "being",
+    "between",
+    "could",
+    "group",
+    "groups",
+    "their",
+    "there",
+    "these",
+    "this",
+    "those",
+    "under",
+    "using",
+    "with",
+    "without",
+}
 
 
 def _parse_bool(value: object, default: bool = False) -> bool:
@@ -37,11 +60,69 @@ def _parse_bool(value: object, default: bool = False) -> bool:
     return bool(default)
 
 
+def _consensus_tokens(text: object) -> set[str]:
+    tokens: set[str] = set()
+    for token in re.findall(r"[a-z0-9]+", str(text or "").lower()):
+        if len(token) < 4:
+            continue
+        if token in _CONSENSUS_STOPWORDS:
+            continue
+        tokens.add(token)
+    return tokens
+
+
+def _token_jaccard(left: set[str], right: set[str]) -> float:
+    if not left and not right:
+        return 1.0
+    if not left or not right:
+        return 0.0
+    union = left | right
+    if not union:
+        return 0.0
+    return len(left & right) / len(union)
+
+
+def _build_similarity_matrix(exposed_rows: Dict[str, dict], groups: List[str]) -> Dict[tuple[str, str], float]:
+    matrix: Dict[tuple[str, str], float] = {}
+    token_map = {
+        group_id: _consensus_tokens(exposed_rows.get(group_id, {}).get("objective_response", ""))
+        for group_id in groups
+    }
+    for group_id in groups:
+        matrix[(group_id, group_id)] = 1.0
+    for index, left_group in enumerate(groups):
+        for right_group in groups[index + 1 :]:
+            similarity = _token_jaccard(token_map.get(left_group, set()), token_map.get(right_group, set()))
+            matrix[(left_group, right_group)] = similarity
+            matrix[(right_group, left_group)] = similarity
+    return matrix
+
+
+def _group_similarity_stats(
+    *,
+    group_id: str,
+    groups: List[str],
+    similarity_matrix: Dict[tuple[str, str], float],
+) -> dict:
+    peers = [group for group in groups if group != group_id]
+    if not peers:
+        return {"peer_count": 0, "min_similarity": 1.0, "avg_similarity": 1.0}
+    values = [float(similarity_matrix.get((group_id, peer), 0.0)) for peer in peers]
+    if not values:
+        return {"peer_count": len(peers), "min_similarity": 0.0, "avg_similarity": 0.0}
+    return {
+        "peer_count": len(peers),
+        "min_similarity": round(min(values), 3),
+        "avg_similarity": round(sum(values) / len(values), 3),
+    }
+
+
 def run_head_meeting(config: HeadMeetingConfig) -> dict:
     meeting_dir = config.cycle_dir / "meeting"
     meeting_dir.mkdir(parents=True, exist_ok=True)
 
     exposed_rows = _collect_group_exposed(config.project_dir, config.selected_groups)
+    similarity_matrix = _build_similarity_matrix(exposed_rows, config.selected_groups)
     decisions: Dict[str, dict] = {}
     for group_id in config.selected_groups:
         self_row = exposed_rows.get(group_id, {})
@@ -58,10 +139,6 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
             )
             if other_effective_valid:
                 accepted.append(f"{other_group}: accept current exposed handoff for this cycle")
-                if config.cycle_id == 1:
-                    criticisms.append(
-                        f"{other_group}: add one quantitative delta in next cycle for stronger cross-group comparability"
-                    )
             else:
                 reason = "; ".join(str(item) for item in row.get("reasons", []))
                 requests.append(f"{other_group}: fix exposed handoff ({reason})")
@@ -99,6 +176,21 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
                 requests.append(
                     f"{other_group}: strengthen objective_response with concrete conclusion details"
                 )
+            pair_similarity = float(similarity_matrix.get((group_id, other_group), 0.0))
+            if pair_similarity < STRICT_MIN_CONSENSUS_PAIR_SIMILARITY:
+                requests.append(
+                    "{0}: align objective_response with cross-group consensus (pair_similarity={1:.2f} < {2:.2f})".format(
+                        other_group,
+                        pair_similarity,
+                        STRICT_MIN_CONSENSUS_PAIR_SIMILARITY,
+                    )
+                )
+                criticisms.append(
+                    "{0}: objective response diverges from cross-group consensus signal (pair_similarity={1:.2f})".format(
+                        other_group,
+                        pair_similarity,
+                    )
+                )
 
         own_valid = bool(self_row.get("valid"))
         own_structural_valid = bool(self_row.get("structural_valid"))
@@ -110,6 +202,21 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
         own_coverage = float(self_row.get("objective_coverage") or 0.0)
         own_persona_valid = bool(self_row.get("persona_contract_valid"))
         own_persona_override_allowed = bool(self_row.get("persona_override_allowed"))
+        own_similarity = _group_similarity_stats(
+            group_id=group_id,
+            groups=config.selected_groups,
+            similarity_matrix=similarity_matrix,
+        )
+        own_peer_count = int(own_similarity.get("peer_count", 0))
+        own_min_similarity = float(own_similarity.get("min_similarity", 0.0))
+        own_avg_similarity = float(own_similarity.get("avg_similarity", 0.0))
+        consensus_alignment_ok = (
+            own_peer_count == 0 or own_min_similarity >= STRICT_MIN_CONSENSUS_PAIR_SIMILARITY
+        )
+        minimum_cycle_depth_met = bool(
+            config.cycle_id >= STRICT_MIN_CYCLES_FOR_MULTI_GROUP_SATISFACTION
+            or len(config.selected_groups) <= 1
+        )
         if not own_structural_valid:
             new_actions.append(
                 "repair own exposed handoff structure and publish non-pending status"
@@ -142,12 +249,31 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
             new_actions.append(
                 "increase objective_coverage to >= {0:.2f}".format(OBJECTIVE_COVERAGE_THRESHOLD)
             )
+        if not consensus_alignment_ok:
+            new_actions.append(
+                "align objective_response with cross-group consensus (min pair similarity >= {0:.2f})".format(
+                    STRICT_MIN_CONSENSUS_PAIR_SIMILARITY
+                )
+            )
+        if not minimum_cycle_depth_met:
+            new_actions.append(
+                "run at least one refinement cycle before final satisfaction decision"
+            )
         if not own_persona_valid:
             new_actions.append(
                 "publish persona_id/persona_stance/persona_challenge/persona_confidence in exposed handoff"
             )
         if not new_actions:
             new_actions.append("maintain current quality and improve cross-group alignment notes")
+        if (
+            config.cycle_id == 1
+            and len(config.selected_groups) > 1
+            and not requests
+            and not criticisms
+        ):
+            criticisms.append(
+                "cross-group: publish one measurable delta in next cycle for negotiation traceability"
+            )
 
         objective_answered = own_response_status == "ANSWERED"
         strict_evidence = (
@@ -163,6 +289,8 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
             and own_persona_valid
             and objective_answered
             and evidence_complete
+            and consensus_alignment_ok
+            and minimum_cycle_depth_met
             and len(requests) == 0
         )
         decisions[group_id] = {
@@ -179,6 +307,11 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
             "persona_override_allowed": own_persona_override_allowed,
             "persona_contract_valid": own_persona_valid,
             "strict_evidence_complete": bool(strict_evidence),
+            "consensus_peer_count": own_peer_count,
+            "consensus_pair_min_similarity": round(own_min_similarity, 3),
+            "consensus_pair_avg_similarity": round(own_avg_similarity, 3),
+            "consensus_alignment_ok": bool(consensus_alignment_ok),
+            "minimum_cycle_depth_met": bool(minimum_cycle_depth_met),
             "structural_valid": own_structural_valid,
             "valid": own_valid,
             "request_changes": sorted(set(requests)),
@@ -215,8 +348,20 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
         "satisfied_groups": sorted(
             [group_id for group_id, row in decisions.items() if bool(row.get("satisfied"))]
         ),
+        "consensus_alignment_groups": sorted(
+            [group_id for group_id, row in decisions.items() if bool(row.get("consensus_alignment_ok"))]
+        ),
+        "minimum_cycle_depth_groups": sorted(
+            [group_id for group_id, row in decisions.items() if bool(row.get("minimum_cycle_depth_met"))]
+        ),
         "unsatisfied_groups": sorted(
             [group_id for group_id, row in decisions.items() if not bool(row.get("satisfied"))]
+        ),
+        "consensus_ready": all(
+            bool(row.get("consensus_alignment_ok")) for row in decisions.values()
+        ),
+        "minimum_cycle_depth_ready": all(
+            bool(row.get("minimum_cycle_depth_met")) for row in decisions.values()
         ),
         "all_satisfied": all(bool(row.get("satisfied")) for row in decisions.values()),
         "updated_at": now_iso(),
@@ -470,6 +615,14 @@ def _render_minutes(config: HeadMeetingConfig, decisions: Dict[str, dict]) -> st
         lines.append(f"- artifact_count: `{row.get('artifact_count', 0)}`")
         lines.append(f"- objective_response_chars: `{row.get('objective_response_chars', 0)}`")
         lines.append(f"- strict_evidence_complete: `{bool(row.get('strict_evidence_complete'))}`")
+        lines.append(f"- consensus_alignment_ok: `{bool(row.get('consensus_alignment_ok'))}`")
+        lines.append(
+            f"- consensus_pair_min_similarity: `{row.get('consensus_pair_min_similarity', 0.0)}`"
+        )
+        lines.append(
+            f"- consensus_pair_avg_similarity: `{row.get('consensus_pair_avg_similarity', 0.0)}`"
+        )
+        lines.append(f"- minimum_cycle_depth_met: `{bool(row.get('minimum_cycle_depth_met'))}`")
         for key in ["request_changes", "criticisms", "accepted_items", "new_actions"]:
             values = row.get(key, [])
             if not isinstance(values, list) or not values:
