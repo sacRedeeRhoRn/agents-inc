@@ -31,7 +31,7 @@ class _GroupPaneState:
     total_specialists: int = 0
 
 
-class LiveDashboard(AbstractContextManager["LiveDashboard"]):
+class LiveDashboard(AbstractContextManager):
     def __init__(self, *, screen: bool = True):
         if not _RICH_AVAILABLE:
             raise RuntimeError("rich is not available")
