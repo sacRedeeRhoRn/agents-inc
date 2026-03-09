@@ -54,6 +54,68 @@ class LiveDashboardTests(unittest.TestCase):
         self.assertEqual(sorted(dashboard._groups.keys()), ["literature-intelligence"])
         self.assertEqual(list(dashboard._groups["literature-intelligence"].lines), [])
 
+    def test_stop_clears_terminal_when_alt_screen_unavailable(self) -> None:
+        dashboard = LiveDashboard()
+
+        class _FakeConsole:
+            is_terminal = True
+
+            def __init__(self) -> None:
+                self.clear_calls = []
+
+            def clear(self, home: bool = True) -> None:
+                self.clear_calls.append(home)
+
+        class _FakeLive:
+            def __init__(self, console) -> None:
+                self.console = console
+                self._alt_screen = False
+                self.stopped = False
+
+            def stop(self) -> None:
+                self.stopped = True
+
+        console = _FakeConsole()
+        live = _FakeLive(console)
+        dashboard._live = live
+
+        dashboard.stop()
+
+        self.assertTrue(live.stopped)
+        self.assertEqual(console.clear_calls, [True])
+        self.assertIsNone(dashboard._live)
+
+    def test_stop_does_not_clear_terminal_when_alt_screen_used(self) -> None:
+        dashboard = LiveDashboard()
+
+        class _FakeConsole:
+            is_terminal = True
+
+            def __init__(self) -> None:
+                self.clear_calls = []
+
+            def clear(self, home: bool = True) -> None:
+                self.clear_calls.append(home)
+
+        class _FakeLive:
+            def __init__(self, console) -> None:
+                self.console = console
+                self._alt_screen = True
+                self.stopped = False
+
+            def stop(self) -> None:
+                self.stopped = True
+
+        console = _FakeConsole()
+        live = _FakeLive(console)
+        dashboard._live = live
+
+        dashboard.stop()
+
+        self.assertTrue(live.stopped)
+        self.assertEqual(console.clear_calls, [])
+        self.assertIsNone(dashboard._live)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

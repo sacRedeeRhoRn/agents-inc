@@ -69,7 +69,20 @@ class LiveDashboard(AbstractContextManager["LiveDashboard"]):
     def stop(self) -> None:
         if self._live is None:
             return
-        self._live.stop()
+        live = self._live
+        console = getattr(live, "console", None)
+        used_alt_screen = bool(getattr(live, "_alt_screen", False))
+        live.stop()
+        if (
+            self._screen
+            and not used_alt_screen
+            and console is not None
+            and bool(getattr(console, "is_terminal", False))
+        ):
+            try:
+                console.clear(home=True)
+            except Exception:
+                pass
         self._live = None
 
     def handle_event(self, event: dict) -> None:
