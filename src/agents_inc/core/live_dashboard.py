@@ -36,6 +36,9 @@ class LiveDashboard(AbstractContextManager["LiveDashboard"]):
             raise RuntimeError("rich is not available")
         self._screen = bool(screen)
         self._live: Live | None = None
+        self._reset_state()
+
+    def _reset_state(self) -> None:
         self._project_id = ""
         self._execution_mode = ""
         self._cycle = 0
@@ -60,7 +63,7 @@ class LiveDashboard(AbstractContextManager["LiveDashboard"]):
     def start(self) -> None:
         if self._live is not None:
             return
-        self._live = Live(self._render(), refresh_per_second=8, screen=self._screen, transient=False)
+        self._live = Live(self._render(), refresh_per_second=8, screen=self._screen, transient=True)
         self._live.start()
 
     def stop(self) -> None:
@@ -75,6 +78,7 @@ class LiveDashboard(AbstractContextManager["LiveDashboard"]):
             return
 
         if kind == "turn_started":
+            self._reset_state()
             self._project_id = str(event.get("project_id") or "").strip()
             self._execution_mode = str(event.get("execution_mode") or "").strip()
             self._max_cycles = int(event.get("max_cycles", 0) or 0)
