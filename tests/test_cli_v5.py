@@ -113,6 +113,40 @@ class CLIV5Tests(unittest.TestCase):
             self.assertEqual(skill_activation.get("active_head_groups"), selected)
             self.assertEqual(skill_activation.get("active_specialist_groups"), [])
 
+    def test_create_project_clears_terminal_for_non_json_launch(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fabric_root = Path(td) / "fabric"
+            projects_root = Path(td) / "projects"
+            config_path = Path(td) / ".agents-inc" / "config.yaml"
+            with patch(
+                "agents_inc.cli.create_project.run_orchestrator_chat",
+                return_value={
+                    "thread_id": "thread-123",
+                    "chat_log_path": str(Path(td) / "chat.log"),
+                },
+            ):
+                with patch("agents_inc.cli.create_project.clear_interactive_terminal") as clear_terminal:
+                    with patch.object(
+                        sys,
+                        "argv",
+                        [
+                            "agents-inc-create",
+                            "proj-v5",
+                            "--fabric-root",
+                            str(fabric_root),
+                            "--projects-root",
+                            str(projects_root),
+                            "--config-path",
+                            str(config_path),
+                            "--groups",
+                            "developer,quality-assurance",
+                            "--no-launch",
+                        ],
+                    ):
+                        code = create_cli.main()
+            self.assertEqual(code, 0)
+            clear_terminal.assert_called_once()
+
     def test_create_project_full_mode_activates_specialists(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             fabric_root = Path(td) / "fabric"
@@ -342,6 +376,36 @@ class CLIV5Tests(unittest.TestCase):
             specialists = manifest.get("specialists", [])
             roles = [str(item.get("role") or "") for item in specialists if isinstance(item, dict)]
             self.assertIn("web-research", roles)
+
+    def test_new_group_clears_terminal_in_non_json_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fabric_root = Path(td) / "fabric"
+            ensure_fabric_root_initialized(fabric_root)
+            with patch("agents_inc.cli.new_group.clear_interactive_terminal") as clear_terminal:
+                with patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "agents-inc-new-group",
+                        "--fabric-root",
+                        str(fabric_root),
+                        "--group-id",
+                        "client-success",
+                        "--display-name",
+                        "Client Success",
+                        "--domain",
+                        "professional-services",
+                        "--purpose",
+                        "Support client onboarding and delivery handoffs.",
+                        "--success-criteria",
+                        "handoffs complete,evidence validated",
+                        "--no-codex",
+                        "--force",
+                    ],
+                ):
+                    code = new_group_cli.main()
+            self.assertEqual(code, 0)
+            clear_terminal.assert_called_once()
 
     def test_regenerate_core_groups_from_seed(self) -> None:
         with tempfile.TemporaryDirectory() as td:

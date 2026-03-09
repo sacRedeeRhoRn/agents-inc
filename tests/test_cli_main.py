@@ -168,6 +168,41 @@ class CLIMainTests(unittest.TestCase):
             self.assertEqual(code, 0)
             run_chat.assert_called_once()
 
+    def test_resume_cli_clears_terminal_for_non_json_launch(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            project_root = Path(td) / "proj-test"
+            project_root.mkdir(parents=True, exist_ok=True)
+            with patch(
+                "agents_inc.cli.resume.resolve_project_context",
+                return_value=(
+                    project_root / "agent_group_fabric",
+                    project_root,
+                    project_root,
+                    project_root / "manifest.yaml",
+                    {"project_id": "proj-test"},
+                ),
+            ):
+                with patch(
+                    "agents_inc.cli.resume.load_orchestrator_state",
+                    return_value={"thread_id": "thread-prev"},
+                ):
+                    with patch("agents_inc.cli.resume.load_checkpoint", return_value={}):
+                        with patch(
+                            "agents_inc.cli.resume.run_orchestrator_chat",
+                            return_value={
+                                "thread_id": "thread-next",
+                                "chat_log_path": str(project_root / "chat.log"),
+                            },
+                        ) as run_chat:
+                            with patch("agents_inc.cli.resume.clear_interactive_terminal") as clear_terminal:
+                                with patch.object(
+                                    sys, "argv", ["agents-inc-resume", "proj-test"]
+                                ):
+                                    code = resume_cli.main()
+            self.assertEqual(code, 0)
+            run_chat.assert_called_once()
+            clear_terminal.assert_called_once()
+
     def test_resume_cli_forwards_auto_restart_from_blocked_checkpoint(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             project_root = Path(td) / "proj-test"

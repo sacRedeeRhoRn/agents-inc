@@ -27,6 +27,7 @@ from agents_inc.core.fabric_lib import (
     slugify,
 )
 from agents_inc.core.orchestrator_chat import OrchestratorChatConfig, run_orchestrator_chat
+from agents_inc.core.live_dashboard import clear_interactive_terminal
 from agents_inc.core.response_policy import ensure_response_policy, upsert_specialist_sessions
 from agents_inc.core.session_compaction import compact_session
 from agents_inc.core.session_state import default_project_index_path, write_checkpoint
@@ -227,6 +228,8 @@ def _checkpoint_payload(
 def main() -> int:
     args = parse_args()
     try:
+        if not bool(args.json):
+            clear_interactive_terminal()
         project_id = slugify(args.project_id)
         if not project_id:
             raise FabricError("project id resolved to empty value")

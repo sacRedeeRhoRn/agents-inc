@@ -5,6 +5,7 @@ import json
 
 from agents_inc.cli._project_context import resolve_project_context
 from agents_inc.core.fabric_lib import FabricError, ensure_json_serializable, slugify
+from agents_inc.core.live_dashboard import clear_interactive_terminal
 from agents_inc.core.orchestrator_chat import OrchestratorChatConfig, run_orchestrator_chat
 from agents_inc.core.orchestrator_state import load_orchestrator_state
 from agents_inc.core.session_state import (
@@ -33,6 +34,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     try:
+        if not bool(args.json) and not bool(args.no_launch):
+            clear_interactive_terminal()
         project_id = slugify(args.project_id)
         if not project_id:
             raise FabricError("project id cannot be empty")

@@ -14,6 +14,7 @@ from agents_inc.core.fabric_lib import (
 )
 from agents_inc.core.group_generation_engine import generate_group_draft
 from agents_inc.core.group_wizard import build_manifest_v2
+from agents_inc.core.live_dashboard import clear_interactive_terminal
 from agents_inc.core.util.fs import dump_yaml, load_yaml
 
 
@@ -226,6 +227,8 @@ def _regenerate_core_groups(args: argparse.Namespace, fabric_root: Path) -> dict
 def main() -> int:
     args = parse_args()
     try:
+        if not bool(args.json):
+            clear_interactive_terminal()
         fabric_root = resolve_fabric_root(args.fabric_root)
         ensure_fabric_root_initialized(fabric_root)
         if args.regenerate_core:
