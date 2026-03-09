@@ -59,6 +59,7 @@ def main() -> int:
         auto_restart_from_cycle = 0
         auto_restart_group_objectives = None
         auto_restart_cycle_summaries = None
+        auto_restart_source = ""
         latest_checkpoint_id = ""
         try:
             latest_checkpoint = load_checkpoint(project_root, "latest")
@@ -92,6 +93,35 @@ def main() -> int:
                     cycle_summaries = blocked_resume.get("cycle_summaries")
                     if isinstance(cycle_summaries, list):
                         auto_restart_cycle_summaries = list(cycle_summaries)
+                    auto_restart_source = "checkpoint"
+        pending_orchestration = state.get("pending_orchestration")
+        if (
+            not bool(args.no_launch)
+            and not auto_restart_objective
+            and isinstance(pending_orchestration, dict)
+        ):
+            pending_objective = str(pending_orchestration.get("objective") or "").strip()
+            if pending_objective:
+                auto_restart_checkpoint_id = (
+                    str(pending_orchestration.get("checkpoint_id") or "").strip()
+                    or latest_checkpoint_id
+                    or "pending-interrupted-turn"
+                )
+                auto_restart_objective = pending_objective
+                auto_restart_turn_dir = str(pending_orchestration.get("turn_dir") or "").strip()
+                try:
+                    auto_restart_from_cycle = max(
+                        0, int(pending_orchestration.get("resume_from_cycle", 0) or 0)
+                    )
+                except Exception:
+                    auto_restart_from_cycle = 0
+                group_objectives = pending_orchestration.get("group_objectives")
+                if isinstance(group_objectives, dict):
+                    auto_restart_group_objectives = dict(group_objectives)
+                cycle_summaries = pending_orchestration.get("cycle_summaries")
+                if isinstance(cycle_summaries, list):
+                    auto_restart_cycle_summaries = list(cycle_summaries)
+                auto_restart_source = "pending-state"
         chat = run_orchestrator_chat(
             OrchestratorChatConfig(
                 fabric_root=fabric_root,
@@ -120,6 +150,7 @@ def main() -> int:
             "auto_restart_checkpoint_id": auto_restart_checkpoint_id,
             "auto_restart_turn_dir": auto_restart_turn_dir,
             "auto_restart_from_cycle": auto_restart_from_cycle,
+            "auto_restart_source": auto_restart_source,
         }
         if args.json:
             print(json.dumps(ensure_json_serializable(summary), indent=2, sort_keys=True))

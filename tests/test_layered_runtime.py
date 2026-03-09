@@ -20,7 +20,9 @@ if str(SRC) not in sys.path:
 from agents_inc.core.agent_session_runner import AgentSessionRunner  # noqa: E402
 from agents_inc.core.evidence_cache import load_evidence_cache  # noqa: E402
 from agents_inc.core.layered_runtime import (  # noqa: E402
+    HeadResult,
     LayeredRuntimeConfig,
+    SpecialistResult,
     _build_head_prompt,
     _build_specialist_prompt,
     _hydrate_evidence_refs_from_cache,
@@ -548,16 +550,76 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             dispatch={
                 "head_agent": "head",
                 "head_skill": "dev-head",
-                "head_task_brief": {"purpose": "build direct answer"},
+                "head_task_brief": {
+                    "purpose": "build direct answer",
+                    "specialist_skill_names": ["grp-developer-domain-core", "grp-developer-web-research"],
+                    "expert_profile": {
+                        "field_identity": "Act as final authority",
+                        "signature_commitment": "Protect the quality bar",
+                        "analysis_protocol": ["Frame", "Decompose"],
+                        "evidence_hierarchy": ["Direct evidence outranks prose"],
+                        "pressure_questions": ["What breaks the leading conclusion?"],
+                        "refusal_conditions": ["Do not answer without explicit basis"],
+                        "publication_bar": ["Decision basis is explicit"],
+                    },
+                    "specialist_contracts": [
+                        {
+                            "agent_id": "domain-core-specialist",
+                            "expert_lens": "Domain core lens",
+                            "definition_of_done": ["Produce `work.md`."],
+                            "method": ["Parse objective"],
+                            "failure_modes": ["Missing evidence -> BLOCKED"],
+                            "required_references": ["references/domain-core-core.md"],
+                            "required_outputs": ["work.md", "handoff.json"],
+                        }
+                    ],
+                    "reasoning_phases": [{"phase_id": 1, "specialists": ["domain-core-specialist"]}],
+                },
             },
             phase_outputs={},  # type: ignore[arg-type]
             execution_mode="light",
+            visible_skill_names=[
+                "dev-head",
+                "grp-developer-domain-core",
+                "grp-developer-web-research",
+            ],
         )
         self.assertIn("Execute this group objective directly", prompt)
         self.assertIn("Web search is enabled", prompt)
         self.assertIn("Persona contract (canonical)", prompt)
+        self.assertIn("Expert charter (canonical)", prompt)
+        self.assertIn("grp-developer-domain-core", prompt)
+        self.assertIn("grp-developer-web-research", prompt)
+        self.assertIn("Also activate and apply these specialist skills", prompt)
+        self.assertIn("- `$grp-developer-domain-core`", prompt)
+        self.assertIn("- `$grp-developer-web-research`", prompt)
+        self.assertIn("specialist_contracts", prompt)
+        self.assertIn("reasoning_phases", prompt)
+        self.assertIn("simulate the specialist decomposition", prompt)
+        self.assertIn("pressure_questions", prompt)
+        self.assertIn("refusal_conditions", prompt)
         self.assertIn('"persona_stance": "field-proud stance in one line"', prompt)
         self.assertNotIn("Specialist summaries (canonical)", prompt)
+
+    def test_build_head_prompt_light_mode_skips_unmounted_specialist_activation(self) -> None:
+        prompt = _build_head_prompt(
+            objective="test light mode objective",
+            group_id="developer",
+            dispatch={
+                "head_agent": "head",
+                "head_skill": "dev-head",
+                "head_task_brief": {
+                    "purpose": "build direct answer",
+                    "specialist_skill_names": ["grp-developer-domain-core", "grp-developer-web-research"],
+                },
+            },
+            phase_outputs={},  # type: ignore[arg-type]
+            execution_mode="light",
+            visible_skill_names=["dev-head"],
+        )
+        self.assertNotIn("Also activate and apply these specialist skills", prompt)
+        self.assertNotIn("- `$grp-developer-domain-core`", prompt)
+        self.assertNotIn("- `$grp-developer-web-research`", prompt)
 
     def test_light_mode_runs_head_only(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -609,6 +671,10 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             self.assertEqual(len(specialist_runs), 0)
             self.assertEqual(len(head_runs), 1)
             self.assertTrue(bool(head_runs[0].web_search))
+            self.assertIn("Also activate and apply these specialist skills", str(head_runs[0].prompt))
+            self.assertIn("- `$grp-developer-domain-core`", str(head_runs[0].prompt))
+            self.assertNotIn("- `$grp-developer-web-research`", str(head_runs[0].prompt))
+            self.assertIn("specialist_contracts", str(head_runs[0].prompt))
             orchestrator_plan = json.loads(
                 (turn_dir / "layer2" / "orchestrator-plan.json").read_text(encoding="utf-8")
             )
@@ -619,6 +685,152 @@ class LayeredRuntimeMountTests(unittest.TestCase):
             visible_skills = group_head_sessions.get("developer", {}).get("visible_skills", [])
             self.assertIn("grp-developer-head", visible_skills)
             self.assertIn("grp-developer-domain-core", visible_skills)
+
+    def test_light_mode_emits_group_notes_and_persists_worklog(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_root = root / "project-root"
+            project_dir = root / "project-dir"
+            turn_dir = root / "turn-001"
+            project_root.mkdir(parents=True, exist_ok=True)
+            project_dir.mkdir(parents=True, exist_ok=True)
+            turn_dir.mkdir(parents=True, exist_ok=True)
+
+            group_manifest = yaml.safe_load(
+                (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+            )
+            self.assertIsInstance(group_manifest, dict)
+            events: list[dict] = []
+            runtime_config = LayeredRuntimeConfig(
+                project_id="proj-light-notes",
+                project_root=project_root,
+                project_dir=project_dir,
+                turn_dir=turn_dir,
+                message="test light note streaming",
+                selected_groups=["developer"],
+                group_manifests={"developer": deepcopy(group_manifest)},
+                execution_mode="light",
+                progress_callback=lambda event: events.append(dict(event)),
+            )
+
+            with patch.dict("os.environ", {"AGENTS_INC_BACKEND": "mock"}, clear=False):
+                result = run_layered_runtime(runtime_config)
+
+            self.assertFalse(bool(result.get("blocked")))
+            note_events = [
+                row
+                for row in events
+                if str(row.get("event")) == "runtime_group_note"
+                and str(row.get("group_id")) == "developer"
+            ]
+            self.assertGreaterEqual(len(note_events), 1)
+            worklog_path = turn_dir / "layer3" / "developer" / "live-worklog.log"
+            self.assertTrue(worklog_path.exists())
+            worklog_text = worklog_path.read_text(encoding="utf-8")
+            self.assertIn("header synthesis started", worklog_text)
+
+    def test_full_mode_emits_group_waiting_state(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_root = root / "project-root"
+            project_dir = root / "project-dir"
+            turn_dir = root / "turn-001"
+            project_root.mkdir(parents=True, exist_ok=True)
+            project_dir.mkdir(parents=True, exist_ok=True)
+            turn_dir.mkdir(parents=True, exist_ok=True)
+
+            group_manifest = yaml.safe_load(
+                (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+            )
+            self.assertIsInstance(group_manifest, dict)
+            events: list[dict] = []
+            runtime_config = LayeredRuntimeConfig(
+                project_id="proj-full-waiting",
+                project_root=project_root,
+                project_dir=project_dir,
+                turn_dir=turn_dir,
+                message="test full waiting state",
+                selected_groups=["developer"],
+                group_manifests={"developer": deepcopy(group_manifest)},
+                execution_mode="full",
+                progress_callback=lambda event: events.append(dict(event)),
+            )
+
+            def _fake_specialist(*args, **kwargs):  # type: ignore[no-untyped-def]
+                task = args[3]
+                specialist_id = str(task.get("agent_id") or "specialist")
+                role = str(task.get("role") or "domain-core")
+                return SpecialistResult(
+                    success=True,
+                    group_id="developer",
+                    specialist_id=specialist_id,
+                    role=role,
+                    attempt=1,
+                    work_path="",
+                    handoff_path="",
+                    raw_log_path="",
+                    redacted_log_path="",
+                    codex_home="",
+                    visible_skills=[],
+                    mount_status={},
+                    timed_out=False,
+                    error="",
+                    escalation_request=None,
+                )
+
+            def _fake_head(**kwargs):  # type: ignore[no-untyped-def]
+                return HeadResult(
+                    success=True,
+                    group_id="developer",
+                    attempt=1,
+                    work_text="# Summary\n\nhead merged outputs.\n",
+                    handoff_payload={
+                        "claims": [{"claim": "head merged outputs", "evidence_ids": ["ev_1"]}],
+                        "evidence_refs": [
+                            {
+                                "evidence_id": "ev_1",
+                                "citation": "https://example.org/head",
+                                "title": "head evidence",
+                                "source_type": "web",
+                            }
+                        ],
+                        "artifacts": [{"path": "out.md", "title": "out"}],
+                        "produced_artifacts": ["out.md"],
+                        "objective_response": "head answered the objective explicitly.",
+                        "decision_summary": "head decision",
+                        "recommended_actions": ["next"],
+                        "objective_coverage": 0.95,
+                        "persona_id": "persona-developer-head",
+                        "persona_stance": "stance",
+                        "persona_challenge": "challenge",
+                        "persona_confidence": 0.9,
+                        "persona_override_evidence": False,
+                        "response_status": "ANSWERED",
+                        "integration_notes": "# Integration Notes\n\n- ok",
+                    },
+                    raw_log_path="",
+                    redacted_log_path="",
+                    codex_home="",
+                    visible_skills=[],
+                    mount_status={},
+                    error="",
+                )
+
+            with patch("agents_inc.core.layered_runtime._run_specialist_with_retries", side_effect=_fake_specialist):
+                with patch("agents_inc.core.layered_runtime._run_head_with_retries", side_effect=_fake_head):
+                    result = run_layered_runtime(runtime_config)
+
+            self.assertFalse(bool(result.get("blocked")))
+            waiting_events = [
+                row
+                for row in events
+                if str(row.get("event")) == "runtime_group_waiting"
+                and str(row.get("group_id")) == "developer"
+            ]
+            self.assertGreaterEqual(len(waiting_events), 1)
+            self.assertTrue(
+                any("waiting on specialists" in str(row.get("summary") or "") for row in waiting_events)
+            )
 
 
 if __name__ == "__main__":

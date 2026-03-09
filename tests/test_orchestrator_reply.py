@@ -75,6 +75,78 @@ class OrchestratorReplyTests(unittest.TestCase):
             for task in phase.get("tasks", []):
                 self.assertIn("web_search_enabled", task)
 
+    def test_light_dispatch_folds_specialist_contracts_into_head_brief(self) -> None:
+        group_manifest = yaml.safe_load(
+            (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+        )
+        self.assertIsInstance(group_manifest, dict)
+        dispatch = build_dispatch_plan(
+            "proj-light-contracts",
+            "developer",
+            "build a rigorous answer",
+            group_manifest,
+            execution_mode="light",
+        )
+        self.assertEqual(dispatch.get("dispatch_mode"), "head-only")
+        head_task_brief = dispatch.get("head_task_brief", {})
+        self.assertIsInstance(head_task_brief, dict)
+        self.assertIn("specialist_contracts", head_task_brief)
+        self.assertIn("reasoning_phases", head_task_brief)
+        self.assertIn("specialist_skill_names", head_task_brief)
+        self.assertIn("expert_profile", head_task_brief)
+        contracts = head_task_brief.get("specialist_contracts", [])
+        self.assertIsInstance(contracts, list)
+        self.assertGreater(len(contracts), 0)
+        first = contracts[0]
+        self.assertIn("expert_lens", first)
+        self.assertIn("definition_of_done", first)
+        self.assertIn("method", first)
+        self.assertIn("failure_modes", first)
+        self.assertIn("required_references", first)
+        self.assertIn("required_outputs", first)
+        reasoning_phases = head_task_brief.get("reasoning_phases", [])
+        self.assertIsInstance(reasoning_phases, list)
+        self.assertGreater(len(reasoning_phases), 0)
+        self.assertIn("specialists", reasoning_phases[0])
+        self.assertIn("success_criteria", head_task_brief)
+        self.assertIn("gate_checks_enabled", head_task_brief)
+        expert_profile = head_task_brief.get("expert_profile", {})
+        self.assertIsInstance(expert_profile, dict)
+        self.assertIn("field_identity", expert_profile)
+        self.assertIn("pressure_questions", expert_profile)
+        self.assertIn("refusal_conditions", expert_profile)
+        self.assertIn("chief engineer", str(expert_profile.get("field_identity") or ""))
+
+    def test_dispatch_fails_fast_on_specialist_missing_agent_id(self) -> None:
+        group_manifest = yaml.safe_load(
+            (ROOT / "catalog" / "groups" / "developer.yaml").read_text(encoding="utf-8")
+        )
+        self.assertIsInstance(group_manifest, dict)
+        specialists = list(group_manifest.get("specialists", []))
+        self.assertTrue(specialists)
+        broken = dict(specialists[0])
+        broken.pop("agent_id", None)
+        specialists[0] = broken
+        group_manifest["specialists"] = specialists
+
+        with self.assertRaises(FabricError):
+            build_dispatch_plan(
+                "proj-broken-light",
+                "developer",
+                "broken specialist manifest",
+                group_manifest,
+                execution_mode="light",
+            )
+
+        with self.assertRaises(FabricError):
+            build_dispatch_plan(
+                "proj-broken-full",
+                "developer",
+                "broken specialist manifest",
+                group_manifest,
+                execution_mode="full",
+            )
+
     def test_group_and_non_group_turn_outputs(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             fabric_root = Path(td) / "agent_group_fabric"

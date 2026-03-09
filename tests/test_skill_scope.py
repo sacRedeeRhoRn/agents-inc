@@ -110,27 +110,25 @@ class SkillScopeTests(unittest.TestCase):
                 activation["active_head_groups"],
                 ["developer", "integration-delivery"],
             )
-            self.assertEqual(
-                activation["active_specialist_groups"],
-                ["developer", "integration-delivery"],
-            )
+            self.assertEqual(activation["active_specialist_groups"], [])
 
             project_skill_dir = project_root / ".agents-inc" / "codex-home" / "skills" / "local"
             rows = managed_rows(project_skill_dir)
             self.assertTrue(rows)
             self.assertTrue(
                 any(
-                    row.get("group_id") == "developer" and row.get("role") == "specialist"
+                    row.get("group_id") == "developer" and row.get("role") == "head"
                     for row in rows
                 )
             )
             self.assertTrue(
                 any(
                     row.get("group_id") == "integration-delivery"
-                    and row.get("role") == "specialist"
+                    and row.get("role") == "head"
                     for row in rows
                 )
             )
+            self.assertFalse(any(row.get("role") == "specialist" for row in rows))
 
             global_skill_dir = home_dir / ".codex" / "skills" / "local"
             self.assertFalse(global_skill_dir.exists())
@@ -222,7 +220,7 @@ class SkillScopeTests(unittest.TestCase):
             activation_path = project_root / ".agents-inc" / "state" / "skill-activation.yaml"
             activation = yaml.safe_load(activation_path.read_text(encoding="utf-8"))
             self.assertEqual(activation["active_head_groups"], ["integration-delivery"])
-            self.assertEqual(activation["active_specialist_groups"], ["integration-delivery"])
+            self.assertEqual(activation["active_specialist_groups"], [])
 
             rows = managed_rows(project_root / ".agents-inc" / "codex-home" / "skills" / "local")
             self.assertFalse(any(row.get("group_id") == "developer" for row in rows))
@@ -232,13 +230,7 @@ class SkillScopeTests(unittest.TestCase):
                     for row in rows
                 )
             )
-            self.assertTrue(
-                any(
-                    row.get("group_id") == "integration-delivery"
-                    and row.get("role") == "specialist"
-                    for row in rows
-                )
-            )
+            self.assertFalse(any(row.get("role") == "specialist" for row in rows))
 
     def test_cleanup_global_removes_only_managed_entries(self) -> None:
         with tempfile.TemporaryDirectory() as td:

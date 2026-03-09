@@ -358,6 +358,40 @@ class CLIOrchestratorReplyTests(unittest.TestCase):
             self.assertEqual(payload.get("project_id"), "proj-a")
             self.assertIn("live: cycle 1 started", err.getvalue())
 
+    def test_main_returns_130_for_abort_interrupt(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            fake_root = Path(td)
+            blocked_text = (
+                "BLOCKED[BLOCKED_ABORT_REQUESTED] "
+                "blocked_report=/tmp/report blocked_reasons=/tmp/reasons"
+            )
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                with patch(
+                    "agents_inc.cli.orchestrator_reply._resolve_project_fabric_root",
+                    return_value=fake_root,
+                ):
+                    with patch("agents_inc.cli.orchestrator_reply.ensure_fabric_root_initialized"):
+                        with patch(
+                            "agents_inc.cli.orchestrator_reply.run_orchestrator_reply",
+                            side_effect=RuntimeError(blocked_text),
+                        ):
+                            with patch.object(
+                                sys,
+                                "argv",
+                                [
+                                    "agents-inc-orchestrator-reply",
+                                    "--project-id",
+                                    "proj-a",
+                                    "--message",
+                                    "delegate objective",
+                                ],
+                            ):
+                                code = orchestrator_reply_cli.main()
+            self.assertEqual(code, 130)
+            self.assertIn("interrupted: orchestration aborted by user", out.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

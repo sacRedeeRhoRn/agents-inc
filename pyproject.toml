@@ -20,7 +20,8 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "PyYAML>=6.0"
+  "PyYAML>=6.0",
+  "rich>=13.0"
 ]
 
 [project.optional-dependencies]

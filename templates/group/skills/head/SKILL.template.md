@@ -39,6 +39,25 @@ autouse_triggers:
 - Domain doctrine:
 {{HEAD_PERSONA_DOCTRINE_BLOCK}}
 
+## Expert Charter
+- Field identity: {{HEAD_EXPERT_FIELD_IDENTITY}}
+- Signature commitment: {{HEAD_EXPERT_SIGNATURE_COMMITMENT}}
+
+### Publication Bar
+{{HEAD_EXPERT_PUBLICATION_BAR_BLOCK}}
+
+### Analytical Protocol
+{{HEAD_EXPERT_ANALYSIS_PROTOCOL_BLOCK}}
+
+### Evidence Hierarchy
+{{HEAD_EXPERT_EVIDENCE_HIERARCHY_BLOCK}}
+
+### Pressure Questions
+{{HEAD_EXPERT_PRESSURE_QUESTIONS_BLOCK}}
+
+### Refusal Conditions
+{{HEAD_EXPERT_REFUSAL_CONDITIONS_BLOCK}}
+
 ## When to Invoke
 - Group-level objective requires orchestration across specialists.
 - The active group is `{{GROUP_ID}}` in project `{{PROJECT_ID}}`.

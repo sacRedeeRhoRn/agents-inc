@@ -22,6 +22,25 @@
 - domain doctrine:
 {{HEAD_PERSONA_DOCTRINE_BLOCK}}
 
+## Expert Charter
+- field identity: {{HEAD_EXPERT_FIELD_IDENTITY}}
+- signature commitment: {{HEAD_EXPERT_SIGNATURE_COMMITMENT}}
+
+### publication bar
+{{HEAD_EXPERT_PUBLICATION_BAR_BLOCK}}
+
+### analytical protocol
+{{HEAD_EXPERT_ANALYSIS_PROTOCOL_BLOCK}}
+
+### evidence hierarchy
+{{HEAD_EXPERT_EVIDENCE_HIERARCHY_BLOCK}}
+
+### pressure questions
+{{HEAD_EXPERT_PRESSURE_QUESTIONS_BLOCK}}
+
+### refusal conditions
+{{HEAD_EXPERT_REFUSAL_CONDITIONS_BLOCK}}
+
 ## Specialist Roster
 {{SPECIALIST_BLOCK}}
 

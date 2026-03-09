@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Callable, Dict, List
 
 from agents_inc.core.fabric_lib import load_yaml, now_iso, stable_json, write_text
 
@@ -16,6 +16,7 @@ class HeadMeetingConfig:
     project_dir: Path
     selected_groups: List[str]
     message: str
+    note_callback: Callable[[str], None] | None = None
 
 
 OBJECTIVE_COVERAGE_THRESHOLD = 0.8
@@ -115,6 +116,19 @@ def _group_similarity_stats(
         "min_similarity": round(min(values), 3),
         "avg_similarity": round(sum(values) / len(values), 3),
     }
+
+
+def _emit_meeting_note(config: HeadMeetingConfig, text: str) -> None:
+    callback = config.note_callback
+    if callback is None:
+        return
+    note = str(text or "").strip()
+    if not note:
+        return
+    try:
+        callback(note)
+    except Exception:
+        return
 
 
 def run_head_meeting(config: HeadMeetingConfig) -> dict:
@@ -321,6 +335,13 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
             "satisfied": satisfied,
             "updated_at": now_iso(),
         }
+        note = (
+            f"{group_id}: satisfied={bool(satisfied)} requests={len(decisions[group_id]['request_changes'])} "
+            f"criticisms={len(decisions[group_id]['criticisms'])}"
+        )
+        if decisions[group_id]["criticisms"]:
+            note += " | " + str(decisions[group_id]["criticisms"][0])
+        _emit_meeting_note(config, note)
 
     minutes_md = _render_minutes(config, decisions)
     minutes_path = meeting_dir / f"minutes-cycle-{config.cycle_id:04d}.md"
@@ -368,6 +389,18 @@ def run_head_meeting(config: HeadMeetingConfig) -> dict:
     }
     matrix_path = meeting_dir / f"satisfaction-matrix-cycle-{config.cycle_id:04d}.json"
     write_text(matrix_path, stable_json(matrix) + "\n")
+    if bool(matrix.get("all_satisfied")):
+        _emit_meeting_note(
+            config,
+            "consensus ready: all groups satisfied strict meeting gates for this cycle.",
+        )
+    else:
+        unsatisfied = ", ".join(str(item) for item in matrix.get("unsatisfied_groups", []))
+        _emit_meeting_note(
+            config,
+            "rework required: unsatisfied groups="
+            + (unsatisfied if unsatisfied else "unknown"),
+        )
 
     return {
         "minutes_path": str(minutes_path),

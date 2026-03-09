@@ -167,6 +167,12 @@ class ProjectGroupsTests(unittest.TestCase):
             self.assertIsInstance(persona, dict)
             self.assertEqual(persona.get("tone"), "authoritative")
             self.assertEqual(persona.get("override_policy"), "head-meeting-only")
+            expert_profile = head.get("expert_profile")
+            self.assertIsInstance(expert_profile, dict)
+            self.assertIn("field_identity", expert_profile)
+            self.assertIn("analysis_protocol", expert_profile)
+            self.assertIn("pressure_questions", expert_profile)
+            self.assertIn("chief engineer", str(expert_profile.get("field_identity") or ""))
 
 
 if __name__ == "__main__":

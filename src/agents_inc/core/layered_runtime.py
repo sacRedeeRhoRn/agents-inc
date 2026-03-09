@@ -61,6 +61,7 @@ OBJECTIVE_PARTIAL_HINTS = (
     "next cycle",
     "assumption",
 )
+LIVE_NOTE_PREFIX = "LIVE_NOTE:"
 
 
 @dataclass
@@ -133,6 +134,180 @@ def _emit_progress(config: LayeredRuntimeConfig, event: dict) -> None:
         callback(event)
     except Exception:
         return
+
+
+def _append_line(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(text.rstrip() + "\n")
+
+
+def _append_ndjson(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(stable_json(payload).rstrip() + "\n")
+
+
+def _group_worklog_paths(*, layer3_dir: Path, group_id: str) -> tuple[Path, Path]:
+    group_layer3 = layer3_dir / group_id
+    group_layer3.mkdir(parents=True, exist_ok=True)
+    return (group_layer3 / "live-worklog.log", group_layer3 / "live-worklog.ndjson")
+
+
+def _write_group_worklog_event(
+    *,
+    layer3_dir: Path,
+    config: LayeredRuntimeConfig,
+    group_id: str,
+    status: str,
+    text: str,
+    event_name: str,
+    metadata: dict | None = None,
+) -> None:
+    note_text = str(text or "").strip()
+    if not note_text:
+        return
+    log_path, ndjson_path = _group_worklog_paths(layer3_dir=layer3_dir, group_id=group_id)
+    payload = {
+        "ts": now_iso(),
+        "event": event_name,
+        "project_id": config.project_id,
+        "cycle": int(config.cycle_id),
+        "group_id": group_id,
+        "status": status,
+        "text": note_text,
+    }
+    if isinstance(metadata, dict):
+        payload.update(metadata)
+    _append_line(log_path, f"[{payload['ts']}] [{status}] {note_text}")
+    _append_ndjson(ndjson_path, payload)
+
+
+def _emit_group_worklog_note(
+    *,
+    layer3_dir: Path,
+    config: LayeredRuntimeConfig,
+    group_id: str,
+    text: str,
+) -> None:
+    note_text = str(text or "").strip()
+    if not note_text:
+        return
+    _write_group_worklog_event(
+        layer3_dir=layer3_dir,
+        config=config,
+        group_id=group_id,
+        status="running",
+        text=note_text,
+        event_name="runtime_group_note",
+    )
+    _emit_progress(
+        config,
+        {
+            "event": "runtime_group_note",
+            "project_id": config.project_id,
+            "cycle": int(config.cycle_id),
+            "group_id": group_id,
+            "text": note_text,
+        },
+    )
+
+
+def _emit_group_waiting_state(
+    *,
+    layer3_dir: Path,
+    config: LayeredRuntimeConfig,
+    group_id: str,
+    completed_specialists: int,
+    total_specialists: int,
+    pending_specialists: List[str],
+) -> None:
+    pending_preview = ", ".join(str(item).strip() for item in pending_specialists[:4] if str(item).strip())
+    if len(pending_specialists) > 4:
+        pending_preview = (
+            f"{pending_preview} (+{len(pending_specialists) - 4} more)"
+            if pending_preview
+            else f"{len(pending_specialists)} pending"
+        )
+    summary = "waiting on specialists {0}/{1} complete".format(
+        int(completed_specialists),
+        int(total_specialists),
+    )
+    if pending_preview:
+        summary += f" | pending={pending_preview}"
+    _write_group_worklog_event(
+        layer3_dir=layer3_dir,
+        config=config,
+        group_id=group_id,
+        status="waiting",
+        text=summary,
+        event_name="runtime_group_waiting",
+        metadata={
+            "completed_specialists": int(completed_specialists),
+            "total_specialists": int(total_specialists),
+            "pending_specialists": list(pending_specialists),
+        },
+    )
+    _emit_progress(
+        config,
+        {
+            "event": "runtime_group_waiting",
+            "project_id": config.project_id,
+            "cycle": int(config.cycle_id),
+            "group_id": group_id,
+            "completed_specialists": int(completed_specialists),
+            "total_specialists": int(total_specialists),
+            "pending_specialists": list(pending_specialists),
+            "summary": summary,
+        },
+    )
+
+
+class _LiveNoteParser:
+    def __init__(self, *, on_note: Callable[[str], None]):
+        self._on_note = on_note
+        self._buffer = ""
+        self._emitted: set[str] = set()
+
+    def feed_stream_event(self, event: dict) -> None:
+        kind = str(event.get("event") or "").strip()
+        if kind not in {"agent_delta", "agent_message"}:
+            return
+        self._feed_text(str(event.get("text") or ""), final=(kind == "agent_message"))
+
+    def flush(self) -> None:
+        if self._buffer:
+            self._consume_line(self._buffer)
+            self._buffer = ""
+
+    def _feed_text(self, text: str, *, final: bool) -> None:
+        if not text:
+            return
+        self._buffer += text
+        if final:
+            for line in self._buffer.splitlines():
+                self._consume_line(line)
+            self._buffer = ""
+            return
+
+        lines = self._buffer.splitlines(keepends=True)
+        remainder = ""
+        for line in lines:
+            if line.endswith("\n") or line.endswith("\r"):
+                self._consume_line(line)
+            else:
+                remainder = line
+        self._buffer = remainder
+
+    def _consume_line(self, line: str) -> None:
+        text = str(line or "").strip()
+        if not text.startswith(LIVE_NOTE_PREFIX):
+            return
+        note = text[len(LIVE_NOTE_PREFIX) :].strip()
+        if not note or note in self._emitted:
+            return
+        self._emitted.add(note)
+        self._on_note(note)
 
 
 def _resolve_task_web_search_enabled(*, config: LayeredRuntimeConfig, task: dict, role: str) -> bool:
@@ -492,6 +667,8 @@ def _run_group(
     group_manifest = config.group_manifests[group_id]
     group_objective = str((config.group_objectives or {}).get(group_id) or config.message)
     execution_mode = _resolve_execution_mode(config)
+    group_layer3 = layer3_dir / group_id
+    group_layer3.mkdir(parents=True, exist_ok=True)
     dispatch = build_dispatch_plan(
         config.project_id,
         group_id,
@@ -507,6 +684,20 @@ def _run_group(
     specialist_failures: List[dict] = []
 
     if execution_mode == "full":
+        total_specialists = len(group_manifest.get("specialists", []))
+        pending_specialists = [
+            str(row.get("agent_id") or "").strip()
+            for row in group_manifest.get("specialists", [])
+            if isinstance(row, dict) and str(row.get("agent_id") or "").strip()
+        ]
+        _emit_group_waiting_state(
+            layer3_dir=layer3_dir,
+            config=config,
+            group_id=group_id,
+            completed_specialists=0,
+            total_specialists=total_specialists,
+            pending_specialists=pending_specialists,
+        )
         for phase in dispatch.get("phases", []):
             if _abort_requested(config):
                 group_error = "abort requested"
@@ -634,6 +825,28 @@ def _run_group(
                             if not pending.done():
                                 pending.cancel()
                         break
+                    completed_specialists = len(
+                        [
+                            row
+                            for row in specialist_sessions[group_id].values()
+                            if str(row.get("status") or "").strip()
+                            in {"COMPLETE", "COMPLETE_WITH_WARNINGS"}
+                        ]
+                    )
+                    pending_specialists = [
+                        specialist_key
+                        for specialist_key, row in specialist_sessions[group_id].items()
+                        if str(row.get("status") or "").strip()
+                        not in {"COMPLETE", "COMPLETE_WITH_WARNINGS", "FAILED", "ESCALATION_REQUIRED"}
+                    ]
+                    _emit_group_waiting_state(
+                        layer3_dir=layer3_dir,
+                        config=config,
+                        group_id=group_id,
+                        completed_specialists=completed_specialists,
+                        total_specialists=total_specialists,
+                        pending_specialists=pending_specialists,
+                    )
 
             if group_error:
                 break
@@ -647,8 +860,6 @@ def _run_group(
             }
         )
 
-    group_layer3 = layer3_dir / group_id
-    group_layer3.mkdir(parents=True, exist_ok=True)
     head_log = group_layer3 / "head-merge.log"
 
     if group_error:
@@ -1446,12 +1657,32 @@ def _run_head_with_retries(
         dispatch=dispatch,
         phase_outputs=phase_outputs,
         execution_mode=execution_mode,
+        visible_skill_names=visible_skills,
     )
     head_timeout_sec = _resolve_head_timeout_sec(config.agent_timeout_sec)
 
     for attempt in range(1, attempts_total + 1):
         group_work_dir = config.project_dir / "agent-groups" / group_id
         group_work_dir.mkdir(parents=True, exist_ok=True)
+        _emit_group_worklog_note(
+            layer3_dir=layer3_dir,
+            config=config,
+            group_id=group_id,
+            text=(
+                "header synthesis started"
+                if execution_mode == "light"
+                else "specialists finished; header synthesis started"
+            )
+            + f" (attempt {attempt})",
+        )
+        note_parser = _LiveNoteParser(
+            on_note=lambda text: _emit_group_worklog_note(
+                layer3_dir=layer3_dir,
+                config=config,
+                group_id=group_id,
+                text=text,
+            )
+        )
         result = runner.run(
             AgentRunConfig(
                 project_root=config.project_root,
@@ -1471,8 +1702,10 @@ def _run_head_with_retries(
                 sandbox_mode="workspace-write",
                 sandbox_cd_dir=group_work_dir,
                 sandbox_network_access=True,
+                stream_callback=note_parser.feed_stream_event,
             )
         )
+        note_parser.flush()
 
         payload = dict(result.parsed_handoff or {})
         if result.success:
@@ -1734,8 +1967,9 @@ def _default_head_persona_brief(group_id: str) -> dict:
             f"I represent {normalized_group} and defend domain standards with uncompromising rigor."
         ),
         "domain_doctrine": [
-            "Decisions are domain-grounded and explicit.",
-            "Weak evidence is challenged before publication.",
+            "Decompose the objective into explicit technical sub-problems before deciding.",
+            "Promote only claims whose evidence, assumptions, and limits are visible.",
+            "Challenge weak evidence directly and refuse cosmetic certainty.",
         ],
         "challenge_style": "Confront weak assumptions directly and demand stronger support.",
         "visibility": "moderate",
@@ -1783,6 +2017,77 @@ def _resolve_head_persona_brief(*, dispatch: dict, execution_mode: str, group_id
     }
 
 
+def _default_head_expert_profile(group_id: str) -> dict:
+    normalized_group = str(group_id or "group").strip() or "group"
+    return {
+        "field_identity": (
+            f"Act as the final expert authority for {normalized_group}: define the problem rigorously, "
+            "reject weak support, and protect the decision quality bar."
+        ),
+        "signature_commitment": (
+            "You are not here to sound confident. You are here to make the conclusion technically defensible."
+        ),
+        "analysis_protocol": [
+            "Frame the objective in explicit technical terms before choosing a direction.",
+            "Decompose the work into concrete analytical lenses and dependency order.",
+            "Stress-test the leading conclusion against contradiction, counterexample, and failure boundaries.",
+            "State the final decision with explicit basis, uncertainty, and next executable action.",
+        ],
+        "evidence_hierarchy": [
+            "Direct evidence, executable artifacts, and first-principles constraints outrank attractive summary prose.",
+            "Conflicting evidence must be surfaced before a confident answer is published.",
+        ],
+        "pressure_questions": [
+            "What is the decisive mechanism or discriminator here in field terms?",
+            "What evidence would overturn the current leading conclusion?",
+            "Which hidden assumption is carrying the most decision weight?",
+        ],
+        "refusal_conditions": [
+            "Do not return `ANSWERED` while the decisive claim still depends on hidden assumptions.",
+            "Do not return `ANSWERED` when the conclusion lacks an explicit decision basis.",
+        ],
+        "publication_bar": [
+            "The answer names what is known, what is inferred, and what still needs verification.",
+            "A competent operator could understand the decision path without guessing at hidden steps.",
+        ],
+    }
+
+
+def _resolve_head_expert_profile(*, dispatch: dict, execution_mode: str, group_id: str) -> dict:
+    if execution_mode == "light":
+        task_brief = dispatch.get("head_task_brief", {})
+        if not isinstance(task_brief, dict):
+            task_brief = {}
+        raw = task_brief.get("expert_profile", {})
+    else:
+        raw = dispatch.get("head_expert_profile", {})
+    if not isinstance(raw, dict):
+        raw = {}
+
+    defaults = _default_head_expert_profile(group_id)
+    resolved = {}
+    for key in [
+        "analysis_protocol",
+        "evidence_hierarchy",
+        "pressure_questions",
+        "refusal_conditions",
+        "publication_bar",
+    ]:
+        value = raw.get(key)
+        if not isinstance(value, list):
+            value = defaults[key]
+        rows = [str(item).strip() for item in value if str(item).strip()]
+        resolved[key] = rows[:8] if rows else list(defaults[key])
+
+    resolved["field_identity"] = str(
+        raw.get("field_identity") or defaults["field_identity"]
+    ).strip()
+    resolved["signature_commitment"] = str(
+        raw.get("signature_commitment") or defaults["signature_commitment"]
+    ).strip()
+    return resolved
+
+
 def _build_head_prompt(
     *,
     objective: str,
@@ -1790,6 +2095,7 @@ def _build_head_prompt(
     dispatch: dict,
     phase_outputs: Dict[str, SpecialistResult],
     execution_mode: str,
+    visible_skill_names: Optional[List[str]] = None,
 ) -> str:
     head_skill = str(dispatch.get("head_skill") or "").strip()
     activation = (
@@ -1802,10 +2108,36 @@ def _build_head_prompt(
         execution_mode=execution_mode,
         group_id=group_id,
     )
+    expert_profile = _resolve_head_expert_profile(
+        dispatch=dispatch,
+        execution_mode=execution_mode,
+        group_id=group_id,
+    )
     if execution_mode == "light":
         head_task_brief = dispatch.get("head_task_brief", {})
         if not isinstance(head_task_brief, dict):
             head_task_brief = {}
+        visible_skill_set = {
+            str(item).strip() for item in (visible_skill_names or []) if str(item).strip()
+        }
+        specialist_skill_names = head_task_brief.get("specialist_skill_names", [])
+        if not isinstance(specialist_skill_names, list):
+            specialist_skill_names = []
+        specialist_skill_names = [
+            str(item).strip() for item in specialist_skill_names if str(item).strip()
+        ][:16]
+        mounted_specialist_skill_names = [
+            skill_name
+            for skill_name in specialist_skill_names
+            if skill_name in visible_skill_set and skill_name != head_skill
+        ]
+        if mounted_specialist_skill_names:
+            activation += (
+                "Also activate and apply these specialist skills as internal expert lenses while "
+                "producing one integrated head answer:\n"
+                + "\n".join([f"- `${skill_name}`" for skill_name in mounted_specialist_skill_names])
+                + "\n"
+            )
         return activation + (
             "You are the group head agent in a layered multi-agent runtime. "
             "Execute this group objective directly without delegating to specialists.\n"
@@ -1814,16 +2146,24 @@ def _build_head_prompt(
             f"Dispatch metadata: {json.dumps({'head_agent': dispatch.get('head_agent'), 'head_skill': dispatch.get('head_skill'), 'execution_mode': 'light'}, ensure_ascii=True)}\n"
             f"Group brief (canonical): {json.dumps(head_task_brief, ensure_ascii=True)}\n"
             f"Persona contract (canonical): {json.dumps(persona, ensure_ascii=True)}\n"
+            f"Expert charter (canonical): {json.dumps(expert_profile, ensure_ascii=True)}\n"
             "Rules:\n"
-            "1. Directly solve the group objective and produce an evidence-backed answer.\n"
-            "2. Web search is enabled for this run; cite sources for externally derived claims.\n"
-            "3. Publish only group-level artifacts and citations.\n"
-            "4. Set response_status to ANSWERED only when this group directly answers the objective.\n"
-            "5. If evidence is insufficient, set response_status to BLOCKED and explain why.\n"
-            "6. objective_coverage is a 0..1 score for how fully this group addressed the objective.\n"
-            "7. Express a proud domain stance and explicit challenge posture in persona_stance/persona_challenge.\n"
-            "8. Set persona_override_evidence to true only when override policy permits it and confidence is justified.\n"
-            "Return ONLY these exact blocks:\n"
+            "1. Operate as the field authority described by the expert charter, not as a generic coordinator.\n"
+            "2. Solve the group objective directly, but internally simulate the specialist decomposition described in the canonical brief.\n"
+            "3. Use the reasoning phases in order; do not skip dependency checks or collapse specialist responsibilities into shallow summary.\n"
+            "4. Apply every folded specialist contract: respect required outputs, required references, method, failure modes, and gate checks.\n"
+            "5. Use the expert charter's pressure questions and refusal conditions as mandatory pre-publication checks.\n"
+            "6. Web search is enabled for this run; cite sources for externally derived claims and prefer accountable sources.\n"
+            "7. Publish only group-level artifacts and citations.\n"
+            "8. Set response_status to ANSWERED only when this group directly answers the objective with explicit basis.\n"
+            "9. If evidence is insufficient, set response_status to BLOCKED and explain why.\n"
+            "10. objective_coverage is a 0..1 score for how fully this group addressed the objective.\n"
+            "11. Express a proud domain stance and explicit challenge posture in persona_stance/persona_challenge.\n"
+            "12. Set persona_override_evidence to true only when override policy permits it and confidence is justified.\n"
+            "During execution, emit concise visible worklog updates as standalone lines beginning with "
+            "`LIVE_NOTE:`. Keep each note under 140 characters. Use them only for phase shifts, blockers, "
+            "evidence changes, or conclusion changes. Do not put secrets in LIVE_NOTE lines.\n"
+            "After any LIVE_NOTE lines, return ONLY these exact blocks and do not add any prose after END_HANDOFF_JSON:\n"
             "BEGIN_WORK\n"
             "<group summary markdown>\n"
             "END_WORK\n"
@@ -1926,17 +2266,23 @@ def _build_head_prompt(
         f"Dispatch metadata: {json.dumps({'head_agent': dispatch.get('head_agent'), 'head_skill': dispatch.get('head_skill')}, ensure_ascii=True)}\n"
         f"Specialist summaries (canonical): {json.dumps(input_rows, ensure_ascii=True)}\n"
         f"Persona contract (canonical): {json.dumps(persona, ensure_ascii=True)}\n"
+        f"Expert charter (canonical): {json.dumps(expert_profile, ensure_ascii=True)}\n"
         "Rules:\n"
-        "1. Use only the specialist summaries provided above as input. Do not perform web searches.\n"
-        "2. Avoid broad filesystem crawling; read at most one specialist handoff file only if a required field is missing.\n"
-        "3. Resolve conflicts and report unresolved assumptions explicitly.\n"
-        "4. Publish only group-level artifacts and citations.\n"
-        "5. Set response_status to ANSWERED only when this group directly answers the objective.\n"
-        "6. If evidence is insufficient, set response_status to BLOCKED and explain why.\n"
-        "7. objective_coverage is a 0..1 score for how fully this group addressed the objective.\n"
-        "8. Express a proud domain stance and explicit challenge posture in persona_stance/persona_challenge.\n"
-        "9. Set persona_override_evidence to true only when override policy permits it and confidence is justified.\n"
-        "Return ONLY these exact blocks:\n"
+        "1. Operate as the field authority described by the expert charter, not as a passive aggregator.\n"
+        "2. Use only the specialist summaries provided above as input. Do not perform web searches.\n"
+        "3. Avoid broad filesystem crawling; read at most one specialist handoff file only if a required field is missing.\n"
+        "4. Resolve conflicts and report unresolved assumptions explicitly.\n"
+        "5. Use the expert charter's pressure questions and refusal conditions before accepting a merged conclusion.\n"
+        "6. Publish only group-level artifacts and citations.\n"
+        "7. Set response_status to ANSWERED only when this group directly answers the objective.\n"
+        "8. If evidence is insufficient, set response_status to BLOCKED and explain why.\n"
+        "9. objective_coverage is a 0..1 score for how fully this group addressed the objective.\n"
+        "10. Express a proud domain stance and explicit challenge posture in persona_stance/persona_challenge.\n"
+        "11. Set persona_override_evidence to true only when override policy permits it and confidence is justified.\n"
+        "During execution, emit concise visible worklog updates as standalone lines beginning with "
+        "`LIVE_NOTE:`. Keep each note under 140 characters. Use them only for merge-phase shifts, blockers, "
+        "evidence changes, or conclusion changes. Do not put secrets in LIVE_NOTE lines.\n"
+        "After any LIVE_NOTE lines, return ONLY these exact blocks and do not add any prose after END_HANDOFF_JSON:\n"
         "BEGIN_WORK\n"
         "<group summary markdown>\n"
         "END_WORK\n"

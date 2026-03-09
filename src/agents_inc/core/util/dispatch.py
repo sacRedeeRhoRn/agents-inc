@@ -9,6 +9,11 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple
 
+from agents_inc.core.persona_tools import (
+    expert_lens_for_role,
+    synthesize_domain_doctrine,
+    synthesize_expert_profile,
+)
 from agents_inc.core.util.constants import SCHEMA_VERSION
 from agents_inc.core.util.errors import FabricError
 
@@ -54,6 +59,151 @@ def _normalize_dep_entries(depends_on: Any) -> List[dict]:
                 }
             )
     return out
+
+
+def _normalized_rows(values: Any) -> List[str]:
+    if not isinstance(values, list):
+        return []
+    out: List[str] = []
+    seen = set()
+    for item in values:
+        text = str(item or "").strip()
+        if not text or text in seen:
+            continue
+        out.append(text)
+        seen.add(text)
+    return out
+
+
+def _gate_check_names(group_manifest: dict) -> List[str]:
+    checks = group_manifest.get("gate_profile", {}).get("checks", {})
+    if not isinstance(checks, dict):
+        return []
+    return [str(key).strip() for key, value in checks.items() if str(key).strip() and bool(value)]
+
+
+def _specialist_definition_of_done(group_manifest: dict, specialist: dict) -> List[str]:
+    rows = [f"Produce `{output}`." for output in _normalized_rows(specialist.get("required_outputs", []))]
+    for gate_name in _gate_check_names(group_manifest):
+        rows.append(f"Pass gate check `{gate_name}`.")
+    return rows
+
+
+def _specialist_method_steps(dep_entries: List[dict]) -> List[str]:
+    dep_names = [
+        str(dep.get("agent_id") or "").strip()
+        for dep in dep_entries
+        if isinstance(dep, dict) and str(dep.get("agent_id") or "").strip()
+    ]
+    steps = [
+        "Parse the objective and isolate the sub-problem tied to this specialist focus.",
+        "Load required references first; mark unknowns before claiming conclusions.",
+        "Build claim-level outputs with explicit evidence and assumptions.",
+        "Write required artifacts and ensure paths are reproducible by peers.",
+    ]
+    if dep_names:
+        steps.insert(
+            2,
+            "Consume dependency artifacts from: {0}.".format(", ".join(sorted(dep_names))),
+        )
+    return steps
+
+
+def _specialist_failure_modes(group_manifest: dict) -> List[str]:
+    rows = [
+        "Missing citations for key claims -> return `BLOCKED_UNCITED`.",
+        "Missing required evidence -> return `BLOCKED_NEEDS_EVIDENCE`.",
+        "Scope creep into other specialists' responsibilities -> return `BLOCKED_REVIEW`.",
+    ]
+    for gate_name in _gate_check_names(group_manifest):
+        rows.append(f"Gate `{gate_name}` violation -> return `BLOCKED_REVIEW`.")
+    return rows
+
+
+def _prepare_specialist_graph(
+    group_id: str, specialists: Any
+) -> Tuple[Dict[str, dict], Dict[str, List[dict]], Dict[str, set], List[List[str]]]:
+    if not isinstance(specialists, list):
+        return {}, {}, {}, []
+
+    spec_map: Dict[str, dict] = {}
+    dep_entries_map: Dict[str, List[dict]] = {}
+    deps_map: Dict[str, set] = {}
+    for index, specialist in enumerate(specialists, start=1):
+        if not isinstance(specialist, dict):
+            raise FabricError(
+                "group '{0}' specialist entry #{1} must be a map".format(group_id, index)
+            )
+        aid = str(specialist.get("agent_id") or "").strip()
+        if not aid:
+            raise FabricError(
+                "group '{0}' specialist entry #{1} is missing agent_id".format(group_id, index)
+            )
+        if aid in spec_map:
+            raise FabricError(
+                "group '{0}' specialist agent_id '{1}' is duplicated".format(group_id, aid)
+            )
+        spec_map[aid] = specialist
+        dep_entries = _normalize_dep_entries(specialist.get("depends_on", []))
+        dep_entries_map[aid] = dep_entries
+        deps_map[aid] = {entry["agent_id"] for entry in dep_entries}
+
+    remaining = set(spec_map.keys())
+    completed: set = set()
+    phases: List[List[str]] = []
+    while remaining:
+        ready = sorted([aid for aid in remaining if deps_map[aid].issubset(completed)])
+        if not ready:
+            blocked = sorted(remaining)
+            raise FabricError(
+                "cyclic or unsatisfied specialist dependencies in group '{0}': {1}".format(
+                    group_id, ", ".join(blocked)
+                )
+            )
+        phases.append(ready)
+        completed.update(ready)
+        remaining.difference_update(ready)
+    return spec_map, dep_entries_map, deps_map, phases
+
+
+def _light_specialist_contract(
+    *,
+    group_manifest: dict,
+    specialist: dict,
+    dep_entries: List[dict],
+) -> dict:
+    role = str(specialist.get("role") or "domain-core").strip() or "domain-core"
+    execution = resolve_task_execution(group_manifest, specialist)
+    return {
+        "agent_id": str(specialist.get("agent_id") or "").strip(),
+        "skill_name": str(
+            specialist.get("effective_skill_name") or specialist.get("skill_name") or ""
+        ).strip(),
+        "role": role,
+        "focus": str(specialist.get("focus") or "").strip(),
+        "expert_lens": expert_lens_for_role(role),
+        "depends_on": sorted(
+            [
+                str(entry.get("agent_id") or "").strip()
+                for entry in dep_entries
+                if isinstance(entry, dict) and str(entry.get("agent_id") or "").strip()
+            ]
+        ),
+        "dependency_artifacts": _normalized_rows(
+            [
+                artifact
+                for entry in dep_entries
+                if isinstance(entry, dict)
+                for artifact in entry.get("required_artifacts", [])
+            ]
+        ),
+        "required_outputs": _normalized_rows(specialist.get("required_outputs", [])),
+        "required_references": _normalized_rows(specialist.get("required_references", [])),
+        "definition_of_done": _specialist_definition_of_done(group_manifest, specialist),
+        "method": _specialist_method_steps(dep_entries),
+        "failure_modes": _specialist_failure_modes(group_manifest),
+        "execution": execution,
+    }
 
 
 # ── Public API ─────────────────────────────────────────────────────────────
@@ -121,19 +271,12 @@ def build_dispatch_plan(
     persona = head.get("persona", {})
     if not isinstance(persona, dict):
         persona = {}
-    doctrine = persona.get("domain_doctrine")
-    if not isinstance(doctrine, list):
-        doctrine = []
-    doctrine_rows = [str(item).strip() for item in doctrine if str(item).strip()]
-    if not doctrine_rows:
-        success = group_manifest.get("success_criteria")
-        if isinstance(success, list):
-            doctrine_rows = [str(item).strip() for item in success if str(item).strip()]
-    if not doctrine_rows:
-        doctrine_rows = [
-            "Decisions are domain-grounded and explicit.",
-            "Weak evidence is challenged before publication.",
-        ]
+    specialists = group_manifest.get("specialists", [])
+    doctrine_rows = synthesize_domain_doctrine(
+        success_criteria=group_manifest.get("success_criteria"),
+        specialists=specialists,
+        provided_doctrine=persona.get("domain_doctrine"),
+    )
     head_persona_brief = {
         "persona_id": str(persona.get("persona_id") or f"persona-{group_id}-head").strip(),
         "tone": str(persona.get("tone") or "authoritative").strip(),
@@ -145,19 +288,34 @@ def build_dispatch_plan(
         "confidence_threshold": float(persona.get("confidence_threshold") or 0.8),
         "override_policy": str(persona.get("override_policy") or "head-meeting-only").strip(),
     }
+    head_expert_profile = synthesize_expert_profile(
+        group_id=group_id,
+        display_name=group_manifest.get("display_name"),
+        domain=group_manifest.get("domain"),
+        purpose=group_manifest.get("purpose") or head.get("mission"),
+        success_criteria=group_manifest.get("success_criteria"),
+        specialists=specialists,
+        gate_checks=_gate_check_names(group_manifest),
+        provided_profile=head.get("expert_profile"),
+    )
 
     interaction = group_manifest.get("interaction", {})
     session_mode = "interactive-separated"
     if isinstance(interaction, dict) and interaction.get("mode"):
         session_mode = str(interaction["mode"])
 
+    spec_map, dep_entries_map, deps_map, specialist_layers = _prepare_specialist_graph(
+        group_id, specialists
+    )
+
     if mode == "light":
         specialist_focus = []
-        specialists = group_manifest.get("specialists", [])
-        if isinstance(specialists, list):
-            for specialist in specialists:
-                if not isinstance(specialist, dict):
-                    continue
+        specialist_contracts = []
+        specialist_skill_names: List[str] = []
+        required_reference_paths: List[str] = []
+        for phase in specialist_layers:
+            for aid in phase:
+                specialist = spec_map[aid]
                 role = str(specialist.get("role") or "").strip()
                 focus = str(specialist.get("focus") or "").strip()
                 if role or focus:
@@ -167,6 +325,37 @@ def build_dispatch_plan(
                             "focus": focus,
                         }
                     )
+                contract = _light_specialist_contract(
+                    group_manifest=group_manifest,
+                    specialist=specialist,
+                    dep_entries=dep_entries_map.get(aid, []),
+                )
+                specialist_contracts.append(contract)
+                skill_name = str(contract.get("skill_name") or "").strip()
+                if skill_name and skill_name not in specialist_skill_names:
+                    specialist_skill_names.append(skill_name)
+                for ref_path in contract.get("required_references", []):
+                    text = str(ref_path or "").strip()
+                    if text and text not in required_reference_paths:
+                        required_reference_paths.append(text)
+
+        reasoning_phases = []
+        for phase_id, phase in enumerate(specialist_layers, start=1):
+            reasoning_phases.append(
+                {
+                    "phase_id": phase_id,
+                    "specialists": [
+                        {
+                            "agent_id": aid,
+                            "role": str(spec_map[aid].get("role") or "domain-core").strip()
+                            or "domain-core",
+                            "focus": str(spec_map[aid].get("focus") or "").strip(),
+                            "depends_on": sorted(list(deps_map.get(aid, set()))),
+                        }
+                        for aid in phase
+                    ],
+                }
+            )
 
         return {
             "project_id": project_id,
@@ -191,41 +380,24 @@ def build_dispatch_plan(
             "head_task_brief": {
                 "purpose": str(group_manifest.get("purpose") or "").strip(),
                 "head_mission": str(head.get("mission") or "").strip(),
+                "success_criteria": _normalized_rows(group_manifest.get("success_criteria", [])),
+                "gate_checks_enabled": _gate_check_names(group_manifest),
                 "specialist_focus": specialist_focus[:12],
+                "specialist_skill_names": specialist_skill_names[:16],
+                "specialist_contracts": specialist_contracts[:16],
+                "reasoning_phases": reasoning_phases[:12],
+                "required_reference_paths": required_reference_paths[:32],
                 "head_persona": head_persona_brief,
+                "expert_profile": head_expert_profile,
             },
             "phases": [],
         }
 
-    specialists = group_manifest.get("specialists", [])
     if not specialists:
         raise FabricError(f"group '{group_id}' has no specialists")
-
-    spec_map: Dict[str, dict] = {}
-    dep_entries_map: Dict[str, List[dict]] = {}
-    deps_map: Dict[str, set] = {}
-    for specialist in specialists:
-        aid = specialist["agent_id"]
-        spec_map[aid] = specialist
-        dep_entries = _normalize_dep_entries(specialist.get("depends_on", []))
-        dep_entries_map[aid] = dep_entries
-        deps_map[aid] = {entry["agent_id"] for entry in dep_entries}
-
-    remaining = set(spec_map.keys())
-    completed: set = set()
     phases = []
     phase_id = 1
-
-    while remaining:
-        ready = sorted([aid for aid in remaining if deps_map[aid].issubset(completed)])
-        if not ready:
-            blocked = sorted(remaining)
-            raise FabricError(
-                "cyclic or unsatisfied specialist dependencies in group '{0}': {1}".format(
-                    group_id, ", ".join(blocked)
-                )
-            )
-
+    for ready in specialist_layers:
         mode = "parallel" if len(ready) > 1 else "sequential"
         tasks = []
         for aid in ready:
@@ -263,10 +435,7 @@ def build_dispatch_plan(
                 }
             )
         phases.append({"phase_id": phase_id, "mode": mode, "tasks": tasks})
-
         phase_id += 1
-        completed.update(ready)
-        remaining.difference_update(ready)
 
     return {
         "project_id": project_id,
@@ -290,6 +459,7 @@ def build_dispatch_plan(
         ),
         "gate_profile": group_manifest.get("gate_profile", {}),
         "head_persona_brief": head_persona_brief,
+        "head_expert_profile": head_expert_profile,
         "phases": phases,
         "quality_gates": group_manifest.get("quality_gates", {}),
     }

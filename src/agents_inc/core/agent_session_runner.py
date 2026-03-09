@@ -5,9 +5,10 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict
+from typing import Callable, Dict, List
 
 from agents_inc.core.backends.registry import resolve_backend
 from agents_inc.core.codex_home import codex_launch_env
@@ -41,6 +42,7 @@ class AgentRunConfig:
     sandbox_mode: str | None = None
     sandbox_cd_dir: Path | None = None
     sandbox_network_access: bool | None = None
+    stream_callback: Callable[[Dict[str, object]], None] | None = None
 
 
 @dataclass
@@ -305,8 +307,22 @@ class AgentSessionRunner:
             "cross-check assumptions, and concrete next actions for downstream validation. "
             "Quality gates were evaluated for coverage, evidence sufficiency, and integration readiness.\n"
         )
+        mock_live_notes = [
+            f"LIVE_NOTE: {label} opened the objective and established the working frame.",
+            f"LIVE_NOTE: {label} checked evidence sufficiency and narrowed the leading path.",
+            f"LIVE_NOTE: {label} prepared the final structured handoff.",
+        ]
+        if config.stream_callback is not None:
+            self._emit_stream_event(
+                config,
+                {
+                    "event": "agent_message",
+                    "text": "\n".join(mock_live_notes) + "\n",
+                },
+            )
         raw_text = (
-            "BEGIN_WORK\n"
+            "\n".join(mock_live_notes)
+            + "\nBEGIN_WORK\n"
             + work
             + "\nEND_WORK\nBEGIN_HANDOFF_JSON\n"
             + json.dumps(handoff, indent=2)
@@ -421,46 +437,183 @@ class AgentSessionRunner:
             parsed_timeout = 0
         if parsed_timeout > 0:
             timeout_value = parsed_timeout
-        return subprocess.run(
+        if config.stream_callback is None:
+            return subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout_value,
+                env=self._launch_env(config),
+                cwd=str(config.work_dir or config.project_root),
+            )
+
+        proc = subprocess.Popen(
             cmd,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout_value,
+            bufsize=1,
             env=self._launch_env(config),
             cwd=str(config.work_dir or config.project_root),
         )
+        if proc.stdout is None or proc.stderr is None:
+            raise RuntimeError("failed to create subprocess pipes")
+
+        stdout_chunks: List[str] = []
+        stderr_chunks: List[str] = []
+
+        def _reader(stream_name: str, stream, sink: List[str]) -> None:  # type: ignore[no-untyped-def]
+            try:
+                for chunk in iter(stream.readline, ""):
+                    sink.append(chunk)
+                    self._emit_stream_event(
+                        config,
+                        {
+                            "event": "raw_line",
+                            "stream": stream_name,
+                            "text": chunk,
+                        },
+                    )
+                    for parsed in _extract_exec_stream_events(chunk):
+                        self._emit_stream_event(config, parsed)
+            finally:
+                try:
+                    stream.close()
+                except Exception:
+                    return
+
+        stdout_thread = threading.Thread(
+            target=_reader, args=("stdout", proc.stdout, stdout_chunks), daemon=True
+        )
+        stderr_thread = threading.Thread(
+            target=_reader, args=("stderr", proc.stderr, stderr_chunks), daemon=True
+        )
+        stdout_thread.start()
+        stderr_thread.start()
+        try:
+            proc.wait(timeout=timeout_value)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+            stdout_thread.join()
+            stderr_thread.join()
+            raise subprocess.TimeoutExpired(
+                cmd=cmd,
+                timeout=timeout_value if timeout_value is not None else 0,
+                output="".join(stdout_chunks),
+                stderr="".join(stderr_chunks),
+            )
+
+        stdout_thread.join()
+        stderr_thread.join()
+        return subprocess.CompletedProcess(
+            cmd,
+            int(proc.returncode),
+            stdout="".join(stdout_chunks),
+            stderr="".join(stderr_chunks),
+        )
+
+    @staticmethod
+    def _emit_stream_event(config: AgentRunConfig, event: Dict[str, object]) -> None:
+        callback = config.stream_callback
+        if callback is None:
+            return
+        try:
+            callback(dict(event))
+        except Exception:
+            return
 
 
 def _extract_exec_json(raw_text: str) -> tuple[str, str]:
     thread_id = ""
     agent_messages: list[str] = []
     for line in raw_text.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("{") or not stripped.endswith("}"):
-            continue
-        try:
-            payload = json.loads(stripped)
-        except Exception:
-            continue
-        if not isinstance(payload, dict):
-            continue
-        event_type = str(payload.get("type") or "")
-        if event_type == "thread.started":
-            thread = str(payload.get("thread_id") or "").strip()
-            if thread:
-                thread_id = thread
-            continue
-        if event_type != "item.completed":
-            continue
-        item = payload.get("item")
-        if not isinstance(item, dict):
-            continue
-        if str(item.get("type") or "") != "agent_message":
-            continue
-        text = str(item.get("text") or "").strip()
-        if text:
-            agent_messages.append(text)
+        for event in _extract_exec_stream_events(line):
+            kind = str(event.get("event") or "")
+            if kind == "thread_started":
+                thread = str(event.get("thread_id") or "").strip()
+                if thread:
+                    thread_id = thread
+            elif kind == "agent_message":
+                text = str(event.get("text") or "").strip()
+                if text:
+                    agent_messages.append(text)
     return thread_id, "\n\n".join(agent_messages).strip()
+
+
+def _extract_exec_stream_events(raw_line: str) -> List[Dict[str, object]]:
+    stripped = str(raw_line or "").strip()
+    if not stripped.startswith("{") or not stripped.endswith("}"):
+        return []
+    try:
+        payload = json.loads(stripped)
+    except Exception:
+        return []
+    if not isinstance(payload, dict):
+        return []
+
+    candidates = [payload]
+    if str(payload.get("type") or "").strip() == "event_msg":
+        nested = payload.get("payload")
+        if isinstance(nested, dict):
+            candidates = [nested]
+
+    out: List[Dict[str, object]] = []
+    for item in candidates:
+        out.extend(_extract_exec_stream_events_from_payload(item))
+    return out
+
+
+def _extract_exec_stream_events_from_payload(payload: Dict[str, object]) -> List[Dict[str, object]]:
+    out: List[Dict[str, object]] = []
+    event_type = str(payload.get("type") or "").strip()
+    method = str(payload.get("method") or "").strip()
+    params = payload.get("params") if isinstance(payload.get("params"), dict) else {}
+
+    if event_type == "thread.started":
+        thread = str(payload.get("thread_id") or "").strip()
+        if thread:
+            out.append({"event": "thread_started", "thread_id": thread})
+    elif method == "thread/started":
+        params_thread = str(params.get("threadId") or params.get("thread_id") or "").strip()
+        if params_thread:
+            out.append({"event": "thread_started", "thread_id": params_thread})
+
+    if method == "item/agentMessage/delta":
+        delta_text = str(params.get("delta") or "")
+        if delta_text:
+            out.append({"event": "agent_delta", "text": delta_text})
+
+    if method == "item/completed":
+        item = params.get("item") if isinstance(params.get("item"), dict) else {}
+        if str(item.get("type") or "").strip() == "agentMessage":
+            text = str(item.get("text") or "").strip()
+            if text:
+                out.append({"event": "agent_message", "text": text})
+
+    if event_type == "item.completed":
+        item = payload.get("item")
+        if isinstance(item, dict) and str(item.get("type") or "").strip() == "agent_message":
+            text = str(item.get("text") or "").strip()
+            if text:
+                out.append({"event": "agent_message", "text": text})
+
+    if event_type in {"message.delta", "response.output_text.delta"}:
+        delta_text = str(payload.get("delta") or "").strip()
+        if delta_text:
+            out.append({"event": "agent_delta", "text": delta_text})
+
+    if event_type == "item.delta":
+        item = payload.get("item")
+        if isinstance(item, dict) and str(item.get("type") or "").strip() in {
+            "agent_message",
+            "agentMessage",
+        }:
+            delta_text = str(payload.get("delta") or item.get("delta") or "").strip()
+            if delta_text:
+                out.append({"event": "agent_delta", "text": delta_text})
+
+    return out
 
 
 def datetime_from_iso(value: str):

@@ -479,6 +479,15 @@ class FabricIntegrationTests(unittest.TestCase):
         agents_text = specialist_agents.read_text(encoding="utf-8")
         self.assertIn(f"${specialist_skill}", agents_text)
 
+        head_skill = (
+            project_dir / "agent-groups" / "developer" / "skills" / group_manifest["head"]["effective_skill_name"] / "SKILL.md"
+        )
+        self.assertTrue(head_skill.exists())
+        head_skill_text = head_skill.read_text(encoding="utf-8")
+        self.assertIn("## Expert Charter", head_skill_text)
+        self.assertIn("### Pressure Questions", head_skill_text)
+        self.assertIn("### Refusal Conditions", head_skill_text)
+
         required_ref = specialist["required_references"][0]
         ref_path = project_dir / "agent-groups" / "developer" / required_ref
         self.assertTrue(ref_path.exists())

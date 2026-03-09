@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Callable, List, Optional
 
 from agents_inc.core.fabric_lib import FabricError, slugify
+from agents_inc.core.persona_tools import synthesize_domain_doctrine
 
 ASK = Callable[[str, Optional[str]], str]
 
@@ -209,16 +210,10 @@ def _default_head_persona(draft: GroupDraft) -> dict:
     domain_text = str(draft.domain or "general-domain").replace("-", " ").strip()
     display = str(draft.display_name or "Group").strip()
     persona_id = "persona-{0}-head".format(slugify(draft.group_id))
-    doctrine: List[str] = []
-    for item in draft.success_criteria:
-        text = str(item).strip()
-        if text and text not in doctrine:
-            doctrine.append(text)
-    if not doctrine:
-        doctrine = [
-            "Decisions are strict, explicit, and domain-grounded.",
-            "Weak evidence is challenged before publication.",
-        ]
+    doctrine = synthesize_domain_doctrine(
+        success_criteria=draft.success_criteria,
+        specialists=draft.specialists,
+    )
     return {
         "persona_id": persona_id,
         "tone": "authoritative",

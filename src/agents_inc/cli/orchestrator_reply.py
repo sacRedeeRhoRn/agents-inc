@@ -1,10 +1,23 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
 import json
+import os
 import re
+import select
 import sys
+import tempfile
+import threading
+import time
 from pathlib import Path
+
+try:
+    import termios
+    import tty
+except Exception:  # pragma: no cover - platform fallback
+    termios = None  # type: ignore[assignment]
+    tty = None  # type: ignore[assignment]
 
 from agents_inc.cli.escalation_prompt import resolve_escalations
 from agents_inc.core.config_state import default_config_path, get_projects_root
@@ -14,6 +27,7 @@ from agents_inc.core.fabric_lib import (
     resolve_fabric_root,
     slugify,
 )
+from agents_inc.core.live_dashboard import LiveDashboard, should_enable_dashboard
 from agents_inc.core.model_profiles import (
     DEFAULT_HEAD_MODEL,
     DEFAULT_HEAD_REASONING_EFFORT,
@@ -25,6 +39,9 @@ from agents_inc.core.model_profiles import (
 from agents_inc.core.orchestrator_reply import OrchestratorReplyConfig, run_orchestrator_reply
 from agents_inc.core.progress_notes import format_progress_event
 from agents_inc.core.session_state import default_project_index_path, find_resume_project
+
+_DOUBLE_ESC_WINDOW_SEC = 0.7
+_INTERRUPT_POLL_SEC = 0.1
 
 
 def parse_args() -> argparse.Namespace:
@@ -56,6 +73,12 @@ def parse_args() -> argparse.Namespace:
         help="config file path (default ~/.agents-inc/config.yaml)",
     )
     parser.add_argument("--json", action="store_true", help="emit JSON result")
+    parser.add_argument(
+        "--dashboard",
+        default="auto",
+        choices=["auto", "on", "off"],
+        help="render interactive live dashboard when stdout is a TTY",
+    )
     parser.add_argument(
         "--max-parallel",
         type=int,
@@ -174,6 +197,122 @@ def parse_args() -> argparse.Namespace:
         help="do not prompt for escalation values when blocked by escalation requests",
     )
     return parser.parse_args()
+
+
+def _stdin_fd_if_tty() -> int | None:
+    try:
+        fd = int(sys.stdin.fileno())
+    except Exception:
+        return None
+    if fd < 0:
+        return None
+    if not os.isatty(fd):
+        return None
+    return fd
+
+
+def _watch_double_escape_interrupt(
+    *,
+    worker: threading.Thread,
+    on_interrupt,
+) -> bool:
+    def _mark_interrupt(current: bool) -> bool:
+        if current:
+            return current
+        try:
+            on_interrupt()
+        except Exception:
+            pass
+        return True
+
+    fd = _stdin_fd_if_tty()
+    if fd is None:
+        while worker.is_alive():
+            try:
+                worker.join(timeout=_INTERRUPT_POLL_SEC)
+            except KeyboardInterrupt:
+                interrupted = _mark_interrupt(False)
+                while worker.is_alive():
+                    try:
+                        worker.join(timeout=_INTERRUPT_POLL_SEC)
+                    except KeyboardInterrupt:
+                        interrupted = _mark_interrupt(interrupted)
+                        continue
+                return interrupted
+        return False
+
+    original_attrs = None
+    if termios is not None and tty is not None:
+        try:
+            original_attrs = termios.tcgetattr(fd)
+            tty.setcbreak(fd)
+        except Exception:
+            original_attrs = None
+
+    interrupted = False
+    last_esc_at = 0.0
+    try:
+        while worker.is_alive():
+            try:
+                worker.join(timeout=_INTERRUPT_POLL_SEC)
+            except KeyboardInterrupt:
+                interrupted = _mark_interrupt(interrupted)
+                continue
+            if not worker.is_alive():
+                break
+            try:
+                ready, _, _ = select.select([fd], [], [], 0.0)
+            except Exception:
+                continue
+            if not ready:
+                continue
+            try:
+                chunk = os.read(fd, 32)
+            except Exception:
+                continue
+            if not chunk:
+                continue
+            for byte in chunk:
+                if byte != 0x1B:
+                    continue
+                now = time.monotonic()
+                if not interrupted and (now - last_esc_at) <= _DOUBLE_ESC_WINDOW_SEC:
+                    interrupted = _mark_interrupt(interrupted)
+                last_esc_at = now
+    finally:
+        if original_attrs is not None and termios is not None:
+            try:
+                termios.tcsetattr(fd, termios.TCSADRAIN, original_attrs)
+            except Exception:
+                pass
+    return interrupted
+
+
+def _run_interruptible_action(*, action, on_interrupt):
+    result_box = {}
+    error_box = {}
+
+    def _worker() -> None:
+        try:
+            result_box["value"] = action()
+        except BaseException as exc:  # noqa: BLE001
+            error_box["error"] = exc
+
+    worker = threading.Thread(target=_worker, daemon=True)
+    worker.start()
+    interrupted = _watch_double_escape_interrupt(worker=worker, on_interrupt=on_interrupt)
+    while worker.is_alive():
+        try:
+            worker.join(timeout=_INTERRUPT_POLL_SEC)
+        except KeyboardInterrupt:
+            if not interrupted:
+                interrupted = True
+                try:
+                    on_interrupt()
+                except Exception:
+                    pass
+            continue
+    return result_box.get("value"), error_box.get("error"), interrupted
 
 
 def _manifest_exists(fabric_root: Path, project_id: str) -> bool:
@@ -376,6 +515,9 @@ def main() -> int:
                 )
 
         def _print_live_event_stdout(event: dict) -> None:
+            if dashboard is not None:
+                dashboard.handle_event(event)
+                return
             line = format_progress_event(event)
             if line:
                 print(line, flush=True)
@@ -384,6 +526,26 @@ def main() -> int:
             line = format_progress_event(event)
             if line:
                 print(line, file=sys.stderr, flush=True)
+
+        dashboard = None
+        if should_enable_dashboard(
+            str(args.dashboard or "auto"),
+            interactive=bool(getattr(sys.stdout, "isatty", lambda: False)()),
+            json_mode=bool(args.json),
+        ):
+            dashboard = LiveDashboard()
+
+        interactive_interrupt = bool(
+            not args.json
+            and getattr(sys.stdin, "isatty", lambda: False)()
+            and getattr(sys.stdout, "isatty", lambda: False)()
+        )
+        abort_file = None
+        if interactive_interrupt:
+            abort_file = (
+                Path(tempfile.gettempdir())
+                / f"agents-inc-abort-{os.getpid()}-{int(time.time() * 1000)}.flag"
+            )
 
         config = OrchestratorReplyConfig(
             fabric_root=fabric_root,
@@ -402,7 +564,11 @@ def main() -> int:
             stop_rule=str(args.stop_rule or "unanimous-head-satisfied"),
             max_cycles=int(runtime["max_cycles"]),
             heartbeat_sec=int(runtime["heartbeat_sec"]),
-            abort_file=Path(args.abort_file).expanduser().resolve() if args.abort_file else None,
+            abort_file=(
+                Path(args.abort_file).expanduser().resolve()
+                if args.abort_file
+                else abort_file
+            ),
             require_negotiation=bool(require_negotiation),
             audit=bool(args.audit),
             specialist_model=str(model_settings["specialist_model"]),
@@ -413,7 +579,29 @@ def main() -> int:
             progress_callback=(_print_live_event_stderr if args.json else _print_live_event_stdout),
             project_index_path=default_project_index_path(args.project_index),
         )
-        result = run_orchestrator_reply(config)
+        def _request_abort() -> None:
+            if abort_file is None or abort_file.exists():
+                return
+            abort_file.write_text("user interrupt requested via double ESC\n", encoding="utf-8")
+
+        try:
+            with (dashboard if dashboard is not None else nullcontext()):
+                if interactive_interrupt:
+                    run_result, run_error, _ = _run_interruptible_action(
+                        action=lambda: run_orchestrator_reply(config),
+                        on_interrupt=_request_abort,
+                    )
+                    if run_error is not None:
+                        raise run_error
+                    result = run_result if isinstance(run_result, dict) else {}
+                else:
+                    result = run_orchestrator_reply(config)
+        finally:
+            if abort_file is not None and abort_file.exists():
+                try:
+                    abort_file.unlink()
+                except Exception:
+                    pass
         if args.json:
             print(json.dumps(result, indent=2, sort_keys=True))
         else:
@@ -431,6 +619,12 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001
         blocked = _parse_blocked_error(str(exc))
         if blocked:
+            if blocked.get("status") == "BLOCKED_ABORT_REQUESTED":
+                if args.json:
+                    print(json.dumps({"error": "interrupted", **blocked}, indent=2, sort_keys=True))
+                else:
+                    print("interrupted: orchestration aborted by user (double ESC)")
+                return 130
             escalation_summary = {}
             if blocked.get("status") == "BLOCKED_ESCALATION_REQUIRED":
                 interactive = bool(

@@ -19,6 +19,7 @@ from agents_inc.core.codex_app_client import CodexAppServerError, TurnResult  # 
 from agents_inc.core.fabric_lib import FabricError  # noqa: E402
 from agents_inc.core.orchestrator_chat import (  # noqa: E402
     OrchestratorChatConfig,
+    _watch_double_escape_interrupt,
     run_orchestrator_chat,
 )
 from agents_inc.core.orchestrator_state import load_orchestrator_state  # noqa: E402
@@ -150,6 +151,37 @@ class _InterruptibleDirectClient:
 
 
 class OrchestratorChatTests(unittest.TestCase):
+    def test_double_esc_watch_treats_keyboard_interrupt_as_abort_request(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            chat_log_path = Path(td) / "chat.log"
+            interrupt_calls = {"count": 0}
+
+            class _FakeWorker:
+                def __init__(self) -> None:
+                    self.calls = 0
+
+                def is_alive(self) -> bool:
+                    return self.calls < 2
+
+                def join(self, timeout=None) -> None:  # noqa: ARG002
+                    self.calls += 1
+                    if self.calls == 1:
+                        raise KeyboardInterrupt()
+
+            def _on_interrupt() -> None:
+                interrupt_calls["count"] += 1
+
+            with patch("agents_inc.core.orchestrator_chat._stdin_fd_if_tty", return_value=None):
+                interrupted = _watch_double_escape_interrupt(
+                    worker=_FakeWorker(),
+                    on_interrupt=_on_interrupt,
+                    chat_log_path=chat_log_path,
+                )
+
+            self.assertTrue(interrupted)
+            self.assertEqual(interrupt_calls["count"], 1)
+            self.assertIn("interrupt requested", chat_log_path.read_text(encoding="utf-8"))
+
     def test_direct_turn_prints_live_prefix_and_reply(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             project_root = Path(td) / "proj-chat"

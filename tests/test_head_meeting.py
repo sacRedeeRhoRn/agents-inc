@@ -323,6 +323,43 @@ class HeadMeetingTests(unittest.TestCase):
             self.assertFalse(bool(dev.get("consensus_alignment_ok")))
             self.assertFalse(bool(qa.get("consensus_alignment_ok")))
 
+    def test_meeting_note_callback_emits_room_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project_dir = root / "generated" / "projects" / "proj-f"
+            cycle_dir = root / "turn" / "cycles" / "cycle-0002"
+            cycle_dir.mkdir(parents=True, exist_ok=True)
+
+            _write_group_exposed(
+                project_dir,
+                group_id="developer",
+                response_status="ANSWERED",
+                objective_coverage=0.95,
+            )
+            _write_group_exposed(
+                project_dir,
+                group_id="integration-delivery",
+                response_status="ANSWERED",
+                objective_coverage=0.94,
+            )
+            notes: list[str] = []
+            result = run_head_meeting(
+                HeadMeetingConfig(
+                    project_id="proj-f",
+                    cycle_id=2,
+                    cycle_dir=cycle_dir,
+                    project_dir=project_dir,
+                    selected_groups=["developer", "integration-delivery"],
+                    message="deliver one consensus answer",
+                    note_callback=lambda text: notes.append(str(text)),
+                )
+            )
+
+            self.assertTrue(bool(result.get("all_satisfied")))
+            self.assertTrue(any(note.startswith("developer:") for note in notes))
+            self.assertTrue(any(note.startswith("integration-delivery:") for note in notes))
+            self.assertTrue(any("consensus ready" in note for note in notes))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

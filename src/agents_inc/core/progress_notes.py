@@ -41,6 +41,18 @@ def format_progress_event(event: dict) -> str:
         cycle = int(event.get("cycle", 0) or 0)
         group_id = str(event.get("group_id") or "").strip() or "unknown"
         return f"live: cycle {cycle} group {group_id} started"
+    if kind == "runtime_group_waiting":
+        cycle = int(event.get("cycle", 0) or 0)
+        group_id = str(event.get("group_id") or "").strip() or "unknown"
+        summary = str(event.get("summary") or "").strip() or "waiting on specialists"
+        return f"live: cycle {cycle} group {group_id} waiting | {summary}"
+    if kind == "runtime_group_note":
+        cycle = int(event.get("cycle", 0) or 0)
+        group_id = str(event.get("group_id") or "").strip() or "unknown"
+        text = str(event.get("text") or "").strip()
+        if not text:
+            return ""
+        return f"live: cycle {cycle} group {group_id} note | {text}"
     if kind == "runtime_group_done":
         cycle = int(event.get("cycle", 0) or 0)
         group_id = str(event.get("group_id") or "").strip() or "unknown"
@@ -55,6 +67,12 @@ def format_progress_event(event: dict) -> str:
             return f"live: cycle {cycle} meeting satisfied all groups"
         unsatisfied = _join_groups(event.get("unsatisfied_groups", []))
         return f"live: cycle {cycle} meeting needs more work | unsatisfied={unsatisfied}"
+    if kind == "meeting_room_note":
+        cycle = int(event.get("cycle", 0) or 0)
+        text = str(event.get("text") or "").strip()
+        if not text:
+            return ""
+        return f"live: cycle {cycle} meeting room | {text}"
     if kind == "turn_blocked":
         status = str(event.get("status") or "").strip() or "BLOCKED"
         reason_count = int(event.get("reason_count", 0) or 0)

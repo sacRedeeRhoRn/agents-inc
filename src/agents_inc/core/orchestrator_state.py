@@ -26,6 +26,7 @@ def _default_state(project_id: str = "") -> dict:
         "last_auto_resume_checkpoint_id": "",
         "last_auto_resume_status": "",
         "last_auto_resume_at": "",
+        "pending_orchestration": {},
         "chat_log_path": "",
         "prefix": "/agents-inc",
         "updated_at": now_iso(),
@@ -43,6 +44,8 @@ def load_orchestrator_state(project_root: Path, project_id: str = "") -> dict:
         state["status"] = "inactive"
     if not isinstance(state.get("prefix"), str) or not str(state.get("prefix")).strip():
         state["prefix"] = "/agents-inc"
+    if not isinstance(state.get("pending_orchestration"), dict):
+        state["pending_orchestration"] = {}
     return state
 
 

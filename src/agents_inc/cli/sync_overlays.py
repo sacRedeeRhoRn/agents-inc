@@ -13,6 +13,7 @@ from agents_inc.core.fabric_lib import (
     resolve_fabric_root,
     write_text,
 )
+from agents_inc.core.persona_tools import synthesize_domain_doctrine, synthesize_expert_profile
 
 
 def _resolve_head_persona(group: dict) -> dict:
@@ -25,19 +26,11 @@ def _resolve_head_persona(group: dict) -> dict:
     group_id = str(group.get("group_id") or "group").strip() or "group"
     display_name = str(group.get("display_name") or group_id).strip() or group_id
     domain = str(group.get("domain") or "general-domain").strip().replace("-", " ")
-    doctrine = persona.get("domain_doctrine")
-    if not isinstance(doctrine, list):
-        doctrine = []
-    doctrine_rows = [str(item).strip() for item in doctrine if str(item).strip()]
-    if not doctrine_rows:
-        success = group.get("success_criteria")
-        if isinstance(success, list):
-            doctrine_rows = [str(item).strip() for item in success if str(item).strip()]
-    if not doctrine_rows:
-        doctrine_rows = [
-            "Decisions are domain-grounded and explicit.",
-            "Weak evidence is challenged before publication.",
-        ]
+    doctrine_rows = synthesize_domain_doctrine(
+        success_criteria=group.get("success_criteria"),
+        specialists=group.get("specialists"),
+        provided_doctrine=persona.get("domain_doctrine"),
+    )
     return {
         "persona_id": str(persona.get("persona_id") or f"persona-{group_id}-head").strip(),
         "tone": str(persona.get("tone") or "authoritative").strip(),
@@ -104,6 +97,31 @@ def render_agents_template(fabric_root: Path, project_id: str, group: dict) -> s
     )
     persona = _resolve_head_persona(group)
     doctrine_block = "\n".join(["- {0}".format(item) for item in persona["domain_doctrine"]])
+    expert_profile = synthesize_expert_profile(
+        group_id=group.get("group_id"),
+        display_name=group.get("display_name"),
+        domain=group.get("domain"),
+        purpose=group.get("purpose") or group.get("head", {}).get("mission"),
+        success_criteria=group.get("success_criteria"),
+        specialists=group.get("specialists"),
+        gate_checks=list((group.get("gate_profile", {}).get("checks", {}) or {}).keys()),
+        provided_profile=(group.get("head", {}) or {}).get("expert_profile"),
+    )
+    expert_protocol_block = "\n".join(
+        ["- {0}".format(item) for item in expert_profile["analysis_protocol"]]
+    )
+    expert_evidence_block = "\n".join(
+        ["- {0}".format(item) for item in expert_profile["evidence_hierarchy"]]
+    )
+    expert_questions_block = "\n".join(
+        ["- {0}".format(item) for item in expert_profile["pressure_questions"]]
+    )
+    expert_refusal_block = "\n".join(
+        ["- {0}".format(item) for item in expert_profile["refusal_conditions"]]
+    )
+    expert_publication_block = "\n".join(
+        ["- {0}".format(item) for item in expert_profile["publication_bar"]]
+    )
     return render_template(
         template,
         {
@@ -128,6 +146,13 @@ def render_agents_template(fabric_root: Path, project_id: str, group: dict) -> s
                 float(persona["confidence_threshold"])
             ),
             "HEAD_PERSONA_OVERRIDE_POLICY": persona["override_policy"],
+            "HEAD_EXPERT_FIELD_IDENTITY": expert_profile["field_identity"],
+            "HEAD_EXPERT_SIGNATURE_COMMITMENT": expert_profile["signature_commitment"],
+            "HEAD_EXPERT_ANALYSIS_PROTOCOL_BLOCK": expert_protocol_block,
+            "HEAD_EXPERT_EVIDENCE_HIERARCHY_BLOCK": expert_evidence_block,
+            "HEAD_EXPERT_PRESSURE_QUESTIONS_BLOCK": expert_questions_block,
+            "HEAD_EXPERT_REFUSAL_CONDITIONS_BLOCK": expert_refusal_block,
+            "HEAD_EXPERT_PUBLICATION_BAR_BLOCK": expert_publication_block,
             "SPECIALIST_BLOCK": specialist_block,
             "WORKDIR_BLOCK": workdir_block,
             "QUALITY_GATE_BLOCK": quality_block,

@@ -26,6 +26,7 @@ from agents_inc.core.fabric_lib import (
     upsert_project_registry_entry,
     write_text,
 )
+from agents_inc.core.persona_tools import synthesize_domain_doctrine, synthesize_expert_profile
 
 REFERENCE_STARTER_BY_ROLE = {
     "domain-core": "domain-core.md",
@@ -104,19 +105,11 @@ def resolve_head_persona(group: dict) -> dict:
     group_id = str(group.get("group_id") or "group").strip() or "group"
     display_name = str(group.get("display_name") or group_id).strip() or group_id
     domain = str(group.get("domain") or "general-domain").strip().replace("-", " ")
-    doctrine = persona.get("domain_doctrine")
-    if not isinstance(doctrine, list):
-        doctrine = []
-    doctrine_rows = [str(item).strip() for item in doctrine if str(item).strip()]
-    if not doctrine_rows:
-        success = group.get("success_criteria")
-        if isinstance(success, list):
-            doctrine_rows = [str(item).strip() for item in success if str(item).strip()]
-    if not doctrine_rows:
-        doctrine_rows = [
-            "Decisions are domain-grounded and explicit.",
-            "Weak evidence is challenged before publication.",
-        ]
+    doctrine_rows = synthesize_domain_doctrine(
+        success_criteria=group.get("success_criteria"),
+        specialists=group.get("specialists"),
+        provided_doctrine=persona.get("domain_doctrine"),
+    )
 
     return {
         "persona_id": str(persona.get("persona_id") or f"persona-{group_id}-head").strip(),
@@ -308,6 +301,18 @@ def write_group_assets(
     )
     wrappers_readme = read_template(fabric_root, "templates/group/tools/wrappers/README.txt")
     persona = resolve_head_persona(group)
+    expert_profile = synthesize_expert_profile(
+        group_id=group_id,
+        display_name=group.get("display_name"),
+        domain=group.get("domain"),
+        purpose=group.get("purpose") or group.get("head", {}).get("mission"),
+        success_criteria=group.get("success_criteria"),
+        specialists=group.get("specialists"),
+        gate_checks=list((group.get("gate_profile", {}).get("checks", {}) or {}).keys()),
+        provided_profile=(group.get("head", {}) or {}).get("expert_profile"),
+    )
+    if isinstance(group.get("head"), dict):
+        group["head"]["expert_profile"] = expert_profile
 
     context = {
         "PROJECT_ID": project_id,
@@ -329,6 +334,19 @@ def write_group_assets(
             float(persona["confidence_threshold"])
         ),
         "HEAD_PERSONA_OVERRIDE_POLICY": persona["override_policy"],
+        "HEAD_EXPERT_FIELD_IDENTITY": expert_profile["field_identity"],
+        "HEAD_EXPERT_SIGNATURE_COMMITMENT": expert_profile["signature_commitment"],
+        "HEAD_EXPERT_ANALYSIS_PROTOCOL_BLOCK": format_bullet(expert_profile["analysis_protocol"]),
+        "HEAD_EXPERT_EVIDENCE_HIERARCHY_BLOCK": format_bullet(
+            expert_profile["evidence_hierarchy"]
+        ),
+        "HEAD_EXPERT_PRESSURE_QUESTIONS_BLOCK": format_bullet(
+            expert_profile["pressure_questions"]
+        ),
+        "HEAD_EXPERT_REFUSAL_CONDITIONS_BLOCK": format_bullet(
+            expert_profile["refusal_conditions"]
+        ),
+        "HEAD_EXPERT_PUBLICATION_BAR_BLOCK": format_bullet(expert_profile["publication_bar"]),
         "SPECIALIST_BLOCK": render_specialist_block(group["specialists"]),
         "WORKDIR_BLOCK": render_workdirs_block(project_id, group_id, group["specialists"]),
         "QUALITY_GATE_BLOCK": render_quality_gate_block(group["quality_gates"]),
@@ -453,6 +471,23 @@ def write_group_assets(
                 float(persona["confidence_threshold"])
             ),
             "HEAD_PERSONA_OVERRIDE_POLICY": persona["override_policy"],
+            "HEAD_EXPERT_FIELD_IDENTITY": expert_profile["field_identity"],
+            "HEAD_EXPERT_SIGNATURE_COMMITMENT": expert_profile["signature_commitment"],
+            "HEAD_EXPERT_ANALYSIS_PROTOCOL_BLOCK": format_bullet(
+                expert_profile["analysis_protocol"]
+            ),
+            "HEAD_EXPERT_EVIDENCE_HIERARCHY_BLOCK": format_bullet(
+                expert_profile["evidence_hierarchy"]
+            ),
+            "HEAD_EXPERT_PRESSURE_QUESTIONS_BLOCK": format_bullet(
+                expert_profile["pressure_questions"]
+            ),
+            "HEAD_EXPERT_REFUSAL_CONDITIONS_BLOCK": format_bullet(
+                expert_profile["refusal_conditions"]
+            ),
+            "HEAD_EXPERT_PUBLICATION_BAR_BLOCK": format_bullet(
+                expert_profile["publication_bar"]
+            ),
         },
     )
 

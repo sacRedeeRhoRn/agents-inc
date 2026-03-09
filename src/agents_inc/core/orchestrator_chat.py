@@ -7,6 +7,7 @@ import select
 import sys
 import threading
 import time
+from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
@@ -20,6 +21,7 @@ except Exception:  # pragma: no cover - platform fallback (e.g., Windows)
 
 from agents_inc.core.codex_app_client import CodexAppClient, CodexAppServerError
 from agents_inc.core.codex_home import codex_launch_env
+from agents_inc.core.live_dashboard import LiveDashboard, should_enable_dashboard
 from agents_inc.core.orchestrator_reply import OrchestratorReplyConfig, run_orchestrator_reply
 from agents_inc.core.orchestrator_state import load_orchestrator_state, save_orchestrator_state
 from agents_inc.core.progress_notes import format_progress_event
@@ -135,10 +137,33 @@ def _watch_double_escape_interrupt(
     on_interrupt: Callable[[], None],
     chat_log_path: Path,
 ) -> bool:
+    def _mark_interrupt(current: bool) -> bool:
+        if current:
+            return current
+        try:
+            on_interrupt()
+        except Exception:
+            pass
+        line = "live: interrupt requested (double ESC)"
+        print("agents-inc-live>", flush=True)
+        print(line, flush=True)
+        _append_chat_line(chat_log_path, "agents-inc-live", line)
+        return True
+
     fd = _stdin_fd_if_tty()
     if fd is None:
         while worker.is_alive():
-            worker.join(timeout=_INTERRUPT_POLL_SEC)
+            try:
+                worker.join(timeout=_INTERRUPT_POLL_SEC)
+            except KeyboardInterrupt:
+                interrupted = _mark_interrupt(False)
+                while worker.is_alive():
+                    try:
+                        worker.join(timeout=_INTERRUPT_POLL_SEC)
+                    except KeyboardInterrupt:
+                        interrupted = _mark_interrupt(interrupted)
+                        continue
+                return interrupted
         return False
 
     original_attrs = None
@@ -153,7 +178,11 @@ def _watch_double_escape_interrupt(
     last_esc_at = 0.0
     try:
         while worker.is_alive():
-            worker.join(timeout=_INTERRUPT_POLL_SEC)
+            try:
+                worker.join(timeout=_INTERRUPT_POLL_SEC)
+            except KeyboardInterrupt:
+                interrupted = _mark_interrupt(interrupted)
+                continue
             if not worker.is_alive():
                 break
             try:
@@ -173,15 +202,7 @@ def _watch_double_escape_interrupt(
                     continue
                 now = time.monotonic()
                 if not interrupted and (now - last_esc_at) <= _DOUBLE_ESC_WINDOW_SEC:
-                    interrupted = True
-                    try:
-                        on_interrupt()
-                    except Exception:
-                        pass
-                    line = "live: interrupt requested (double ESC)"
-                    print("agents-inc-live>", flush=True)
-                    print(line, flush=True)
-                    _append_chat_line(chat_log_path, "agents-inc-live", line)
+                    interrupted = _mark_interrupt(interrupted)
                 last_esc_at = now
     finally:
         if original_attrs is not None and termios is not None:
@@ -214,7 +235,21 @@ def _run_interruptible_action(
         on_interrupt=on_interrupt,
         chat_log_path=chat_log_path,
     )
-    worker.join()
+    while worker.is_alive():
+        try:
+            worker.join(timeout=_INTERRUPT_POLL_SEC)
+        except KeyboardInterrupt:
+            if not interrupted:
+                interrupted = True
+                try:
+                    on_interrupt()
+                except Exception:
+                    pass
+                line = "live: interrupt requested (double ESC)"
+                print("agents-inc-live>", flush=True)
+                print(line, flush=True)
+                _append_chat_line(chat_log_path, "agents-inc-live", line)
+            continue
     return result_box.get("value"), error_box.get("error"), interrupted
 
 
@@ -225,6 +260,52 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
     state = load_orchestrator_state(project_root, project_id=config.project_id)
     state["prefix"] = config.orchestration_prefix
     state["chat_log_path"] = str(chat_log_path)
+
+    def _save_state() -> None:
+        nonlocal state
+        state = save_orchestrator_state(project_root, state)
+
+    def _set_pending_orchestration(
+        *,
+        objective: str,
+        output_dir: Optional[Path],
+        resume_from_cycle: int,
+        resume_group_objectives: Dict[str, str] | None,
+        resume_cycle_summaries: List[dict] | None,
+        checkpoint_id: str = "",
+    ) -> None:
+        pending = {
+            "objective": str(objective or "").strip(),
+            "turn_dir": str(output_dir) if output_dir else "",
+            "resume_from_cycle": max(0, int(resume_from_cycle or 0)),
+            "group_objectives": dict(resume_group_objectives)
+            if isinstance(resume_group_objectives, dict)
+            else {},
+            "cycle_summaries": list(resume_cycle_summaries)
+            if isinstance(resume_cycle_summaries, list)
+            else [],
+            "checkpoint_id": str(checkpoint_id or "").strip(),
+            "requested_at": now_iso(),
+        }
+        state["pending_orchestration"] = pending
+        _save_state()
+
+    def _mark_pending_interrupt_requested() -> None:
+        pending = state.get("pending_orchestration")
+        if not isinstance(pending, dict):
+            return
+        pending = dict(pending)
+        pending["interrupt_requested_at"] = now_iso()
+        state["pending_orchestration"] = pending
+        _save_state()
+
+    def _clear_pending_orchestration() -> None:
+        if not isinstance(state.get("pending_orchestration"), dict):
+            return
+        if not state.get("pending_orchestration"):
+            return
+        state["pending_orchestration"] = {}
+        _save_state()
 
     thread_id = ""
     fallback_from_thread = ""
@@ -238,7 +319,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
             thread_id = existing_thread
         state["thread_id"] = thread_id
         state["status"] = "inactive"
-        save_orchestrator_state(project_root, state)
+        _save_state()
         return {
             "project_id": config.project_id,
             "project_root": str(project_root),
@@ -270,7 +351,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
 
         state["thread_id"] = thread_id
         state["status"] = "active"
-        save_orchestrator_state(project_root, state)
+        _save_state()
 
         summary = {
             "project_id": config.project_id,
@@ -315,13 +396,33 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
             resume_from_cycle: int = 0,
             resume_group_objectives: Dict[str, str] | None = None,
             resume_cycle_summaries: List[dict] | None = None,
+            resume_checkpoint_id: str = "",
         ) -> str:
+            _set_pending_orchestration(
+                objective=objective,
+                output_dir=output_dir,
+                resume_from_cycle=resume_from_cycle,
+                resume_group_objectives=resume_group_objectives,
+                resume_cycle_summaries=resume_cycle_summaries,
+                checkpoint_id=resume_checkpoint_id,
+            )
+            dashboard = None
+            if should_enable_dashboard(
+                "auto",
+                interactive=bool(getattr(sys.stdout, "isatty", lambda: False)()),
+                json_mode=False,
+            ):
+                dashboard = LiveDashboard()
+
             def _print_live_event(event: dict) -> None:
+                if dashboard is not None:
+                    dashboard.handle_event(event)
                 line = format_progress_event(event)
                 if not line:
                     return
-                print("agents-inc-live>", flush=True)
-                print(line, flush=True)
+                if dashboard is None:
+                    print("agents-inc-live>", flush=True)
+                    print(line, flush=True)
                 _append_chat_line(chat_log_path, "agents-inc-live", line)
 
             abort_dir = project_root / ".agents-inc" / "state"
@@ -335,6 +436,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                     abort_file,
                     "user interrupt requested via double ESC at {0}\n".format(now_iso()),
                 )
+                _mark_pending_interrupt_requested()
 
             def _call_orchestrator() -> object:
                 return run_orchestrator_reply(
@@ -354,11 +456,12 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                 )
 
             try:
-                run_result, run_error, _ = _run_interruptible_action(
-                    action=_call_orchestrator,
-                    on_interrupt=_request_abort,
-                    chat_log_path=chat_log_path,
-                )
+                with (dashboard if dashboard is not None else nullcontext()):
+                    run_result, run_error, _ = _run_interruptible_action(
+                        action=_call_orchestrator,
+                        on_interrupt=_request_abort,
+                        chat_log_path=chat_log_path,
+                    )
                 if run_error is not None:
                     raise run_error
                 result = run_result if isinstance(run_result, dict) else {}
@@ -366,6 +469,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                 blocked = _parse_blocked_error(str(exc))
                 if blocked:
                     if str(blocked.get("status") or "") == "BLOCKED_ABORT_REQUESTED":
+                        _clear_pending_orchestration()
                         print("agents-inc>")
                         print("interrupted: orchestration aborted by user (double ESC).")
                         _append_chat_line(
@@ -390,12 +494,14 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                             blocked["status"], blocked["blocked_report"]
                         ),
                     )
+                    _clear_pending_orchestration()
                     return "blocked"
                 message = str(exc).strip() or "unknown orchestration error"
                 print("agents-inc>")
                 print(f"orchestration error: {message}")
                 print("session remains active; fix and retry.")
                 _append_chat_line(chat_log_path, "agents-inc-error", message)
+                _clear_pending_orchestration()
                 return "error"
             finally:
                 if abort_file.exists():
@@ -412,6 +518,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
             print("agents-inc>")
             print(answer)
             _append_chat_line(chat_log_path, "agents-inc", answer)
+            _clear_pending_orchestration()
             if config.sync_orchestrated_to_direct_thread:
                 sync_note = (
                     "The following response was produced via /agents-inc orchestration. "
@@ -448,11 +555,12 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                 resume_from_cycle=start_cycle,
                 resume_group_objectives=resume_objectives,
                 resume_cycle_summaries=resume_cycle_summaries,
+                resume_checkpoint_id=auto_checkpoint_id,
             )
             state["last_auto_resume_checkpoint_id"] = auto_checkpoint_id
             state["last_auto_resume_status"] = auto_status
             state["last_auto_resume_at"] = now_iso()
-            save_orchestrator_state(project_root, state)
+            _save_state()
 
         while True:
             try:
@@ -508,7 +616,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
                     thread_id = client.start_thread()
                     state["thread_id"] = thread_id
                     state["status"] = "active"
-                    save_orchestrator_state(project_root, state)
+                    _save_state()
                     print(f"codex> resumed on a fresh thread: {thread_id}")
                     if previous_thread and previous_thread != thread_id:
                         print(f"codex> previous thread was: {previous_thread}")
@@ -528,7 +636,7 @@ def run_orchestrator_chat(config: OrchestratorChatConfig) -> dict:
             print(answer)
             _append_chat_line(chat_log_path, "codex", answer)
             state["last_turn_id"] = str(getattr(turn, "turn_id", ""))
-            save_orchestrator_state(project_root, state)
+            _save_state()
         return summary
     finally:
         state = load_orchestrator_state(project_root, project_id=config.project_id)

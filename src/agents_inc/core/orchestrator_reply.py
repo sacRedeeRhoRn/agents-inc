@@ -2850,6 +2850,18 @@ def _emit_progress(config: OrchestratorReplyConfig, event: dict) -> None:
         return
 
 
+def _append_line(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(text.rstrip() + "\n")
+
+
+def _append_ndjson(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(stable_json(payload).rstrip() + "\n")
+
+
 def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
     project_id = slugify(config.project_id)
     config = OrchestratorReplyConfig(
@@ -3231,6 +3243,24 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 "selected_groups": selected_groups,
             },
         )
+        meeting_room_log = cycle_dir / "meeting" / "live-room.log"
+        meeting_room_ndjson = cycle_dir / "meeting" / "live-room.ndjson"
+
+        def _meeting_note(text: str) -> None:
+            note_text = str(text or "").strip()
+            if not note_text:
+                return
+            payload = {
+                "event": "meeting_room_note",
+                "project_id": config.project_id,
+                "cycle": cycle,
+                "text": note_text,
+            }
+            _append_line(meeting_room_log, note_text)
+            _append_ndjson(meeting_room_ndjson, payload)
+            _emit_progress(config, payload)
+
+        _meeting_note("reviewing exposed handoffs, strict evidence gates, and consensus alignment.")
         meeting = run_head_meeting(
             HeadMeetingConfig(
                 project_id=config.project_id,
@@ -3239,6 +3269,7 @@ def run_orchestrator_reply(config: OrchestratorReplyConfig) -> dict:
                 project_dir=project_dir,
                 selected_groups=selected_groups,
                 message=config.message,
+                note_callback=_meeting_note,
             )
         )
         meeting_outputs.append(meeting)
